@@ -1,0 +1,4 @@
+#!/usr/bin/lua
+
+cgi = require "wsview.sgi.cgi"
+cgi.run()

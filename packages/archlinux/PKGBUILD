@@ -1,0 +1,44 @@
+pkgname=wslog
+pkgver=0.8.4
+pkgrel=1
+pkgdesc="Weather station logger"
+arch=('x86_64' 'aarch64')
+url=""
+license=('GPL3')
+source=("$pkgname-$pkgver.tar.gz"
+	'wslogd.service'
+	'wslog.sysusers'
+	'wslog.tmpfiles')
+sha1sums=('46f3e7685c9b9def924d6d7b1565c282cda7da0b'
+          '6531743a53927325c9a008dcb091fcca86e6753b'
+	  ''
+	  '')
+depends=('sqlite' 'curl' 'lua')
+
+backup=('etc/wslogd.conf')
+
+build() {
+  cd "$pkgname-$pkgver"
+  ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+  make
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  make DESTDIR="$pkgdir" install
+  install -Dm0644 "$srcdir"/wslogd.service "$pkgdir"/usr/lib/systemd/system/wslogd.service
+  install -Dm0644 "$srcdir"/wslog.sysusers "$pkgdir"/usr/lib/sysusers.d/wslog.conf
+  install -Dm0644 "$srcdir"/wslog.tmpfiles "$pkgdir"/usr/lib/tmpfiles.d/wslog.conf
+
+  install -d "$pkgdir"/srv
+  mv "$pkgdir"/var/www "$pkgdir"/srv/http
+  rmdir "$pkgdir"/var
+
+  rm "$pkgdir"/usr/lib/lua/5.3/wsview.la
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  make check
+}
+

@@ -1,0 +1,106 @@
+/*
+ * Summary
+ */
+
+.table {
+	display: table;
+}
+
+.row {
+	display: table-row;
+	clear: both;
+}
+
+.col {
+	display: table-cell;
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+.circle {
+	border: 5px solid rgb(129, 130, 130);
+	border-radius: 50%;
+	height: 85px;
+	width: 85px;
+}
+
+.arrow {
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+	border-top: 21px solid rgb(51, 51, 51);
+	position: absolute;
+	left: 41px;
+	top: -7px;
+}
+
+.ws-data, .aggr-data {
+	white-space: nowrap;
+}
+
+.ws-value, .aggr-value {
+	font-weight: 600;
+}
+
+.ws-unit, .aggr-unit {
+	font-weight: 100;
+}
+
+#rt-tbody {
+	padding-top: 20px;
+	width: 100%;
+}
+
+#rt-temp .ws-data {
+	font-size: 80px;
+}
+
+#rt-temp .ws-value {
+	font-weight: 400;
+}
+
+#rt-temp .ws-unit {
+	font-size: 42px;
+	text-align: left;
+	vertical-align: super;
+}
+
+#rt-windchill * {
+	font-size: 18px;
+}
+
+#rt-wind .col {
+	position: relative;
+}
+
+#rt-wind-speed {
+	position: absolute;
+	top: 25px;
+	width: 95px;
+	text-align: center;
+}
+
+#rt-wind-speed .col {
+	width: 95px;
+	margin: 0;
+}
+
+#rt-wind-speed .ws-data {
+	font-size: 22px;
+}
+
+#aggr .table {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+/*
+ * Charts
+ */
+.charts {
+}
+
+.chart {
+	width: 800px;
+	padding: 10px;
+}
+
