@@ -185,7 +185,7 @@ error:
 }
 
 int
-ws_write(int fd, uint8_t byte)
+ws_write_byte(int fd, uint8_t byte)
 {
 	int ret;
 
