@@ -6,7 +6,7 @@
 
 #define MAX_RESETS 		100
 #define MAX_RETRIES		50
-#define MAX_BLOCK		80
+#define MAX_BLOCKS		80
 #define READ_TIMEOUT		1000		/* milliseconds */
 
 #define WRITENIB		0x42
@@ -16,41 +16,18 @@
 #define SETACK			0x04
 #define UNSETACK		0x0C
 
+#define min(a,b)		((a) < (b) ? (a) : (b))
+
 static struct measure mem_map[] = {
 	{ 0x346, "it", TEMP, "in temp" }
 };
 
 static void
-encode_data(uint8_t encode_constant, const uint8_t *in, uint8_t *out, size_t len)
+encode(uint8_t encode_constant, const uint8_t *in, uint8_t *out, size_t len)
 {
 	for (int i = 0; i < len; i++) {
 		out[i] = encode_constant + (in[i] * 4);
 	}
-}
-
-static int
-write_byte(int fd, uint8_t byte, uint8_t ack)
-{
-	uint8_t answer;
-
-	if (ws_write_byte(fd, byte) == -1) {
-		goto error;
-	}
-	if (ws_read_byte(fd, &answer, READ_TIMEOUT) == -1) {
-		goto error;
-	}
-
-	/* Check answer against ack */
-	if (ack != answer) {
-		fprintf(stderr, "Expected %d, got %d\n", ack, answer);
-		return -1;
-	}
-
-	return 0;
-
-error:
-	perror("write_byte");
-	return -1;
 }
 
 static uint8_t
@@ -65,6 +42,60 @@ checksum(const uint8_t *buf, size_t len)
 	checksum &= 0xFF;
 
 	return (uint8_t) checksum;
+}
+
+static int
+read_byte(int fd, uint8_t *buf, long timeout)
+{
+	int ret;
+
+	ret = ws_read_byte(fd, buf, timeout);
+	if (ret == -1) {
+		goto error;
+	} else if (ret == 0) {
+		errno = EAGAIN;
+		goto error;
+	}
+
+	return 0;
+
+error:
+	perror("read_byte");
+	return -1;
+}
+
+static int
+write_byte(int fd, uint8_t byte, uint8_t ack)
+{
+	int ret;
+	uint8_t answer;
+
+	ret = ws_write_byte(fd, byte);
+	if (ret == -1) {
+		goto error;
+	} else if (ret == 0) {
+		errno = EIO;
+		goto error;
+	}
+
+	/* Check ack */
+	ret = ws_read_byte(fd, &answer, READ_TIMEOUT);
+	if (ret == -1) {
+		goto error;
+	} else if (ret == 0) {
+		errno = ENODATA;
+		goto error;
+	} else if (ack != answer) {
+		fprintf(stderr, "Expected ack %x, got %x\n", ack, answer);
+		errno = EIO;
+		return -1;
+	}
+
+	return 0;
+
+error:
+	perror("write_byte");
+	return -1;
 }
 
 /**
@@ -106,6 +137,9 @@ ws_reset_06(int fd)
 			}
 
 			ret = ws_read_byte(fd, &answer, 50);
+			if (ret == -1) {
+				goto error;
+			}
 		}
 
 		if (success) {
@@ -122,13 +156,18 @@ error:
 	return -1;
 }
 
+/**
+ * Write an address.
+ *
+ * @return 0 on success, -1 on error
+ */
 int
 ws_write_address(int fd, uint16_t address)
 {
 	uint8_t byte, ack;
 
 	for (int i = 0; i < 4; i++) {
-		byte = 0x82 + (address >> (4 * (3 - i)) & 0xF) * 4;
+		byte = (address >> (4 * (3 - i)) & 0xF) * 4 + 0x82;
 		ack = i * 16 + (byte - 0x82) / 4;
 
 		if (write_byte(fd, byte, ack) == -1) {
@@ -149,11 +188,11 @@ error:
  * @return 0 on success, -1 on error
  */
 int
-ws_write_data(int fd, uint16_t address, uint8_t encode_constant, const uint8_t *buf, size_t len)
+ws_write_data(int fd, uint16_t address, size_t len, uint8_t encode_constant, const uint8_t *buf)
 {
 	size_t max_len;
 	uint8_t ack_constant;
-	uint8_t encoded_data[MAX_BLOCK];
+	uint8_t encoded_data[MAX_BLOCKS];
 
 	switch (encode_constant) {
 	case SETBIT:
@@ -183,7 +222,7 @@ ws_write_data(int fd, uint16_t address, uint8_t encode_constant, const uint8_t *
 		goto error;
 	}
 
-	encode_data(encode_constant, buf, encoded_data, len);
+	encode(encode_constant, buf, encoded_data, len);
 
 	for (int i = 0; i < len; i++) {
 		uint8_t ack = buf[i] + ack_constant;
@@ -200,15 +239,18 @@ error:
 	return -1;
 }
 
+/**
+ * Reset the device and write a command, verifing it was written correctly.
+ */
 int
-ws_write_safe(int fd, uint16_t address, uint8_t encode_constant, const uint8_t *buf, size_t len)
+ws_write_safe(int fd, uint16_t address, size_t len, uint8_t encode_constant, const uint8_t *buf)
 {
 	for (int i = 0; i < MAX_RETRIES; i++) {
 		if (ws_reset_06(fd) == -1) {
 			goto error;
 		}
 
-		if (ws_write_data(fd, address, encode_constant, buf, len) == 0) {
+		if (ws_write_data(fd, address, len, encode_constant, buf) == 0) {
 			return 0;
 		}
 	}
@@ -221,13 +263,16 @@ error:
 }
 
 int
-ws_read_data(int fd, uint16_t address, uint8_t *buf, size_t len)
+ws_read_data(int fd, uint16_t address, size_t len, uint8_t *buf)
 {
-	if (len < 1 || len > MAX_BLOCK) {
+	uint8_t answer;
+
+	if (len == 0 || len > MAX_BLOCKS) {
 		errno = EINVAL;
 		goto error;
 	}
 
+	/* Write addres to read from */
 	if (ws_write_address(fd, address) == -1) {
 		goto error;
 	}
@@ -243,15 +288,13 @@ ws_read_data(int fd, uint16_t address, uint8_t *buf, size_t len)
 
 	/* Read the response */
 	for (int i = 0; i < nbytes; i++) {
-		if (ws_read_byte(fd, buf + i, READ_TIMEOUT) == -1) {
+		if (read_byte(fd, buf + i, READ_TIMEOUT) == -1) {
 			goto error;
 		}
 	}
 
 	/* Read and verify checksum */
-	uint8_t answer;
-
-	if (ws_read_byte(fd, &answer, READ_TIMEOUT) == -1) {
+	if (read_byte(fd, &answer, READ_TIMEOUT) == -1) {
 		goto error;
 	}
 	if (answer != checksum(buf, nbytes)) {
@@ -263,5 +306,66 @@ ws_read_data(int fd, uint16_t address, uint8_t *buf, size_t len)
 error:
 	perror("ws_read_data");
 	return -1;
+}
+
+static int
+read_block(int fd, uint16_t address, size_t len, uint8_t *buf)
+{
+	int p, k;
+
+	for (p = 0; p < len; p += MAX_BLOCKS) {
+		for (k = 0; k < MAX_RETRIES; k++) {
+			int nbytes = min(MAX_BLOCKS, len - p);
+
+			if (ws_read_data(fd, address + p, nbytes, buf + p) == 0) {
+				break;
+			}
+			if (ws_reset_06(fd) == -1) {
+				goto error;
+			}
+		}
+
+		if (k == MAX_RETRIES) {
+			errno = EAGAIN;
+			goto error;
+		}
+	}
+
+	return 0;
+
+error:
+	perror("ws_read_safe");
+	return -1;
+}
+
+int
+ws_read_batch(int fd, const uint16_t *address, const size_t *len, size_t sz, uint8_t *buf)
+{
+	int i;
+	size_t off = 0;
+
+	if (ws_reset_06(fd) == -1) {
+		goto error;
+	}
+
+	for (i = 0; i < sz; i++) {
+		if (read_block(fd, address[i], len[i], buf + off) == -1) {
+			goto error;
+		}
+
+		off += len[i];
+	}
+
+	return 0;
+
+error:
+	perror("ws_read_batch");
+	return -1;
+}
+
+int
+ws_read_safe(int fd, uint16_t address, size_t len, uint8_t *buf)
+{
+	return ws_read_batch(fd, &address, &len, 1, buf);
 }
 
