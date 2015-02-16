@@ -20,9 +20,8 @@ ws_open(const char *device)
 {
 	int fd = -1;
 	struct termios adtio;
-	int portstatus, fdflags;
+	int portstatus;
 
-	//Setup serial port
 	if ((fd = open(device, O_RDWR)) == -1) {
 		goto error;
 	}
@@ -31,67 +30,27 @@ ws_open(const char *device)
 		goto error;
 	}
 	
-//	if ((fdflags = fcntl(fd, F_GETFL)) == -1 ||
-//	     fcntl(fd, F_SETFL, fdflags & ~O_NONBLOCK) < 0)
-//	{
-//		perror("couldn't reset non-blocking mode");
-//		exit(EXIT_FAILURE);
-//	}
-
 	/* Save current settings */
 	if (tcgetattr(fd, &oldio) == -1) {
 		goto error;
 	}
 	
-	//We want full control of what is set and simply reset the entire adtio struct
 	memset(&adtio, 0, sizeof(adtio));
 	
-	//tcgetattr(fd, &adtio);   // Commented out and replaced by the memset above
-	
-	// Serial control options
-//	adtio.c_cflag &= ~PARENB;      // No parity
-//	adtio.c_cflag &= ~CSTOPB;      // One stop bit
-//	adtio.c_cflag &= ~CSIZE;       // Character size mask
-//	adtio.c_cflag |= CS8;          // Character size 8 bits
-//	adtio.c_cflag |= CREAD;        // Enable Receiver
-//	adtio.c_cflag &= ~HUPCL;       // No "hangup"
-//	adtio.c_cflag |= HUPCL;       // No "hangup"
-//	adtio.c_cflag &= ~CRTSCTS;     // No flowcontrol
-//	adtio.c_cflag |= CLOCAL;       // Ignore modem control lines
-
+	/* Serial control options */
 	adtio.c_cflag = CREAD|HUPCL|CLOCAL|CS8|B2400;
+	adtio.c_lflag = 0;
+	adtio.c_iflag = INPCK;
+	adtio.c_oflag = 0;
+	adtio.c_cc[VMIN] = 1;			/* blocking read until 1 char */
+	adtio.c_cc[VTIME] = 0;			/* timer 0s */
 
-	// Baudrate, for newer systems
 	if (cfsetispeed(&adtio, BAUDRATE) == -1) {
 		goto error;
 	}
 	if (cfsetospeed(&adtio, BAUDRATE) == -1) {
 		goto error;
 	}
-	
-	// Serial local options: adtio.c_lflag
-	// Raw input = clear ICANON, ECHO, ECHOE, and ISIG
-	// Disable misc other local features = clear FLUSHO, NOFLSH, TOSTOP, PENDIN, and IEXTEN
-	// So we actually clear all flags in adtio.c_lflag
-	adtio.c_lflag = 0;
-
-	// Serial input options: adtio.c_iflag
-	// Disable parity check = clear INPCK, PARMRK, and ISTRIP 
-	// Disable software flow control = clear IXON, IXOFF, and IXANY
-	// Disable any translation of CR and LF = clear INLCR, IGNCR, and ICRNL	
-	// Ignore break condition on input = set IGNBRK
-	// Ignore parity errors just in case = set IGNPAR;
-	// So we can clear all flags except IGNBRK and IGNPAR
-//	adtio.c_iflag = IGNBRK|IGNPAR;
-	adtio.c_iflag = INPCK;
-	
-	// Serial output options
-	// Raw output should disable all other output options
-//	adtio.c_oflag &= ~OPOST;
-	adtio.c_oflag = 0;
-
-	adtio.c_cc[VMIN] = 1;		// blocking read until 1 char
-	adtio.c_cc[VTIME] = 0;		// timer 1s
 
 	if (tcflush(fd, TCIOFLUSH) == -1) {
 		goto error;
@@ -104,13 +63,14 @@ ws_open(const char *device)
 		goto error;
 	}
 
-	// Set DTR low and RTS high and leave other ctrl lines untouched
-
+	/* Set DTR low and RTS high and leave other ctrl lines untouched */
 	if (ioctl(fd, TIOCMGET, &portstatus) == -1) {
 		goto error;
 	}
+
 	portstatus &= ~TIOCM_DTR;
 	portstatus |= TIOCM_RTS;
+
 	if (ioctl(fd, TIOCMSET, &portstatus) == -1) {
 		goto error;
 	}
@@ -195,7 +155,7 @@ ws_write_byte(int fd, uint8_t byte)
 
 	if (DEBUG) printf("ws_write: %d\n", ret);
 
-	return 0;
+	return ret;
 
 error:
 	perror("ws_write");
