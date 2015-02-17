@@ -22,7 +22,7 @@ ws_open(const char *device)
 	struct termios adtio;
 	int portstatus;
 
-	if ((fd = open(device, O_RDWR)) == -1) {
+	if ((fd = open(device, O_RDWR|O_NOCTTY|O_NDELAY)) == -1) {
 		goto error;
 	}
 	
@@ -38,10 +38,10 @@ ws_open(const char *device)
 	memset(&adtio, 0, sizeof(adtio));
 	
 	/* Serial control options */
-	adtio.c_cflag = CREAD|HUPCL|CLOCAL|CS8|B2400;
-	adtio.c_lflag = 0;
 	adtio.c_iflag = INPCK;
 	adtio.c_oflag = 0;
+	adtio.c_cflag = CREAD|HUPCL|CLOCAL|CS8;
+	adtio.c_lflag = 0;
 	adtio.c_cc[VMIN] = 1;			/* blocking read until 1 char */
 	adtio.c_cc[VTIME] = 0;			/* timer 0s */
 
@@ -153,7 +153,7 @@ ws_write_byte(int fd, uint8_t byte)
 		goto error;
 	}
 
-	if (DEBUG) printf("ws_write: %d\n", ret);
+	if (DEBUG) printf("ws_write_byte: %d\n", ret);
 
 	return ret;
 

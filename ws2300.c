@@ -9,18 +9,11 @@
 #define MAX_BLOCKS		80
 #define READ_TIMEOUT		1000		/* milliseconds */
 
-#define WRITENIB		0x42
-#define SETBIT			0x12
-#define UNSETBIT		0x32
-#define WRITEACK		0x10
 #define SETACK			0x04
 #define UNSETACK		0x0C
+#define WRITEACK		0x10
 
 #define min(a,b)		((a) < (b) ? (a) : (b))
-
-static struct measure mem_map[] = {
-	{ 0x346, "it", TEMP, "in temp" }
-};
 
 static void
 encode(uint8_t encode_constant, const uint8_t *in, uint8_t *out, size_t len)

@@ -7,6 +7,10 @@
 #define DEBUG 0
 #endif
 
+#define SETBIT			0x12
+#define UNSETBIT		0x32
+#define WRITENIB		0x42
+
 enum type {
 	DATE,
 	TEMP
