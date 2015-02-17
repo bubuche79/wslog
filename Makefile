@@ -8,8 +8,8 @@ all: ws2300
 clean:
 	$(RM) *.o ws2300
 
-ws2300: main.o serial.o ws2300.o
-	$(LD) -o $@ main.o serial.o ws2300.o
+ws2300: main.o serial.o ws2300.o convert.o
+	$(LD) -o $@ $+ -lm
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<

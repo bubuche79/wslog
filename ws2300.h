@@ -1,7 +1,10 @@
 #ifndef _WS2300_H
 #define _WS2300_H
 
+#include <unistd.h>
 #include <stdint.h>
+
+#include "convert.h"
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -11,17 +14,26 @@
 #define UNSETBIT		0x32
 #define WRITENIB		0x42
 
-enum type {
-	DATE,
-	TEMP
+enum ws_type
+{
+	WS_TEMP
 };
 
-struct measure {
-	uint16_t address;
-	char id[8];
-	enum type type;
-	char desc[64];
+struct ws_measure
+{
+	uint16_t addr;				/* nybble address */
+	char id[8];					/* short name */
+	enum ws_type type;			/* data type */
+	char desc[64];				/* long name */
+	char reset[8];				/* id of measure to reset this one */
 };
+
+inline uint8_t
+nybble_at(const uint8_t *buf, size_t i)
+{
+	return (i & 0x1) ? buf[i / 2] >> 4 : buf[i / 2] & 0xF;
+
+}
 
 extern int ws_reset_06(int fd);
 extern int ws_write_address(int fd, uint16_t address);

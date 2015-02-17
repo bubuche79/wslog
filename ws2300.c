@@ -306,6 +306,8 @@ read_block(int fd, uint16_t address, size_t len, uint8_t *buf)
 {
 	int p, k;
 
+	if (DEBUG) printf("read_block %x (%lu)\n", address, len);
+
 	for (p = 0; p < len; p += MAX_BLOCKS) {
 		for (k = 0; k < MAX_RETRIES; k++) {
 			int nbytes = min(MAX_BLOCKS, len - p);
