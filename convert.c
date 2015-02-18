@@ -1,31 +1,48 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "ws2300.h"
+#include "convert.h"
 
-static const struct conv conv[] =
+static const struct ws_conv ws_conv[] =
 {
 		/* BCD number converters */
-		{ "C", 4, "temperature", 2, .offset = -3000 },
-		{ "hPa", 5, "pressure", 1 },
+		{ "°C", 4, "temperature", .bcd = { 2, -3000 } },
+		{ "hPa", 5, "pressure", .bcd = { 1, 0 } },
 		{ "%", 2, "humidity" },
-		{ "mm", 6, "rain", 2 },
-		{ "m/s", 3, "speed", 1 },
+		{ "mm", 6, "rain", .bcd = { 2, 0 } },
+		{ "m/s", 3, "speed", .bcd = { 1, 0 } },
 
 		/* Wind direction converter */
-		{ "°", 1, "wind direction, north=0 clockwise" },
+		{ "deg", 1, "wind direction, North=0 clockwise" },
 
 		/* Wind velocity converter */
 		{ "ms,d", 4, "wind speed and direction" },
 
 		/* Bin converters */
-		{ "s", 2, "time interval", .multi = 5 },
-		{ "min", 3, "time interval", .multi = 1 },
+		{ "s", 2, "time interval", .bin = { 0, 5 } },
+		{ "min", 3, "time interval", .bin = { 0, 1 } },
+
+		/* Date and time converters */
+		{ NULL, 6, "yyyy-mm-dd", .tm = { "%Y-%m-%d" } },
+		{ NULL, 10, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
+		{ NULL, 11, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
+		{ NULL, 6, "hh:mm:ss", .tm = { "%H:%M:%S" } },
 };
 
-const struct conv *ws_conv_temp = &conv[0];
+static inline uint8_t
+nybble_at(const uint8_t *buf, size_t i)
+{
+	return (i & 0x1) ? buf[i / 2] >> 4 : buf[i / 2] & 0xF;
 
-static uint64_t
+}
+
+static inline const struct ws_conv *
+get_conv(enum ws_type t)
+{
+	return &ws_conv[t];
+}
+
+static long
 bcd2num(const uint8_t *buf, size_t n)
 {
 	long res = 0;
@@ -37,7 +54,7 @@ bcd2num(const uint8_t *buf, size_t n)
 	return res;
 }
 
-static uint64_t
+static long
 bin2num(const uint8_t *buf, size_t n)
 {
 	long res = 0;
@@ -50,57 +67,93 @@ bin2num(const uint8_t *buf, size_t n)
 }
 
 static double
-bcd_conv(const uint8_t *buf, const struct conv *c)
+bcd_conv(const uint8_t *buf, const struct ws_conv *c)
 {
-	return (bcd2num(buf, c->nybble_count) + c->offset) / pow(10.0, c->scale);
+	return (bcd2num(buf, c->nybbles) + c->bcd.offset) / pow(10.0, c->bcd.scale);
 }
 
 static void
-bcd_conv_str(const uint8_t *buf, const struct conv *c, char *str, size_t len)
+bcd_conv_str(const uint8_t *buf, const struct ws_conv *c, char *str, size_t len)
 {
-	snprintf(str, len, "%.*f", c->scale, bcd_conv(buf, c));
+	snprintf(str, len, "%.*f %s", c->bcd.scale, bcd_conv(buf, c), c->units);
 }
 
 static double
-bin_conv(const uint8_t *buf, const struct conv *c)
+bin_conv(const uint8_t *buf, const struct ws_conv *c)
 {
-	return bin2num(buf, c->nybble_count) * c->multi / pow(10.0, c->scale);
+	return bin2num(buf, c->nybbles) * c->bin.multi / pow(10.0, c->bin.scale);
+}
+
+static void
+bin_conv_str(const uint8_t *buf, const struct ws_conv *c, char *str, size_t len)
+{
+	snprintf(str, len, "%.*f %s", c->bcd.scale, bin_conv(buf, c), c->units);
+}
+
+const struct ws_conv *
+ws_get_conv(enum ws_type t)
+{
+	return get_conv(t);
 }
 
 double
 ws_get_temp(const uint8_t *buf)
 {
-	return bcd_conv(buf, ws_conv_temp);
+	return bcd_conv(buf, get_conv(WS_TEMP));
 }
 
 void
-ws_get_temp_str(const uint8_t *buf, char *str, size_t len)
+ws_temp_str(const uint8_t *buf, char *str, size_t len)
 {
-	return bcd_conv_str(buf, ws_conv_temp, str, len);
+	return bcd_conv_str(buf, get_conv(WS_TEMP), str, len);
 }
 
 double
 ws_get_pressure(const uint8_t *buf)
 {
-	return bcd_conv(buf, &conv[1]);
+	return bcd_conv(buf, get_conv(WS_PRESSURE));
+}
+
+void
+ws_pressure_str(const uint8_t *buf, char *str, size_t len)
+{
+	return bcd_conv_str(buf, get_conv(WS_PRESSURE), str, len);
 }
 
 double
 ws_get_humidity(const uint8_t *buf)
 {
-	return bcd_conv(buf, &conv[2]);
+	return bcd_conv(buf, get_conv(WS_HUMIDITY));
+}
+
+void
+ws_humidity_str(const uint8_t *buf, char *str, size_t len)
+{
+	return bcd_conv_str(buf, get_conv(WS_HUMIDITY), str, len);
 }
 
 double
 ws_get_rain(const uint8_t *buf)
 {
-	return bcd_conv(buf, &conv[3]);
+	return bcd_conv(buf, get_conv(WS_RAIN));
+}
+
+void
+ws_rain_str(const uint8_t *buf, char *str, size_t len)
+{
+	return bcd_conv_str(buf, get_conv(WS_RAIN), str, len);
 }
 
 double
 ws_get_speed(const uint8_t *buf)
 {
-	return bcd_conv(buf, &conv[4]);
+	return bcd_conv(buf, get_conv(WS_SPEED));
+}
+
+void
+ws_speed_str(const uint8_t *buf, char *str, size_t len)
+{
+	return bcd_conv_str(buf, get_conv(WS_SPEED), str, len);
 }
 
 double

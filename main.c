@@ -5,10 +5,12 @@
 #include <string.h>
 
 #include "serial.h"
+#include "convert.h"
 #include "ws2300.h"
 
 #define PROGNAME	"ws2300"
-#define ZERO		0x000
+
+#define array_sz(a)	(sizeof(a) / sizeof(a[0]))
 
 static struct ws_measure mem_map[] =
 {
@@ -76,123 +78,161 @@ static struct ws_measure mem_map[] =
 	{ 0x02b, None, conv_ala0, "rain 24h alarm active alias" },
 	{ 0x02c, None, conv_ala2, "wind direction alarm active alias" },
 	{ 0x02c, None, conv_ala2, "wind speed max alarm active alias" },
-	{ 0x02c, None, conv_ala2, "wind speed min alarm active alias" },
-	{ 0x200, "st", conv_time, "station set time", "ct" },
-	{ 0x23b, "sw", conv_dtme, "station current date time" },
-	{ 0x24d, "sd", conv_date, "station set date", "cd" },
-	{ 0x266, "lc", conv_lcon, "lcd contrast (ro)" },
+	{ 0x02c, None, conv_ala2, "wind speed min alarm active alias" }, */
+	{ 0x200, "st", WS_TIME, "station set time", "ct" },
+	{ 0x23b, "sw", WS_DATETIME, "station current date time" },
+	{ 0x24d, "sd", WS_DATE, "station set date", "cd" },
+/*	{ 0x266, "lc", conv_lcon, "lcd contrast (ro)" },
 	{ 0x26b, "for", conv_fore, "forecast" },
 	{ 0x26c, "ten", conv_tend, "tendency" }, */
 	{ 0x346, "it", WS_TEMP, "in temp" },
 	{ 0x34b, "itl", WS_TEMP, "in temp min", "it" },
 	{ 0x350, "ith", WS_TEMP, "in temp max", "it" },
-/*	{ 0x354, "itlw", conv_stmp, "in temp min when", "sw" },
-	{ 0x35e, "ithw", conv_stmp, "in temp max when", "sw" }, */
+	{ 0x354, "itlw", WS_TIMESTAMP, "in temp min when", "sw" },
+	{ 0x35e, "ithw", WS_TIMESTAMP, "in temp max when", "sw" },
 	{ 0x369, "itla", WS_TEMP, "in temp min alarm" },
 	{ 0x36e, "itha", WS_TEMP, "in temp max alarm" },
 	{ 0x373, "ot", WS_TEMP, "out temp" },
 	{ 0x378, "otl", WS_TEMP, "out temp min", "ot" },
 	{ 0x37d, "oth", WS_TEMP, "out temp max", "ot" },
-/*	{ 0x381, "otlw", conv_stmp, "out temp min when", "sw" },
-	{ 0x38b, "othw", conv_stmp, "out temp max when", "sw" }, */
+	{ 0x381, "otlw", WS_TIMESTAMP, "out temp min when", "sw" },
+	{ 0x38b, "othw", WS_TIMESTAMP, "out temp max when", "sw" },
 	{ 0x396, "otla", WS_TEMP, "out temp min alarm" },
 	{ 0x39b, "otha", WS_TEMP, "out temp max alarm" },
 	{ 0x3a0, "wc", WS_TEMP, "wind chill" },
 	{ 0x3a5, "wcl", WS_TEMP, "wind chill min", "wc" },
 	{ 0x3aa, "wch", WS_TEMP, "wind chill max", "wc" },
-/*	{ 0x3ae, "wclw", conv_stmp, "wind chill min when", "sw" },
-	{ 0x3b8, "wchw", conv_stmp, "wind chill max when", "sw" }, */
+	{ 0x3ae, "wclw", WS_TIMESTAMP, "wind chill min when", "sw" },
+	{ 0x3b8, "wchw", WS_TIMESTAMP, "wind chill max when", "sw" },
 	{ 0x3c3, "wcla", WS_TEMP, "wind chill min alarm" },
 	{ 0x3c8, "wcha", WS_TEMP, "wind chill max alarm" },
 	{ 0x3ce, "dp", WS_TEMP, "dew point" },
 	{ 0x3d3, "dpl", WS_TEMP, "dew point min", "dp" },
 	{ 0x3d8, "dph", WS_TEMP, "dew point max", "dp" },
-/*	{ 0x3dc, "dplw", conv_stmp, "dew point min when", "sw" },
-	{ 0x3e6, "dphw", conv_stmp, "dew point max when", "sw" }, */
+	{ 0x3dc, "dplw", WS_TIMESTAMP, "dew point min when", "sw" },
+	{ 0x3e6, "dphw", WS_TIMESTAMP, "dew point max when", "sw" },
 	{ 0x3f1, "dpla", WS_TEMP, "dew point min alarm" },
 	{ 0x3f6, "dpha", WS_TEMP, "dew point max alarm" },
-/*	{ 0x3fb, "ih", conv_humi, "in humidity" },
-	{ 0x3fd, "ihl", conv_humi, "in humidity min", "ih" },
-	{ 0x3ff, "ihh", conv_humi, "in humidity max", "ih" },
-	{ 0x401, "ihlw", conv_stmp, "in humidity min when", "sw" },
-	{ 0x40b, "ihhw", conv_stmp, "in humidity max when", "sw" },
-	{ 0x415, "ihla", conv_humi, "in humidity min alarm" },
-	{ 0x417, "ihha", conv_humi, "in humidity max alarm" },
-	{ 0x419, "oh", conv_humi, "out humidity" },
-	{ 0x41b, "ohl", conv_humi, "out humidity min", "oh" },
-	{ 0x41d, "ohh", conv_humi, "out humidity max", "oh" },
-	{ 0x41f, "ohlw", conv_stmp, "out humidity min when", "sw" },
-	{ 0x429, "ohhw", conv_stmp, "out humidity max when", "sw" },
-	{ 0x433, "ohla", conv_humi, "out humidity min alarm" },
-	{ 0x435, "ohha", conv_humi, "out humidity max alarm" },
-	{ 0x497, "rd", conv_rain, "rain 24h" },
-	{ 0x49d, "rdh", conv_rain, "rain 24h max", "rd" },
-	{ 0x4a3, "rdhw", conv_stmp, "rain 24h max when", "sw" },
-	{ 0x4ae, "rdha", conv_rain, "rain 24h max alarm" },
-	{ 0x4b4, "rh", conv_rain, "rain 1h" },
-	{ 0x4ba, "rhh", conv_rain, "rain 1h max", "rh" },
-	{ 0x4c0, "rhhw", conv_stmp, "rain 1h max when", "sw" },
-	{ 0x4cb, "rhha", conv_rain, "rain 1h max alarm" },
-	{ 0x4d2, "rt", conv_rain, "rain total", 	reset=0)
-	{ 0x4d8, "rtrw", conv_stmp, "rain total reset when", "sw" },
-	{ 0x4ee, "wsl", conv_wspd, "wind speed min", "ws" },
-	{ 0x4f4, "wsh", conv_wspd, "wind speed max", "ws" },
-	{ 0x4f8, "wslw", conv_stmp, "wind speed min when", "sw" },
-	{ 0x502, "wshw", conv_stmp, "wind speed max when", "sw" },
-	{ 0x527, "wso", conv_wovr, "wind speed overflow" },
-	{ 0x528, "wsv", conv_wvld, "wind speed validity" },
-	{ 0x529, "wv", conv_wvel, "wind velocity" },
-	{ 0x529, "ws", conv_wspd, "wind speed" },
-	{ 0x52c, "w0", conv_wdir, "wind direction" },
-	{ 0x52d, "w1", conv_wdir, "wind direction 1" },
-	{ 0x52e, "w2", conv_wdir, "wind direction 2" },
-	{ 0x52f, "w3", conv_wdir, "wind direction 3" },
-	{ 0x530, "w4", conv_wdir, "wind direction 4" },
-	{ 0x531, "w5", conv_wdir, "wind direction 5" },
-	{ 0x533, "wsla", conv_wspd, "wind speed min alarm" },
-	{ 0x538, "wsha", conv_wspd, "wind speed max alarm" },
-	{ 0x54d, "cn", conv_conn, "connection type" },
-	{ 0x54f, "cc", conv_per2, "connection time till connect" },
-	{ 0x5d8, "pa", conv_pres, "pressure absolute" },
-	{ 0x5e2, "pr", conv_pres, "pressure relative" },
-	{ 0x5ec, "pc", conv_pres, "pressure correction" },
-	{ 0x5f6, "pal", conv_pres, "pressure absolute min", "pa" },
-	{ 0x600, "prl", conv_pres, "pressure relative min", "pr" },
-	{ 0x60a, "pah", conv_pres, "pressure absolute max", "pa" },
-	{ 0x614, "prh", conv_pres, "pressure relative max", "pr" },
-	{ 0x61e, "plw", conv_stmp, "pressure min when", "sw" },
-	{ 0x628, "phw", conv_stmp, "pressure max when", "sw" },
-	{ 0x63c, "pla", conv_pres, "pressure min alarm" },
-	{ 0x650, "pha", conv_pres, "pressure max alarm" },
-	{ 0x6b2, "hi", conv_per3, "history interval" },
-	{ 0x6b5, "hc", conv_per3, "history time till sample" },
-	{ 0x6b8, "hw", conv_stmp, "history last sample when" },
-	{ 0x6c2, "hp", conv_rec2, "history last record pointer",reset=0)
+	{ 0x3fb, "ih", WS_HUMIDITY, "in humidity" },
+	{ 0x3fd, "ihl", WS_HUMIDITY, "in humidity min", "ih" },
+	{ 0x3ff, "ihh", WS_HUMIDITY, "in humidity max", "ih" },
+	{ 0x401, "ihlw", WS_TIMESTAMP, "in humidity min when", "sw" },
+	{ 0x40b, "ihhw", WS_TIMESTAMP, "in humidity max when", "sw" },
+	{ 0x415, "ihla", WS_HUMIDITY, "in humidity min alarm" },
+	{ 0x417, "ihha", WS_HUMIDITY, "in humidity max alarm" },
+	{ 0x419, "oh", WS_HUMIDITY, "out humidity" },
+	{ 0x41b, "ohl", WS_HUMIDITY, "out humidity min", "oh" },
+	{ 0x41d, "ohh", WS_HUMIDITY, "out humidity max", "oh" },
+	{ 0x41f, "ohlw", WS_TIMESTAMP, "out humidity min when", "sw" },
+	{ 0x429, "ohhw", WS_TIMESTAMP, "out humidity max when", "sw" },
+	{ 0x433, "ohla", WS_HUMIDITY, "out humidity min alarm" },
+	{ 0x435, "ohha", WS_HUMIDITY, "out humidity max alarm" },
+	{ 0x497, "rd", WS_RAIN, "rain 24h" },
+	{ 0x49d, "rdh", WS_RAIN, "rain 24h max", "rd" },
+	{ 0x4a3, "rdhw", WS_TIMESTAMP, "rain 24h max when", "sw" },
+	{ 0x4ae, "rdha", WS_RAIN, "rain 24h max alarm" },
+	{ 0x4b4, "rh", WS_RAIN, "rain 1h" },
+	{ 0x4ba, "rhh", WS_RAIN, "rain 1h max", "rh" },
+	{ 0x4c0, "rhhw", WS_TIMESTAMP, "rain 1h max when", "sw" },
+	{ 0x4cb, "rhha", WS_RAIN, "rain 1h max alarm" },
+	{ 0x4d2, "rt", WS_RAIN, "rain total", "0" },
+	{ 0x4d8, "rtrw", WS_TIMESTAMP, "rain total reset when", "sw" },
+	{ 0x4ee, "wsl", WS_SPEED, "wind speed min", "ws" },
+	{ 0x4f4, "wsh", WS_SPEED, "wind speed max", "ws" },
+	{ 0x4f8, "wslw", WS_TIMESTAMP, "wind speed min when", "sw" },
+	{ 0x502, "wshw", WS_TIMESTAMP, "wind speed max when", "sw" },
+/*	{ 0x527, "wso", conv_wovr, "wind speed overflow" },
+	{ 0x528, "wsv", conv_wvld, "wind speed validity" },*/
+	{ 0x529, "wv", WS_WIND_VELOCITY, "wind velocity" },
+	{ 0x529, "ws", WS_SPEED, "wind speed" },
+	{ 0x52c, "w0", WS_WIND_DIR, "wind direction" },
+	{ 0x52d, "w1", WS_WIND_DIR, "wind direction 1" },
+	{ 0x52e, "w2", WS_WIND_DIR, "wind direction 2" },
+	{ 0x52f, "w3", WS_WIND_DIR, "wind direction 3" },
+	{ 0x530, "w4", WS_WIND_DIR, "wind direction 4" },
+	{ 0x531, "w5", WS_WIND_DIR, "wind direction 5" },
+	{ 0x533, "wsla", WS_SPEED, "wind speed min alarm" },
+	{ 0x538, "wsha", WS_SPEED, "wind speed max alarm" },
+/*	{ 0x54d, "cn", conv_conn, "connection type" },*/
+	{ 0x54f, "cc", WS_INT_SEC, "connection time till connect" },
+	{ 0x5d8, "pa", WS_PRESSURE, "pressure absolute" },
+	{ 0x5e2, "pr", WS_PRESSURE, "pressure relative" },
+	{ 0x5ec, "pc", WS_PRESSURE, "pressure correction" },
+	{ 0x5f6, "pal", WS_PRESSURE, "pressure absolute min", "pa" },
+	{ 0x600, "prl", WS_PRESSURE, "pressure relative min", "pr" },
+	{ 0x60a, "pah", WS_PRESSURE, "pressure absolute max", "pa" },
+	{ 0x614, "prh", WS_PRESSURE, "pressure relative max", "pr" },
+	{ 0x61e, "plw", WS_TIMESTAMP, "pressure min when", "sw" },
+	{ 0x628, "phw", WS_TIMESTAMP, "pressure max when", "sw" },
+	{ 0x63c, "pla", WS_PRESSURE, "pressure min alarm" },
+	{ 0x650, "pha", WS_PRESSURE, "pressure max alarm" },
+	{ 0x6b2, "hi", WS_INT_MIN, "history interval" },
+	{ 0x6b5, "hc", WS_INT_MIN, "history time till sample" },
+	{ 0x6b8, "hw", WS_TIMESTAMP, "history last sample when" },
+/*	{ 0x6c2, "hp", conv_rec2, "history last record pointer",reset=0)
 	{ 0x6c4, "hn", conv_rec2, "history number of records", 0) */
-	{ ZERO }
 };
 
 static void
 usage(FILE *out, int code)
 {
-	fprintf(out, "Usage: %s\n device", PROGNAME);
+	fprintf(out, "Usage: [-h] %s\n device measure...", PROGNAME);
 
 	exit(code);
 }
 
-static const struct ws_measure *
-find_measure(const char *id)
+static void
+do_help()
 {
-	const struct ws_measure *res = NULL;
+	int i;
+
+	for (i = 0; i < array_sz(mem_map); i++) {
+		const struct ws_measure *m = &mem_map[i];
+		const struct ws_conv *c = ws_get_conv(m->type);
+
+		if (c->units != NULL) {
+			printf("%-5s %-30s 0x%3x:%-2d  %s, %s\n", m->id, m->desc, m->addr,
+					c->nybbles, c->units, c->descr);
+		} else {
+			printf("%-5s %-30s 0x%3x:%-2d  %s\n", m->id, m->desc, m->addr,
+					c->nybbles, c->descr);
+		}
+	}
+}
+
+static int
+do_fetch(int fd, const char **ids, int size) {
+	int i = 0;
+	uint16_t addr[size];
+	size_t nybbles[size];
+
+	/* Order measures by address */
+	int j;
 	const struct ws_measure *p = &mem_map[0];
 
-	for (; p->addr != ZERO && res == NULL; p++) {
-		if (strcmp(id, p->id) == 0) {
-			res = p;
+	for (; p->addr != 0; p++) {
+		for (j = 0; j < size; j++) {
+			if (strcmp(ids[j], p->id) == 0) {
+				addr[i] = p->addr;
+				nybbles[i] = ws_get_conv(p->type)->nybbles;
+
+				i++;
+			}
 		}
 	}
 
-	return res;
+	/* Read data */
+	if (ws_read_batch(fd, addr, nybbles, i, NULL) == -1) {
+		return -1;
+	}
+
+	/* Print data (in user order) */
+	for (j = 0; j < size; j++) {
+//		ws_temp_str(data, out, sizeof(out));
+//		printf("%s = %s\n", mx->desc, out);
+	}
+
+	return 0;
 }
 
 int
@@ -202,7 +242,6 @@ main(int argc, char** argv)
 	int errflg = 0;
 
 	const char *device = NULL;
-	const char *id = NULL;
 
 	/* Parse arguments */
 	while ((c = getopt(argc, argv, "h")) != -1) {
@@ -228,20 +267,15 @@ main(int argc, char** argv)
 	}
 
 	device = argv[optind++];
-	id = argv[optind++];
 
 	/* Loading data */
-	int fd = ws_open(device);
-	const struct ws_measure *mx = find_measure(id);
+//	int fd = ws_open(device);
+//	if (fd == -1) {
+//		exit(1);
+//	}
 
-	uint8_t data[20];
-	char out[16];
-
-	ws_read_safe(fd, mx->addr, ws_conv_temp->nybble_count, data);
-	ws_get_temp_str(data, out, sizeof(out));
-	printf("%s\n", out);
-
-	ws_close(fd);
+	do_help();
+//	ws_close(fd);
 
 	exit(0);
 }

@@ -22,7 +22,7 @@ ws_open(const char *device)
 	struct termios adtio;
 	int portstatus;
 
-	if ((fd = open(device, O_RDWR|O_NOCTTY|O_NDELAY)) == -1) {
+	if ((fd = open(device, O_RDWR|O_NOCTTY)) == -1) {
 		goto error;
 	}
 	
@@ -42,8 +42,8 @@ ws_open(const char *device)
 	adtio.c_oflag = 0;
 	adtio.c_cflag = CREAD|HUPCL|CLOCAL|CS8;
 	adtio.c_lflag = 0;
-	adtio.c_cc[VMIN] = 1;			/* blocking read until 1 char */
-	adtio.c_cc[VTIME] = 0;			/* timer 0s */
+	adtio.c_cc[VMIN] = 0;			/* blocking read until 1 char */
+	adtio.c_cc[VTIME] = 10;			/* timer 0s */
 
 	if (cfsetispeed(&adtio, BAUDRATE) == -1) {
 		goto error;
@@ -107,10 +107,12 @@ int
 ws_read_byte(int fd, uint8_t *byte, long timeout)
 {
 	int ret;
+
+#ifdef _HAVE_SELECT
+	/* Wait for input */
 	fd_set readset;
 	struct timeval tv;
 
-	/* Wait for input */
 	for (;;) {
 		FD_ZERO(&readset);
 		FD_SET(fd, &readset);
@@ -134,6 +136,14 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 	} else {
 		ret = 0;
 	}
+#else
+	usleep(50000);
+
+	ret = read(fd, byte, 1);
+	if (ret == -1) {
+		goto error;
+	}
+#endif
 
 	if (DEBUG) printf("ws_read_byte: %d\n", ret);
 

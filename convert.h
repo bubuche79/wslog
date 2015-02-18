@@ -3,26 +3,69 @@
 
 #include <stdint.h>
 
-struct conv
+enum ws_type
 {
-	char units[4];				/* units name (eg hPa) */
-	uint8_t nybble_count;		/* nybbles count */
-	char descr[64];				/* units description */
-	uint8_t scale;				/* value scale */
+	WS_TEMP,
+	WS_PRESSURE,
+	WS_HUMIDITY,
+	WS_RAIN,
+	WS_SPEED,
+	WS_WIND_DIR,
+	WS_WIND_VELOCITY,
+	WS_INT_SEC,
+	WS_INT_MIN,
+	WS_DATE,
+	WS_TIMESTAMP,
+	WS_DATETIME,
+	WS_TIME
+};
 
-	union {
-		struct {
+struct ws_conv
+{
+	char *units;				/* units name (eg hPa) */
+	uint8_t nybbles;			/* nybbles count */
+	char descr[64];				/* units description */
+
+	union
+	{
+		struct
+		{
+			uint8_t scale;		/* value scale */
 			int offset;			/* value offset */
-		};
-		struct {
+		} bcd;
+
+		struct
+		{
+			uint8_t scale;		/* value scale */
 			int multi;			/* multiplicity factor */
-		};
+		} bin;
+
+		struct
+		{
+			char format[16];	/* date, timestamp format */
+		} tm;
 	};
 };
 
-extern const struct conv *ws_conv_temp;
+extern const struct ws_conv *ws_get_conv(enum ws_type t);
 
 extern double ws_get_temp(const uint8_t *buf);
-extern void ws_get_temp_str(const uint8_t *buf, char *str, size_t len);
+extern void ws_temp_str(const uint8_t *buf, char *str, size_t len);
+
+extern double ws_get_pressure(const uint8_t *buf);
+extern void ws_pressure_str(const uint8_t *buf, char *str, size_t len);
+
+extern double ws_get_humidity(const uint8_t *buf);
+extern void ws_humidity_str(const uint8_t *buf, char *str, size_t len);
+
+extern double ws_get_rain(const uint8_t *buf);
+extern void ws_rain_str(const uint8_t *buf, char *str, size_t len);
+
+extern double ws_get_speed(const uint8_t *buf);
+extern void ws_speed_str(const uint8_t *buf, char *str, size_t len);
+
+extern double ws_get_wind_dir(const uint8_t *buf);
+
+extern double ws_get_wind_speed(const uint8_t *buf);
 
 #endif	/* _SCONVERT_H */
