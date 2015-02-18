@@ -201,42 +201,59 @@ do_help()
 }
 
 static int
-do_fetch(int fd, const char **ids, int size) {
-	int i = 0;
-	uint16_t addr[size];
-	size_t nybbles[size];
+do_fetch(int fd, char * const ids[], int size) {
+//	uint16_t addr[size];
+//	size_t nybbles[size];
+
+	uint8_t data[1024];
+	char str[1024];
 
 	/* Order measures by address */
-	int j;
-	const struct ws_measure *p = &mem_map[0];
+	for (int i = 0; i < array_sz(mem_map); i++) {
+		const struct ws_measure *m = &mem_map[i];
+		const struct ws_conv *c = ws_get_conv(m->type);
 
-	for (; p->addr != 0; p++) {
-		for (j = 0; j < size; j++) {
-			if (strcmp(ids[j], p->id) == 0) {
-				addr[i] = p->addr;
-				nybbles[i] = ws_get_conv(p->type)->nybbles;
+		for (int j = 0; j < size; j++) {
+			if (strcmp(ids[j], m->id) == 0) {
+//				addr[i] = m->addr;
+//				nybbles[i] = c->nybbles;
 
-				i++;
+				if (ws_read_safe(fd, m->addr, c->nybbles, data) == -1) {
+					return -1;
+				}
+
+				switch (m->type) {
+				case WS_TEMP:
+					ws_temp_str(data, str, sizeof(str));
+					break;
+
+				case WS_DATETIME:
+					ws_datetime_str(data, str, sizeof(str));
+					break;
+
+				case WS_TIMESTAMP:
+					ws_timestamp_str(data, str, sizeof(str));
+					break;
+
+				default:
+					fprintf(stderr, "not yet supported");
+					break;
+				}
+
+				if (c->units != NULL) {
+					printf("%s = %s %s\n", m->desc, str, c->units);
+				} else {
+					printf("%s = %s\n", m->desc, str);
+				}
 			}
 		}
-	}
-
-	/* Read data */
-	if (ws_read_batch(fd, addr, nybbles, i, NULL) == -1) {
-		return -1;
-	}
-
-	/* Print data (in user order) */
-	for (j = 0; j < size; j++) {
-//		ws_temp_str(data, out, sizeof(out));
-//		printf("%s = %s\n", mx->desc, out);
 	}
 
 	return 0;
 }
 
 int
-main(int argc, char** argv)
+main(int argc, char * const argv[])
 {
 	int c;
 	int errflg = 0;
@@ -247,6 +264,7 @@ main(int argc, char** argv)
 	while ((c = getopt(argc, argv, "h")) != -1) {
 		switch (c) {
 		case 'h':
+			do_help();
 			usage(stdout, 0);
 			break;
 
@@ -269,13 +287,13 @@ main(int argc, char** argv)
 	device = argv[optind++];
 
 	/* Loading data */
-//	int fd = ws_open(device);
-//	if (fd == -1) {
-//		exit(1);
-//	}
+	int fd = ws_open(device);
+	if (fd == -1) {
+		exit(1);
+	}
 
-	do_help();
-//	ws_close(fd);
+	do_fetch(fd, argv + optind, argc - optind);
+	ws_close(fd);
 
 	exit(0);
 }

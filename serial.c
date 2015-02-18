@@ -3,8 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#ifdef _HAVE_SELECT
 #include <sys/select.h>
 #include <sys/ioctl.h>
+#else
+#include <time.h>
+#endif
 #include <unistd.h>
 #include <sys/file.h>
 
@@ -137,7 +141,12 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 		ret = 0;
 	}
 #else
-	usleep(50000);
+	struct timespec tv;
+
+	tv.tv_sec = timeout / 1000;
+	tv.tv_nsec = (timeout % 1000) * 1000000;
+
+	nanosleep(&tv, NULL);
 
 	ret = read(fd, byte, 1);
 	if (ret == -1) {
