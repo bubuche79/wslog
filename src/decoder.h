@@ -48,6 +48,18 @@ struct ws_conv
 	};
 };
 
+struct ws_history
+{
+	double temp_in;
+	double temp_out;
+	double abs_pressure;
+	int humidity_in;
+	int humidity_out;
+	double rain;
+	double wind_speed;
+	double wind_dir;
+};
+
 extern const struct ws_conv *ws_get_conv(enum ws_type t);
 
 extern double ws_get_temp(const uint8_t *buf);
@@ -74,5 +86,7 @@ extern char *ws_datetime_str(const uint8_t *buf, char *str, size_t len);
 
 extern time_t ws_get_timestamp(const uint8_t *buf);
 extern char *ws_timestamp_str(const uint8_t *buf, char *str, size_t len);
+
+extern void ws_decode_history(const uint8_t *buf, struct ws_history *h);
 
 #endif	/* _SCONVERT_H */

@@ -1,9 +1,9 @@
-#include "decoder.h"
-
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
+
+#include "decoder.h"
 
 static const struct ws_conv ws_conv[] =
 {
@@ -235,4 +235,26 @@ ws_timestamp_str(const uint8_t *buf, char *str, size_t len)
 	strftime(str, len, get_conv(WS_TIMESTAMP)->tm.format, &tm);
 
 	return str;
+}
+
+void
+ws_decode_history(const uint8_t *buf, struct ws_history *h)
+{
+	long v;
+
+	v = ((buf[2] & 0xF) << 16) + (buf[1] << 8) + buf[0];
+	h->temp_in = (v % 1000) / 10.0 - 30.0;
+	h->temp_out = (v - (v % 1000)) / 10000.0 - 30.0;
+
+	v = (buf[4] << 12) + (buf[3] <<4 ) + (buf[2] >> 4);
+	h->abs_pressure = (v % 10000) / 10.0;
+	if (h->abs_pressure < 502.2) {
+		h->abs_pressure += 1000;
+	}
+	h->humidity_in = (v - (v % 10000)) / 10000.0;
+
+	h->humidity_out = (buf[5] >> 4) * 10 + (buf[5] & 0xF);
+	h->rain = ((buf[7] & 0xF) * 256 + buf[6]) * 0.518;
+	h->wind_speed = (buf[8] * 16 + (buf[7] >> 4))/ 10.0;
+	h->wind_dir = (buf[9] & 0xF) * 22.5;
 }
