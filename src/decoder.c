@@ -201,7 +201,7 @@ ws_datetime_str(const uint8_t *buf, char *str, size_t len)
 	struct tm tm;
 
 	ts = ws_get_datetime(buf);
-	gmtime_r(&ts, &tm);
+	localtime_r(&ts, &tm);
 	strftime(str, len, get_conv(WS_DATETIME)->tm.format, &tm);
 
 	return str;
@@ -231,7 +231,7 @@ ws_timestamp_str(const uint8_t *buf, char *str, size_t len)
 	struct tm tm;
 
 	ts = ws_get_timestamp(buf);
-	gmtime_r(&ts, &tm);
+	localtime_r(&ts, &tm);
 	strftime(str, len, get_conv(WS_TIMESTAMP)->tm.format, &tm);
 
 	return str;
