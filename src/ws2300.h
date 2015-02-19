@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
-#include "convert.h"
+#include "decoder.h"
 
 #ifndef DEBUG
 #define DEBUG 0

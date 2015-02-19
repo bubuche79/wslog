@@ -1,9 +1,9 @@
+#include "decoder.h"
+
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
-
-#include "convert.h"
 
 static const struct ws_conv ws_conv[] =
 {

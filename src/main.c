@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "decoder.h"
 #include "serial.h"
-#include "convert.h"
 #include "ws2300.h"
 
 #define PROGNAME	"ws2300"

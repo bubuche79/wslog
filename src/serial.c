@@ -3,12 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#ifdef _HAVE_SELECT
+#ifdef HAVE_SELECT
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #else
 #include <time.h>
-#endif	/* _HAVE_SELECT */
+#endif	/* HAVE_SELECT */
 #include <sys/file.h>
 
 #include "serial.h"
@@ -111,7 +111,7 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 {
 	int ret;
 
-#ifdef _HAVE_SELECT
+#ifdef HAVE_SELECT
 	/* Wait for input */
 	fd_set readset;
 	struct timeval tv;
@@ -151,7 +151,7 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 	if (ret == -1) {
 		goto error;
 	}
-#endif	/* _HAVE_SELECT */
+#endif	/* HAVE_SELECT */
 
 	if (DEBUG) printf("ws_read_byte: %d\n", ret);
 
