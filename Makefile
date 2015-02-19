@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -std=c11 -Wall -O2 -DDEBUG=1 -D_XOPEN_SOURCE=700
+CFLAGS = -g -std=c11 -Wall -O2 -D_HAVE_SELECT -D_XOPEN_SOURCE=700
 RM = rm -f
 LD = gcc
 
