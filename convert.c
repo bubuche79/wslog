@@ -28,7 +28,7 @@ static const struct ws_conv ws_conv[] =
 		{ NULL, 6, "yyyy-mm-dd", .tm = { "%Y-%m-%d" } },
 		{ NULL, 10, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
 		{ NULL, 11, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
-		{ NULL, 6, "hh:mm:ss", .tm = { "%H:%M:%S" } },
+		{ NULL, 6, "hh:mm:ss", .tm = { "%H:%M:%S" } }
 };
 
 static inline uint8_t

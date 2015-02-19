@@ -12,7 +12,7 @@
 
 #define array_sz(a)	(sizeof(a) / sizeof(a[0]))
 
-static struct ws_measure mem_map[] =
+static const struct ws_measure mem_map[] =
 {
 /*
 	{ 0x006, "bz", conv_buzz, "buzzer" },
