@@ -6,17 +6,27 @@
 #ifdef HAVE_SELECT
 #include <sys/select.h>
 #include <sys/ioctl.h>
-#else
-#include <time.h>
 #endif	/* HAVE_SELECT */
 #include <sys/file.h>
+#include <time.h>
 
 #include "serial.h"
+#include "util.h"
 #include "ws2300.h"
 
 #define BAUDRATE B2400
 
 static struct termios oldio;
+
+static void
+usleep(long ms) {
+	struct timespec ts;
+
+	ts.tv_sec = ms / 1000;
+	ts.tv_nsec = (ms % 1000) * 1000 * 1000;
+
+	nanosleep(&ts, NULL);
+}
 
 int
 ws_open(const char *device)
@@ -45,8 +55,13 @@ ws_open(const char *device)
 	adtio.c_oflag = 0;
 	adtio.c_cflag = CREAD|HUPCL|CLOCAL|CS8|BAUDRATE;
 	adtio.c_lflag = 0;
+#ifdef HAVE_SELECT
 	adtio.c_cc[VMIN] = 1;			/* blocking read until 1 char */
 	adtio.c_cc[VTIME] = 0;			/* timer 0s */
+#else
+	adtio.c_cc[VMIN] = 0;			/* no blocking read */
+	adtio.c_cc[VTIME] = 10;			/* timer 1s */
+#endif /* HAVE_SELECT */
 
 	if (cfsetispeed(&adtio, BAUDRATE) == -1) {
 		goto error;
@@ -140,13 +155,6 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 		ret = 0;
 	}
 #else
-	struct timespec ts;
-
-	ts.tv_sec = timeout / 1000;
-	ts.tv_nsec = (timeout % 1000) * 1000 * 1000;
-
-	nanosleep(&ts, NULL);
-
 	ret = read(fd, byte, 1);
 	if (ret == -1) {
 		goto error;
@@ -170,6 +178,11 @@ ws_write_byte(int fd, uint8_t byte)
 	if ((ret = write(fd, &byte, 1)) == -1) {
 		goto error;
 	}
+	if (tcdrain(fd) == -1) {
+		goto error;
+	}
+
+	usleep(50);
 
 	if (DEBUG) printf("ws_write_byte: %d\n", ret);
 
