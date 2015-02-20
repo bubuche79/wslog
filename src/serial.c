@@ -18,6 +18,8 @@
 
 static struct termios oldio;
 
+long ws_io_delay = 50;
+
 static void
 usleep(long ms) {
 	struct timespec ts;
@@ -182,7 +184,9 @@ ws_write_byte(int fd, uint8_t byte)
 		goto error;
 	}
 
-	usleep(50);
+	if (ws_io_delay > 0) {
+		usleep(ws_io_delay);
+	}
 
 	if (DEBUG) printf("ws_write_byte: %d\n", ret);
 

@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+extern long ws_io_delay;
+
 extern int ws_open(const char *device);
 extern int ws_close(int fd);
 
