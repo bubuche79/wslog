@@ -6,7 +6,7 @@
 
 #define MAX_RESETS 		100
 #define MAX_RETRIES		50
-#define MAX_BLOCKS		80
+#define MAX_BLOCKS		30
 #define READ_TIMEOUT	1000			/* milliseconds */
 
 #define SETACK			0x04
