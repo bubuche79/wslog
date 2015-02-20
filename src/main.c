@@ -202,50 +202,74 @@ do_help()
 
 static int
 do_fetch(int fd, char * const ids[], int size) {
-//	uint16_t addr[size];
-//	size_t nybbles[size];
+	uint16_t addr[size];
+	size_t nybbles[size];
+	uint8_t *buf[size];
+	uint8_t index[size];
+	int sz = 0;
 
+	/* Optimize I/O */
+	int nbyte = 0;
 	uint8_t data[1024];
-	char str[1024];
 
-	/* Order measures by address */
 	for (int i = 0; i < array_sz(mem_map); i++) {
 		const struct ws_measure *m = &mem_map[i];
 		const struct ws_conv *c = ws_get_conv(m->type);
 
 		for (int j = 0; j < size; j++) {
 			if (strcmp(ids[j], m->id) == 0) {
-//				addr[i] = m->addr;
-//				nybbles[i] = c->nybbles;
+				index[sz] = i;
 
-				if (ws_read_safe(fd, m->addr, c->nybbles, data) == -1) {
-					return -1;
-				}
+				addr[sz] = m->addr;
+				nybbles[sz] = c->nybbles;
+				buf[sz] = data + nbyte;
 
-				switch (m->type) {
-				case WS_TEMP:
-					ws_temp_str(data, str, sizeof(str));
-					break;
-
-				case WS_DATETIME:
-					ws_datetime_str(data, str, sizeof(str));
-					break;
-
-				case WS_TIMESTAMP:
-					ws_timestamp_str(data, str, sizeof(str));
-					break;
-
-				default:
-					fprintf(stderr, "not yet supported");
-					break;
-				}
-
-				if (c->units != NULL) {
-					printf("%s = %s %s\n", m->desc, str, c->units);
-				} else {
-					printf("%s = %s\n", m->desc, str);
-				}
+				sz++;
+				nbyte += (c->nybbles + 1) / 2;
 			}
+		}
+	}
+
+	/* Read */
+	if (ws_read_batch(fd, addr, nybbles, sz, buf) == -1) {
+		return -1;
+	}
+
+	/* Print result */
+	char str[128];
+
+	for (int j = 0; j < size; j++) {
+		int i = index[j];
+
+		const struct ws_measure *m = &mem_map[i];
+		const struct ws_conv *c = ws_get_conv(m->type);
+
+		switch (m->type) {
+		case WS_TEMP:
+			ws_temp_str(buf[j], str, sizeof(str));
+			break;
+
+		case WS_DATETIME:
+			ws_datetime_str(buf[j], str, sizeof(str));
+			break;
+
+		case WS_TIMESTAMP:
+			ws_timestamp_str(buf[j], str, sizeof(str));
+			break;
+
+		case WS_PRESSURE:
+			ws_pressure_str(buf[j], str, sizeof(str));
+			break;
+
+		default:
+			fprintf(stderr, "not yet supported");
+			break;
+		}
+
+		if (c->units != NULL) {
+			printf("%s = %s %s\n", m->desc, str, c->units);
+		} else {
+			printf("%s = %s\n", m->desc, str);
 		}
 	}
 
@@ -261,11 +285,15 @@ main(int argc, char * const argv[])
 	const char *device = NULL;
 
 	/* Parse arguments */
-	while ((c = getopt(argc, argv, "h")) != -1) {
+	while ((c = getopt(argc, argv, "hd:")) != -1) {
 		switch (c) {
 		case 'h':
 			do_help();
 			usage(stdout, 0);
+			break;
+
+		case 'd':
+			ws_io_delay = strtol(optarg, NULL, 10);
 			break;
 
 		case ':':
