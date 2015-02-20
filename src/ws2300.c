@@ -256,11 +256,11 @@ error:
 }
 
 int
-ws_read_data(int fd, uint16_t addr, size_t len, uint8_t *buf)
+ws_read_data(int fd, uint16_t addr, size_t nybble, uint8_t *buf)
 {
 	uint8_t answer;
 
-	if (len == 0 || len > MAX_BLOCKS) {
+	if (nybble == 0 || nybble > MAX_BLOCKS) {
 		errno = EINVAL;
 		goto error;
 	}
@@ -271,16 +271,16 @@ ws_read_data(int fd, uint16_t addr, size_t len, uint8_t *buf)
 	}
 
 	/* Write the number of bytes we want to read */
-	size_t nbytes = (len + 1) / 2;
-	uint8_t byte = 0xC2 + nbytes * 4;
-	uint8_t ack = 0x30 + nbytes;
+	size_t nbyte = (nybble + 1) / 2;
+	uint8_t byte = 0xC2 + nbyte * 4;
+	uint8_t ack = 0x30 + nbyte;
 
 	if (write_byte(fd, byte, ack)) {
 		goto error;
 	}
 
 	/* Read the response */
-	for (int i = 0; i < nbytes; i++) {
+	for (int i = 0; i < nbyte; i++) {
 		if (read_byte(fd, buf + i, READ_TIMEOUT) == -1) {
 			goto error;
 		}
@@ -290,7 +290,7 @@ ws_read_data(int fd, uint16_t addr, size_t len, uint8_t *buf)
 	if (read_byte(fd, &answer, READ_TIMEOUT) == -1) {
 		goto error;
 	}
-	if (answer != checksum(buf, nbytes)) {
+	if (answer != checksum(buf, nbyte)) {
 		goto error;
 	}
 
@@ -302,17 +302,17 @@ error:
 }
 
 static int
-read_block(int fd, uint16_t addr, size_t len, uint8_t *buf)
+read_block(int fd, uint16_t addr, size_t nybble, uint8_t *buf)
 {
 	int p, k;
 
-	if (DEBUG) printf("read_block %x (%lu)\n", addr, len);
+	if (DEBUG) printf("read_block %x (%lu)\n", addr, nybble);
 
-	for (p = 0; p < len; p += MAX_BLOCKS) {
+	for (p = 0; p < nybble; p += MAX_BLOCKS) {
 		for (k = 0; k < MAX_RETRIES; k++) {
-			int nbytes = min(MAX_BLOCKS, len - p);
+			int chunk = min(MAX_BLOCKS, nybble - p);
 
-			if (ws_read_data(fd, addr + p, nbytes, buf + p) == 0) {
+			if (ws_read_data(fd, addr + p, chunk, buf + p) == 0) {
 				break;
 			}
 			if (ws_reset_06(fd) == -1) {
@@ -334,21 +334,18 @@ error:
 }
 
 int
-ws_read_batch(int fd, const uint16_t *addr, const size_t *len, size_t sz, uint8_t *buf)
+ws_read_batch(int fd, const uint16_t *addr, const size_t *nybble, size_t sz, uint8_t *buf[])
 {
 	int i;
-	size_t off = 0;
 
 	if (ws_reset_06(fd) == -1) {
 		goto error;
 	}
 
 	for (i = 0; i < sz; i++) {
-		if (read_block(fd, addr[i], len[i], buf + off) == -1) {
+		if (read_block(fd, addr[i], nybble[i], buf[i]) == -1) {
 			goto error;
 		}
-
-		off += len[i];
 	}
 
 	return 0;
@@ -359,8 +356,8 @@ error:
 }
 
 int
-ws_read_safe(int fd, uint16_t addr, size_t len, uint8_t *buf)
+ws_read_safe(int fd, uint16_t addr, size_t nybble, uint8_t *buf)
 {
-	return ws_read_batch(fd, &addr, &len, 1, buf);
+	return ws_read_batch(fd, &addr, &nybble, 1, &buf);
 }
 
