@@ -312,7 +312,7 @@ read_block(int fd, uint16_t addr, size_t nybble, uint8_t *buf)
 		for (k = 0; k < MAX_RETRIES; k++) {
 			int chunk = min(MAX_BLOCKS, nybble - p);
 
-			if (ws_read_data(fd, addr + p, chunk, buf + p) == 0) {
+			if (ws_read_data(fd, addr + p, chunk, buf + (p + 1) / 2) == 0) {
 				break;
 			}
 			if (ws_reset_06(fd) == -1) {
