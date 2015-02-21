@@ -73,7 +73,7 @@ bin2num(const uint8_t *buf, size_t n)
 static double
 bcd_conv(const uint8_t *buf, const struct ws_conv *c)
 {
-	return (bcd2num(buf, c->nybbles) + c->bcd.offset) / pow(10.0, c->bcd.scale);
+	return (bcd2num(buf, c->nybble) + c->bcd.offset) / pow(10.0, c->bcd.scale);
 }
 
 static char *

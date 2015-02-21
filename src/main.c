@@ -10,9 +10,10 @@
 
 #define PROGNAME	"ws2300"
 
-#define array_sz(a)	(sizeof(a) / sizeof(a[0]))
+#define array_len(a)	(sizeof(a) / sizeof(a[0]))
 
-static const struct ws_measure mem_map[] =
+/* ws23xx memory, ordered by address */
+static const struct ws_measure mem_addr[] =
 {
 /*
 	{ 0x006, "bz", conv_buzz, "buzzer" },
@@ -173,12 +174,88 @@ static const struct ws_measure mem_map[] =
 	{ 0x6c4, "hn", conv_rec2, "history number of records", 0) */
 };
 
+/* ws23xx memory, ordered by id */
+static const struct ws_measure *mem_id[array_len(mem_addr)];
+
 static void
 usage(FILE *out, int code)
 {
-	fprintf(out, "Usage: [-h] %s\n device measure...", PROGNAME);
+	fprintf(out, "Usage: [-h] %s device measure...\n", PROGNAME);
 
 	exit(code);
+}
+
+#if 0
+static inline uint8_t
+nybble_at(const uint8_t *buf, size_t i)
+{
+	return (i & 0x1) ? buf[i / 2] >> 4 : buf[i / 2] & 0xF;
+
+}
+
+static void
+print_nybbles(const uint8_t *buf, size_t nel)
+{
+	printf("(");
+	for (int j = 0; j < nel; j++) {
+		if (j > 0) {
+			printf(", ");
+		}
+		printf("%d", nybble_at(buf, j));
+	}
+	printf(")\n");
+}
+
+static void
+print_hex(const uint8_t *buf, size_t nel)
+{
+	printf("(");
+	for (int j = 0; j < nel; j++) {
+		if (j > 0) {
+			printf(", ");
+		}
+		printf("%.2x", buf[j]);
+	}
+	printf(")\n");
+}
+#endif
+
+/**
+ * Copy nybble data.
+ *
+ * The #nybcpy() function copies #nybble nybbles from area #src, starting at
+ * #offset offset (nybbles offset), to memory area #dest.
+ */
+static void
+nybcpy(uint8_t *dest, const uint8_t *src, size_t offset, size_t nnybble)
+{
+	src += offset / 2;
+
+	if (offset & 0x1) {
+		for (int i = 0; i < nnybble; i++) {
+			int j = 1 + i;
+
+			if (j & 0x1) {
+				dest[i/2] = src[j/2] >> 4;
+			} else {
+				dest[i/2] |= src[j/2] << 4;
+			}
+		}
+	} else {
+		memcpy(dest, src, (nnybble + 1) / 2);
+	}
+}
+
+/**
+ * Compare two measures by id.
+ */
+static int
+wsmncmp(const void *a, const void *b)
+{
+	const struct ws_measure *ma = * (struct ws_measure **) a;
+	const struct ws_measure *mb = * (struct ws_measure **) b;
+
+	return strcmp(ma->id, mb->id);
 }
 
 static void
@@ -186,79 +263,108 @@ do_help()
 {
 	int i;
 
-	for (i = 0; i < array_sz(mem_map); i++) {
-		const struct ws_measure *m = &mem_map[i];
+	for (i = 0; i < array_len(mem_id); i++) {
+		const struct ws_measure *m = mem_id[i];
 		const struct ws_conv *c = ws_get_conv(m->type);
 
 		if (c->units != NULL) {
 			printf("%-5s %-30s 0x%3x:%-2d  %s, %s\n", m->id, m->desc, m->addr,
-					c->nybbles, c->units, c->descr);
+					c->nybble, c->units, c->descr);
 		} else {
 			printf("%-5s %-30s 0x%3x:%-2d  %s\n", m->id, m->desc, m->addr,
-					c->nybbles, c->descr);
+					c->nybble, c->descr);
 		}
 	}
 }
 
 static int
-do_fetch(int fd, char * const ids[], int size) {
-	uint16_t addr[size];
-	size_t nybbles[size];
-	uint8_t *buf[size];
-	uint8_t index[size];
-	int sz = 0;
+read_measures(int fd, char * const ids[], int nel) {
+	uint16_t addr[nel];					/* address */
+	size_t nnybble[nel];				/* number of nybbles at address */
+	uint8_t *buf[nel];					/* nybbles data */
 
-	/* Optimize I/O */
+	off_t off[nel];						/* nybble offset in buffer */
+	const struct ws_measure *mids[nel];
+
+	int sz = 0;
+	int opt_sz = 0;
+
+	/* Optimize I/O per area */
 	int nbyte = 0;
 	uint8_t data[1024];
 
-	for (int i = 0; i < array_sz(mem_map); i++) {
-		const struct ws_measure *m = &mem_map[i];
+	memset(data, 0xFF, sizeof(data));
+
+	for (int i = 0; i < array_len(mem_addr); i++) {
+		const struct ws_measure *m = &mem_addr[i];
 		const struct ws_conv *c = ws_get_conv(m->type);
 
-		for (int j = 0; j < size; j++) {
+		for (int j = 0; j < nel; j++) {
 			if (strcmp(ids[j], m->id) == 0) {
-				index[sz] = i;
+				int same_area = 0;
 
-				addr[sz] = m->addr;
-				nybbles[sz] = c->nybbles;
-				buf[sz] = data + nbyte;
+				if (opt_sz > 0) {
+					/**
+					 * Using the same area saves 6 bytes read, and 5 bytes written,
+					 * so we may overlap here to save I/O.
+					 */
+					if (addr[opt_sz-1] + nnybble[opt_sz-1] + 11 >= m->addr) {
+						same_area = 1;
+					}
+				}
+
+				if (same_area) {
+					nnybble[opt_sz-1] = m->addr + c->nybble - addr[opt_sz-1];
+				} else {
+					if (opt_sz > 0) {
+						nbyte += (nnybble[opt_sz-1] + 1) / 2;
+					}
+
+					addr[opt_sz] = m->addr;
+					nnybble[opt_sz] = c->nybble;
+					buf[opt_sz] = data + nbyte;
+
+					opt_sz++;
+				}
+
+				mids[sz] = m;
+				off[sz] = 2 * nbyte + (m->addr - addr[opt_sz-1]);
 
 				sz++;
-				nbyte += (c->nybbles + 1) / 2;
 			}
 		}
 	}
 
 	/* Read */
-	if (ws_read_batch(fd, addr, nybbles, sz, buf) == -1) {
+	if (ws_read_batch(fd, addr, nnybble, opt_sz, buf) == -1) {
 		return -1;
 	}
 
 	/* Print result */
-	char str[128];
+	for (int i = 0; i < nel; i++) {
+		uint8_t nyb_data[25];
+		char nyb_str[128];
 
-	for (int j = 0; j < size; j++) {
-		int i = index[j];
-
-		const struct ws_measure *m = &mem_map[i];
+		const struct ws_measure *m = mids[i];
 		const struct ws_conv *c = ws_get_conv(m->type);
+
+		nybcpy(nyb_data, data, off[i], c->nybble);
 
 		switch (m->type) {
 		case WS_TEMP:
-			ws_temp_str(buf[j], str, sizeof(str));
+			ws_temp_str(nyb_data, nyb_str, sizeof(nyb_str));
 			break;
 
 		case WS_DATETIME:
-			ws_datetime_str(buf[j], str, sizeof(str));
+			ws_datetime_str(nyb_data, nyb_str, sizeof(nyb_str));
 			break;
 
 		case WS_TIMESTAMP:
-			ws_timestamp_str(buf[j], str, sizeof(str));
+			ws_timestamp_str(nyb_data, nyb_str, sizeof(nyb_str));
 			break;
 
 		case WS_PRESSURE:
-			ws_pressure_str(buf[j], str, sizeof(str));
+			ws_pressure_str(nyb_data, nyb_str, sizeof(nyb_str));
 			break;
 
 		default:
@@ -267,13 +373,29 @@ do_fetch(int fd, char * const ids[], int size) {
 		}
 
 		if (c->units != NULL) {
-			printf("%s = %s %s\n", m->desc, str, c->units);
+			printf("%s = %s %s\n", m->desc, nyb_str, c->units);
 		} else {
-			printf("%s = %s\n", m->desc, str);
+			printf("%s = %s\n", m->desc, nyb_str);
 		}
 	}
 
 	return 0;
+}
+
+/**
+ * Initialize static memory.
+ *
+ * The #init() method shall be called first to initialize static memory area,
+ * like the #mem_id array (which is initialized in this function).
+ */
+static void
+init() {
+	/* Sort mem_addr by id */
+	for (int i = 0; i < array_len(mem_id); i++) {
+		mem_id[i] = &mem_addr[i];
+	}
+
+	qsort(mem_id, array_len(mem_id), sizeof(mem_id[0]), wsmncmp);
 }
 
 int
@@ -283,6 +405,8 @@ main(int argc, char * const argv[])
 	int errflg = 0;
 
 	const char *device = NULL;
+
+	init();
 
 	/* Parse arguments */
 	while ((c = getopt(argc, argv, "hd:")) != -1) {
@@ -320,7 +444,7 @@ main(int argc, char * const argv[])
 		exit(1);
 	}
 
-	do_fetch(fd, argv + optind, argc - optind);
+	read_measures(fd, argv + optind, argc - optind);
 	ws_close(fd);
 
 	exit(0);

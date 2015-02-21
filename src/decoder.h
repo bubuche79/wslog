@@ -24,7 +24,7 @@ enum ws_type
 struct ws_conv
 {
 	char *units;				/* units name (eg hPa) */
-	uint8_t nybbles;			/* nybbles count */
+	uint8_t nybble;				/* nybble count */
 	char descr[64];				/* units description */
 
 	union
