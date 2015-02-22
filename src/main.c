@@ -154,7 +154,7 @@ static const struct ws_measure mem_addr[] =
 	{ 0x531, "w5", WS_WIND_DIR, "wind direction 5" },
 	{ 0x533, "wsla", WS_SPEED, "wind speed min alarm" },
 	{ 0x538, "wsha", WS_SPEED, "wind speed max alarm" },
-/*	{ 0x54d, "cn", conv_conn, "connection type" },*/
+	{ 0x54d, "cn", WS_CONNECTION, "connection type" },
 	{ 0x54f, "cc", WS_INT_SEC, "connection time till connect" },
 	{ 0x5d8, "pa", WS_PRESSURE, "pressure absolute" },
 	{ 0x5e2, "pr", WS_PRESSURE, "pressure relative" },
@@ -170,8 +170,8 @@ static const struct ws_measure mem_addr[] =
 	{ 0x6b2, "hi", WS_INT_MIN, "history interval" },
 	{ 0x6b5, "hc", WS_INT_MIN, "history time till sample" },
 	{ 0x6b8, "hw", WS_TIMESTAMP, "history last sample when" },
-/*	{ 0x6c2, "hp", conv_rec2, "history last record pointer",reset=0)
-	{ 0x6c4, "hn", conv_rec2, "history number of records", 0) */
+	{ 0x6c2, "hp", WS_BIN_2NYB, "history last record pointer", "0" },
+	{ 0x6c4, "hn", WS_BIN_2NYB, "history number of records", "0"}
 };
 
 /* ws23xx memory, ordered by id */
@@ -185,7 +185,7 @@ usage(FILE *out, int code)
 	exit(code);
 }
 
-#if 0
+#if 1
 static inline uint8_t
 nybble_at(const uint8_t *buf, size_t i)
 {
@@ -258,33 +258,14 @@ wsmncmp(const void *a, const void *b)
 	return strcmp(ma->id, mb->id);
 }
 
-static void
-do_help()
-{
-	int i;
-
-	for (i = 0; i < array_len(mem_id); i++) {
-		const struct ws_measure *m = mem_id[i];
-		const struct ws_conv *c = ws_get_conv(m->type);
-
-		if (c->units != NULL) {
-			printf("%-5s %-30s 0x%3x:%-2d  %s, %s\n", m->id, m->desc, m->addr,
-					c->nybble, c->units, c->descr);
-		} else {
-			printf("%-5s %-30s 0x%3x:%-2d  %s\n", m->id, m->desc, m->addr,
-					c->nybble, c->descr);
-		}
-	}
-}
-
 static int
 read_measures(int fd, char * const ids[], int nel) {
 	uint16_t addr[nel];					/* address */
 	size_t nnybble[nel];				/* number of nybbles at address */
-	uint8_t *buf[nel];					/* nybbles data */
+	uint8_t *buf[nel];					/* data */
 
 	off_t off[nel];						/* nybble offset in buffer */
-	const struct ws_measure *mids[nel];
+	const struct ws_measure *mids[nel];	/* measures */
 
 	int sz = 0;
 	int opt_sz = 0;
@@ -355,6 +336,18 @@ read_measures(int fd, char * const ids[], int nel) {
 			ws_temp_str(nyb_data, nyb_str, sizeof(nyb_str));
 			break;
 
+		case WS_INT_SEC:
+			ws_interval_sec_str(nyb_data, nyb_str, sizeof(nyb_str));
+			break;
+
+		case WS_INT_MIN:
+			ws_interval_min_str(nyb_data, nyb_str, sizeof(nyb_str));
+			break;
+
+		case WS_BIN_2NYB:
+			ws_2nyb_str(nyb_data, nyb_str, sizeof(nyb_str));
+			break;
+
 		case WS_DATETIME:
 			ws_datetime_str(nyb_data, nyb_str, sizeof(nyb_str));
 			break;
@@ -398,13 +391,80 @@ init() {
 	qsort(mem_id, array_len(mem_id), sizeof(mem_id[0]), wsmncmp);
 }
 
+static void
+do_help()
+{
+	int i;
+
+	for (i = 0; i < array_len(mem_id); i++) {
+		const struct ws_measure *m = mem_id[i];
+		const struct ws_conv *c = ws_get_conv(m->type);
+
+		if (c->units != NULL) {
+			printf("%-5s %-30s 0x%3x:%-2d  %s, %s\n", m->id, m->desc, m->addr,
+					c->nybble, c->units, c->descr);
+		} else {
+			printf("%-5s %-30s 0x%3x:%-2d  %s\n", m->id, m->desc, m->addr,
+					c->nybble, c->descr);
+		}
+	}
+}
+
+static void
+do_fetch(int argc, char* const argv[]) {
+	const char* device = argv[optind++];
+
+	/* Loading data */
+	int fd = ws_open(device);
+	if (fd == -1) {
+		exit(1);
+	}
+	read_measures(fd, argv + optind, argc - optind);
+	ws_close(fd);
+}
+
+static void
+do_history(int argc, char* const argv[]) {
+	const char* device = argv[optind++];
+
+	/* Loading data */
+	int fd = ws_open(device);
+	if (fd == -1) {
+		exit(1);
+	}
+
+	/* Read history settings */
+	uint8_t buf[1024];
+
+	if (ws_read_safe(fd, 0x6B2, 20, buf) == -1) {
+		exit(1);
+	}
+
+	print_nybbles(buf, 2);
+
+	if (ws_read_safe(fd, 0x6c6, 24 * 19, buf) == -1) {
+		exit(1);
+	}
+
+	for (int i = 0; i < 24; i++) {
+		uint8_t nyb_data[19];
+		struct ws_history h;
+
+		nybcpy(nyb_data, buf, i * 19, 19);
+		ws_decode_history(nyb_data, &h);
+		printf("%.2f,%.2f,%.1f,%d,%d,%.2f,%.1f,%.1f\n", h.temp_in, h.temp_out, h.abs_pressure, h.humidity_in, h.humidity_out, h.rain, h.wind_speed, h.wind_dir);
+	}
+
+	ws_close(fd);
+}
+
 int
 main(int argc, char * const argv[])
 {
 	int c;
 	int errflg = 0;
 
-	const char *device = NULL;
+	const char *cmd = NULL;
 
 	init();
 
@@ -436,17 +496,15 @@ main(int argc, char * const argv[])
 		usage(stderr, 1);
 	}
 
-	device = argv[optind++];
+	cmd = argv[optind++];
 
-	/* Loading data */
-	int fd = ws_open(device);
-	if (fd == -1) {
-		exit(1);
+	if (strcmp("help", cmd) == 0) {
+		do_help();
+	} else if (strcmp("fetch", cmd) == 0) {
+		do_fetch(argc, argv);
+	} else if (strcmp("history", cmd) == 0) {
+		do_history(argc, argv);
 	}
-
-	read_measures(fd, argv + optind, argc - optind);
-	ws_close(fd);
 
 	exit(0);
 }
-

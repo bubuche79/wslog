@@ -19,14 +19,15 @@ enum ws_type
 	WS_DATE,
 	WS_TIMESTAMP,
 	WS_DATETIME,
-	WS_TIME
+	WS_TIME,
+	WS_CONNECTION
 };
 
 struct ws_conv
 {
 	char *units;				/* units name (eg hPa) */
 	uint8_t nybble;				/* nybble count */
-	char descr[64];				/* units description */
+	char *descr;				/* units description */
 
 	union
 	{
@@ -44,8 +45,16 @@ struct ws_conv
 
 		struct
 		{
-			char format[16];	/* date, timestamp format */
+			char *format;		/* date, timestamp format */
 		} tm;
+		struct
+		{
+			struct
+			{
+				uint8_t key;
+				char *value;
+			} map[3];
+		} text;
 	};
 };
 
@@ -93,6 +102,9 @@ char *ws_2nyb_str(const uint8_t *buf, char *str, size_t len);
 
 extern time_t ws_get_datetime(const uint8_t *buf);
 extern char *ws_datetime_str(const uint8_t *buf, char *str, size_t len);
+
+extern time_t ws_get_timestamp(const uint8_t *buf);
+extern char *ws_timestamp_str(const uint8_t *buf, char *str, size_t len);
 
 extern time_t ws_get_timestamp(const uint8_t *buf);
 extern char *ws_timestamp_str(const uint8_t *buf, char *str, size_t len);

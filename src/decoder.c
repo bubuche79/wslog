@@ -30,6 +30,11 @@ static const struct ws_conv ws_conv[] =
 		{ NULL, 10, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
 		{ NULL, 11, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
 		{ NULL, 6, "hh:mm:ss", .tm = { "%H:%M:%S" } },
+
+		/* Text converters */
+		{ NULL, 1, "cable, lost, wireless", .text.map = { { 0, "cable" }, { 3, "lost" }, { 15, "wireless" } } },
+		{ NULL, 1, "rainy, cloudy, sunny", .text.map = { { 0, "rainy" }, { 1, "cloudy" }, { 2, "sunny" } } },
+		{ NULL, 1, "rainy, cloudy, sunny", .text.map = { { 0, "m/s" }, { 1, "knots" }, { 2, "beaufort" }, { 3, "km/h" }, { 4, "mph" } } },
 };
 
 static inline uint8_t
@@ -95,6 +100,23 @@ static char *
 bin_conv_str(const uint8_t *buf, const struct ws_conv *c, char *str, size_t len)
 {
 	snprintf(str, len, "%.*f", c->bcd.scale, bin_conv(buf, c));
+
+	return str;
+}
+
+static char *
+map_conv_str(const uint8_t *buf, const struct ws_conv *c, char *str, size_t len)
+{
+	char *result = NULL;
+	uint8_t key = nybble_at(buf, 0);
+
+	for (int i = 0; result != NULL && i < 3; i++) {
+		if (c->text.map[i].key == key) {
+			result = c->text.map[i].value;
+		}
+	}
+
+	snprintf(str, len, "%s", result);
 
 	return str;
 }
@@ -272,6 +294,12 @@ ws_timestamp_str(const uint8_t *buf, char *str, size_t len)
 	strftime(str, len, get_conv(WS_TIMESTAMP)->tm.format, &tm);
 
 	return str;
+}
+
+char *
+ws_connection_str(const uint8_t *buf, char *str, size_t len)
+{
+	return map_conv_str(buf, get_conv(WS_CONNECTION), str, len);
 }
 
 void
