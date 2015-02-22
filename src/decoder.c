@@ -23,12 +23,13 @@ static const struct ws_conv ws_conv[] =
 		/* Bin converters */
 		{ "s", 2, "time interval", .bin = { 0, 5 } },
 		{ "min", 3, "time interval", .bin = { 0, 1 } },
+		{ NULL, 2, "record number", .bin = { 0, 1 } },
 
 		/* Date and time converters */
 		{ NULL, 6, "yyyy-mm-dd", .tm = { "%Y-%m-%d" } },
 		{ NULL, 10, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
 		{ NULL, 11, "yyy-mm-dd hh:mm", .tm = { "%Y-%m-%d %H:%M" } },
-		{ NULL, 6, "hh:mm:ss", .tm = { "%H:%M:%S" } }
+		{ NULL, 6, "hh:mm:ss", .tm = { "%H:%M:%S" } },
 };
 
 static inline uint8_t
@@ -84,19 +85,19 @@ bcd_conv_str(const uint8_t *buf, const struct ws_conv *c, char *str, size_t len)
 	return str;
 }
 
-//static double
-//bin_conv(const uint8_t *buf, const struct ws_conv *c)
-//{
-//	return bin2num(buf, c->nybbles) * c->bin.multi / pow(10.0, c->bin.scale);
-//}
+static double
+bin_conv(const uint8_t *buf, const struct ws_conv *c)
+{
+	return bin2num(buf, c->nybble) * c->bin.multi / pow(10.0, c->bin.scale);
+}
 
-//static char *
-//bin_conv_str(const uint8_t *buf, const struct ws_conv *c, char *str, size_t len)
-//{
-//	snprintf(str, len, "%.*f", c->bcd.scale, bin_conv(buf, c));
-//
-//	return str;
-//}
+static char *
+bin_conv_str(const uint8_t *buf, const struct ws_conv *c, char *str, size_t len)
+{
+	snprintf(str, len, "%.*f", c->bcd.scale, bin_conv(buf, c));
+
+	return str;
+}
 
 const struct ws_conv *
 ws_get_conv(enum ws_type t)
@@ -174,6 +175,42 @@ double
 ws_get_wind_speed(const uint8_t *buf)
 {
 	return bcd2num(buf, 2) / 10.0 + bin2num(buf + 1, 2) * 22.5;
+}
+
+double
+ws_get_interval_sec(const uint8_t *buf)
+{
+	return bin_conv(buf, get_conv(WS_INT_SEC));
+}
+
+char *
+ws_interval_sec_str(const uint8_t *buf, char *str, size_t len)
+{
+	return bin_conv_str(buf, get_conv(WS_INT_SEC), str, len);
+}
+
+double
+ws_get_interval_min(const uint8_t *buf)
+{
+	return bin_conv(buf, get_conv(WS_INT_MIN));
+}
+
+char *
+ws_interval_min_str(const uint8_t *buf, char *str, size_t len)
+{
+	return bin_conv_str(buf, get_conv(WS_INT_MIN), str, len);
+}
+
+double
+ws_get_2nyb_min(const uint8_t *buf)
+{
+	return bin_conv(buf, get_conv(WS_BIN_2NYB));
+}
+
+char *
+ws_2nyb_str(const uint8_t *buf, char *str, size_t len)
+{
+	return bin_conv_str(buf, get_conv(WS_BIN_2NYB), str, len);
 }
 
 time_t

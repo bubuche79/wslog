@@ -15,6 +15,7 @@ enum ws_type
 	WS_WIND_VELOCITY,
 	WS_INT_SEC,
 	WS_INT_MIN,
+	WS_BIN_2NYB,
 	WS_DATE,
 	WS_TIMESTAMP,
 	WS_DATETIME,
@@ -80,6 +81,15 @@ extern char *ws_speed_str(const uint8_t *buf, char *str, size_t len);
 extern double ws_get_wind_dir(const uint8_t *buf);
 
 extern double ws_get_wind_speed(const uint8_t *buf);
+
+double ws_get_interval_sec(const uint8_t *buf);
+char *ws_interval_sec_str(const uint8_t *buf, char *str, size_t len);
+
+double ws_get_interval_min(const uint8_t *buf);
+char *ws_interval_min_str(const uint8_t *buf, char *str, size_t len);
+
+double ws_get_2nyb(const uint8_t *buf);
+char *ws_2nyb_str(const uint8_t *buf, char *str, size_t len);
 
 extern time_t ws_get_datetime(const uint8_t *buf);
 extern char *ws_datetime_str(const uint8_t *buf, char *str, size_t len);
