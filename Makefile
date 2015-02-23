@@ -10,11 +10,13 @@ all: obj ws2300
 clean:
 	$(RM) -r obj ws2300
 
-ws2300: obj/main.o obj/serial.o obj/ws2300.o obj/decoder.o obj/util.o
-	$(LD) -o $@ $+ -lm
+ws2300: obj/main.o obj/history.o obj/serial.o obj/ws2300.o obj/decoder.o obj/util.o
+	$(CC) -o $@ $+ -lm
 
 obj:
 	$(MKDIR) $@
 
 obj/%.o: src/%.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+install:

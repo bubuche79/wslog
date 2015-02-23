@@ -6,11 +6,41 @@
 
 #include "decoder.h"
 #include "serial.h"
+#include "history.h"
 #include "ws2300.h"
 
 #define PROGNAME	"ws2300"
 
 #define array_len(a)	(sizeof(a) / sizeof(a[0]))
+
+/* BCD converters */
+static const struct ws_type wst_temp = { WS_TEMP, "°C", 4, "temperature" };
+static const struct ws_type wst_pressure = { WS_PRESSURE, "hPa", 5, "pressure" };
+static const struct ws_type wst_humidity = { WS_HUMIDITY, "%", 2, "humidity" };
+static const struct ws_type wst_rain = { WS_RAIN, "mm", 6, "rain" };
+static const struct ws_type wst_speed = { WS_SPEED, "m/s", 3, "speed" };
+
+/* Wind direction converter */
+static const struct ws_type wst_wind_dir = { WS_WIND_DIR, "deg", 1, "wind direction, North=0 clockwise" };
+
+/* Wind velocity converter */
+static const struct ws_type wst_wind_speed = { WS_WIND_VELOCITY, "ms,d", 4, "wind speed and direction" };
+
+/* Bin converters */
+static const struct ws_type wst_int_s = { WS_INT_SEC, "s", 2, "time interval" };
+static const struct ws_type wst_int_m = { WS_INT_MIN, "min", 3, "time interval" };
+static const struct ws_type wst_rec_nbr = { WS_BIN_2NYB, NULL, 2, "record number" };
+
+/* Date and time converters */
+static const struct ws_type wst_date = { WS_DATE, NULL, 6, "yyyy-mm-dd" };
+static const struct ws_type wst_tstamp = { WS_TIMESTAMP, NULL, 10, "yyy-mm-dd hh:mm" };
+static const struct ws_type wst_datetime = { WS_DATETIME, NULL, 11, "yyy-mm-dd hh:mm" };
+static const struct ws_type wst_time = { WS_TIME, NULL, 6, "hh:mm:ss" };
+
+/* Text converters */
+static const struct ws_type wst_conn = { WS_CONNECTION, NULL, 1, "cable, lost, wireless" };
+static const struct ws_type wst_forecast = { 0, NULL, 1, "rainy, cloudy, sunny" };
+static const struct ws_type wst_speed_unit = { 0, NULL, 1, "m/s, knots, beaufort, km/h, mph" };
 
 /* ws23xx memory, ordered by address */
 static const struct ws_measure mem_addr[] =
@@ -80,98 +110,98 @@ static const struct ws_measure mem_addr[] =
 	{ 0x02c, None, conv_ala2, "wind direction alarm active alias" },
 	{ 0x02c, None, conv_ala2, "wind speed max alarm active alias" },
 	{ 0x02c, None, conv_ala2, "wind speed min alarm active alias" }, */
-	{ 0x200, "st", WS_TIME, "station set time", "ct" },
-	{ 0x23b, "sw", WS_DATETIME, "station current date time" },
-	{ 0x24d, "sd", WS_DATE, "station set date", "cd" },
+	{ 0x200, "st", &wst_time, "station set time", "ct" },
+	{ 0x23b, "sw", &wst_datetime, "station current date time" },
+	{ 0x24d, "sd", &wst_date, "station set date", "cd" },
 /*	{ 0x266, "lc", conv_lcon, "lcd contrast (ro)" },
 	{ 0x26b, "for", conv_fore, "forecast" },
 	{ 0x26c, "ten", conv_tend, "tendency" }, */
-	{ 0x346, "it", WS_TEMP, "in temp" },
-	{ 0x34b, "itl", WS_TEMP, "in temp min", "it" },
-	{ 0x350, "ith", WS_TEMP, "in temp max", "it" },
-	{ 0x354, "itlw", WS_TIMESTAMP, "in temp min when", "sw" },
-	{ 0x35e, "ithw", WS_TIMESTAMP, "in temp max when", "sw" },
-	{ 0x369, "itla", WS_TEMP, "in temp min alarm" },
-	{ 0x36e, "itha", WS_TEMP, "in temp max alarm" },
-	{ 0x373, "ot", WS_TEMP, "out temp" },
-	{ 0x378, "otl", WS_TEMP, "out temp min", "ot" },
-	{ 0x37d, "oth", WS_TEMP, "out temp max", "ot" },
-	{ 0x381, "otlw", WS_TIMESTAMP, "out temp min when", "sw" },
-	{ 0x38b, "othw", WS_TIMESTAMP, "out temp max when", "sw" },
-	{ 0x396, "otla", WS_TEMP, "out temp min alarm" },
-	{ 0x39b, "otha", WS_TEMP, "out temp max alarm" },
-	{ 0x3a0, "wc", WS_TEMP, "wind chill" },
-	{ 0x3a5, "wcl", WS_TEMP, "wind chill min", "wc" },
-	{ 0x3aa, "wch", WS_TEMP, "wind chill max", "wc" },
-	{ 0x3ae, "wclw", WS_TIMESTAMP, "wind chill min when", "sw" },
-	{ 0x3b8, "wchw", WS_TIMESTAMP, "wind chill max when", "sw" },
-	{ 0x3c3, "wcla", WS_TEMP, "wind chill min alarm" },
-	{ 0x3c8, "wcha", WS_TEMP, "wind chill max alarm" },
-	{ 0x3ce, "dp", WS_TEMP, "dew point" },
-	{ 0x3d3, "dpl", WS_TEMP, "dew point min", "dp" },
-	{ 0x3d8, "dph", WS_TEMP, "dew point max", "dp" },
-	{ 0x3dc, "dplw", WS_TIMESTAMP, "dew point min when", "sw" },
-	{ 0x3e6, "dphw", WS_TIMESTAMP, "dew point max when", "sw" },
-	{ 0x3f1, "dpla", WS_TEMP, "dew point min alarm" },
-	{ 0x3f6, "dpha", WS_TEMP, "dew point max alarm" },
-	{ 0x3fb, "ih", WS_HUMIDITY, "in humidity" },
-	{ 0x3fd, "ihl", WS_HUMIDITY, "in humidity min", "ih" },
-	{ 0x3ff, "ihh", WS_HUMIDITY, "in humidity max", "ih" },
-	{ 0x401, "ihlw", WS_TIMESTAMP, "in humidity min when", "sw" },
-	{ 0x40b, "ihhw", WS_TIMESTAMP, "in humidity max when", "sw" },
-	{ 0x415, "ihla", WS_HUMIDITY, "in humidity min alarm" },
-	{ 0x417, "ihha", WS_HUMIDITY, "in humidity max alarm" },
-	{ 0x419, "oh", WS_HUMIDITY, "out humidity" },
-	{ 0x41b, "ohl", WS_HUMIDITY, "out humidity min", "oh" },
-	{ 0x41d, "ohh", WS_HUMIDITY, "out humidity max", "oh" },
-	{ 0x41f, "ohlw", WS_TIMESTAMP, "out humidity min when", "sw" },
-	{ 0x429, "ohhw", WS_TIMESTAMP, "out humidity max when", "sw" },
-	{ 0x433, "ohla", WS_HUMIDITY, "out humidity min alarm" },
-	{ 0x435, "ohha", WS_HUMIDITY, "out humidity max alarm" },
-	{ 0x497, "rd", WS_RAIN, "rain 24h" },
-	{ 0x49d, "rdh", WS_RAIN, "rain 24h max", "rd" },
-	{ 0x4a3, "rdhw", WS_TIMESTAMP, "rain 24h max when", "sw" },
-	{ 0x4ae, "rdha", WS_RAIN, "rain 24h max alarm" },
-	{ 0x4b4, "rh", WS_RAIN, "rain 1h" },
-	{ 0x4ba, "rhh", WS_RAIN, "rain 1h max", "rh" },
-	{ 0x4c0, "rhhw", WS_TIMESTAMP, "rain 1h max when", "sw" },
-	{ 0x4cb, "rhha", WS_RAIN, "rain 1h max alarm" },
-	{ 0x4d2, "rt", WS_RAIN, "rain total", "0" },
-	{ 0x4d8, "rtrw", WS_TIMESTAMP, "rain total reset when", "sw" },
-	{ 0x4ee, "wsl", WS_SPEED, "wind speed min", "ws" },
-	{ 0x4f4, "wsh", WS_SPEED, "wind speed max", "ws" },
-	{ 0x4f8, "wslw", WS_TIMESTAMP, "wind speed min when", "sw" },
-	{ 0x502, "wshw", WS_TIMESTAMP, "wind speed max when", "sw" },
+	{ 0x346, "it", &wst_temp, "in temp" },
+	{ 0x34b, "itl", &wst_temp, "in temp min", "it" },
+	{ 0x350, "ith", &wst_temp, "in temp max", "it" },
+	{ 0x354, "itlw", &wst_tstamp, "in temp min when", "sw" },
+	{ 0x35e, "ithw", &wst_tstamp, "in temp max when", "sw" },
+	{ 0x369, "itla", &wst_temp, "in temp min alarm" },
+	{ 0x36e, "itha", &wst_temp, "in temp max alarm" },
+	{ 0x373, "ot", &wst_temp, "out temp" },
+	{ 0x378, "otl", &wst_temp, "out temp min", "ot" },
+	{ 0x37d, "oth", &wst_temp, "out temp max", "ot" },
+	{ 0x381, "otlw", &wst_tstamp, "out temp min when", "sw" },
+	{ 0x38b, "othw", &wst_tstamp, "out temp max when", "sw" },
+	{ 0x396, "otla", &wst_temp, "out temp min alarm" },
+	{ 0x39b, "otha", &wst_temp, "out temp max alarm" },
+	{ 0x3a0, "wc", &wst_temp, "wind chill" },
+	{ 0x3a5, "wcl", &wst_temp, "wind chill min", "wc" },
+	{ 0x3aa, "wch", &wst_temp, "wind chill max", "wc" },
+	{ 0x3ae, "wclw", &wst_tstamp, "wind chill min when", "sw" },
+	{ 0x3b8, "wchw", &wst_tstamp, "wind chill max when", "sw" },
+	{ 0x3c3, "wcla", &wst_temp, "wind chill min alarm" },
+	{ 0x3c8, "wcha", &wst_temp, "wind chill max alarm" },
+	{ 0x3ce, "dp", &wst_temp, "dew point" },
+	{ 0x3d3, "dpl", &wst_temp, "dew point min", "dp" },
+	{ 0x3d8, "dph", &wst_temp, "dew point max", "dp" },
+	{ 0x3dc, "dplw", &wst_tstamp, "dew point min when", "sw" },
+	{ 0x3e6, "dphw", &wst_tstamp, "dew point max when", "sw" },
+	{ 0x3f1, "dpla", &wst_temp, "dew point min alarm" },
+	{ 0x3f6, "dpha", &wst_temp, "dew point max alarm" },
+	{ 0x3fb, "ih", &wst_humidity, "in humidity" },
+	{ 0x3fd, "ihl", &wst_humidity, "in humidity min", "ih" },
+	{ 0x3ff, "ihh", &wst_humidity, "in humidity max", "ih" },
+	{ 0x401, "ihlw", &wst_tstamp, "in humidity min when", "sw" },
+	{ 0x40b, "ihhw", &wst_tstamp, "in humidity max when", "sw" },
+	{ 0x415, "ihla", &wst_humidity, "in humidity min alarm" },
+	{ 0x417, "ihha", &wst_humidity, "in humidity max alarm" },
+	{ 0x419, "oh", &wst_humidity, "out humidity" },
+	{ 0x41b, "ohl", &wst_humidity, "out humidity min", "oh" },
+	{ 0x41d, "ohh", &wst_humidity, "out humidity max", "oh" },
+	{ 0x41f, "ohlw", &wst_tstamp, "out humidity min when", "sw" },
+	{ 0x429, "ohhw", &wst_tstamp, "out humidity max when", "sw" },
+	{ 0x433, "ohla", &wst_humidity, "out humidity min alarm" },
+	{ 0x435, "ohha", &wst_humidity, "out humidity max alarm" },
+	{ 0x497, "rd", &wst_rain, "rain 24h" },
+	{ 0x49d, "rdh", &wst_rain, "rain 24h max", "rd" },
+	{ 0x4a3, "rdhw", &wst_tstamp, "rain 24h max when", "sw" },
+	{ 0x4ae, "rdha", &wst_rain, "rain 24h max alarm" },
+	{ 0x4b4, "rh", &wst_rain, "rain 1h" },
+	{ 0x4ba, "rhh", &wst_rain, "rain 1h max", "rh" },
+	{ 0x4c0, "rhhw", &wst_tstamp, "rain 1h max when", "sw" },
+	{ 0x4cb, "rhha", &wst_rain, "rain 1h max alarm" },
+	{ 0x4d2, "rt", &wst_rain, "rain total", "0" },
+	{ 0x4d8, "rtrw", &wst_tstamp, "rain total reset when", "sw" },
+	{ 0x4ee, "wsl", &wst_speed, "wind speed min", "ws" },
+	{ 0x4f4, "wsh", &wst_speed, "wind speed max", "ws" },
+	{ 0x4f8, "wslw", &wst_tstamp, "wind speed min when", "sw" },
+	{ 0x502, "wshw", &wst_tstamp, "wind speed max when", "sw" },
 /*	{ 0x527, "wso", conv_wovr, "wind speed overflow" },
 	{ 0x528, "wsv", conv_wvld, "wind speed validity" },*/
-	{ 0x529, "wv", WS_WIND_VELOCITY, "wind velocity" },
-	{ 0x529, "ws", WS_SPEED, "wind speed" },
-	{ 0x52c, "w0", WS_WIND_DIR, "wind direction" },
-	{ 0x52d, "w1", WS_WIND_DIR, "wind direction 1" },
-	{ 0x52e, "w2", WS_WIND_DIR, "wind direction 2" },
-	{ 0x52f, "w3", WS_WIND_DIR, "wind direction 3" },
-	{ 0x530, "w4", WS_WIND_DIR, "wind direction 4" },
-	{ 0x531, "w5", WS_WIND_DIR, "wind direction 5" },
-	{ 0x533, "wsla", WS_SPEED, "wind speed min alarm" },
-	{ 0x538, "wsha", WS_SPEED, "wind speed max alarm" },
-	{ 0x54d, "cn", WS_CONNECTION, "connection type" },
-	{ 0x54f, "cc", WS_INT_SEC, "connection time till connect" },
-	{ 0x5d8, "pa", WS_PRESSURE, "pressure absolute" },
-	{ 0x5e2, "pr", WS_PRESSURE, "pressure relative" },
-	{ 0x5ec, "pc", WS_PRESSURE, "pressure correction" },
-	{ 0x5f6, "pal", WS_PRESSURE, "pressure absolute min", "pa" },
-	{ 0x600, "prl", WS_PRESSURE, "pressure relative min", "pr" },
-	{ 0x60a, "pah", WS_PRESSURE, "pressure absolute max", "pa" },
-	{ 0x614, "prh", WS_PRESSURE, "pressure relative max", "pr" },
-	{ 0x61e, "plw", WS_TIMESTAMP, "pressure min when", "sw" },
-	{ 0x628, "phw", WS_TIMESTAMP, "pressure max when", "sw" },
-	{ 0x63c, "pla", WS_PRESSURE, "pressure min alarm" },
-	{ 0x650, "pha", WS_PRESSURE, "pressure max alarm" },
-	{ 0x6b2, "hi", WS_INT_MIN, "history interval" },
-	{ 0x6b5, "hc", WS_INT_MIN, "history time till sample" },
-	{ 0x6b8, "hw", WS_TIMESTAMP, "history last sample when" },
-	{ 0x6c2, "hp", WS_BIN_2NYB, "history last record pointer", "0" },
-	{ 0x6c4, "hn", WS_BIN_2NYB, "history number of records", "0"}
+	{ 0x529, "wv", &wst_wind_speed, "wind velocity" },
+	{ 0x529, "ws", &wst_speed, "wind speed" },
+	{ 0x52c, "w0", &wst_wind_dir, "wind direction" },
+	{ 0x52d, "w1", &wst_wind_dir, "wind direction 1" },
+	{ 0x52e, "w2", &wst_wind_dir, "wind direction 2" },
+	{ 0x52f, "w3", &wst_wind_dir, "wind direction 3" },
+	{ 0x530, "w4", &wst_wind_dir, "wind direction 4" },
+	{ 0x531, "w5", &wst_wind_dir, "wind direction 5" },
+	{ 0x533, "wsla", &wst_speed, "wind speed min alarm" },
+	{ 0x538, "wsha", &wst_speed, "wind speed max alarm" },
+	{ 0x54d, "cn", &wst_conn, "connection type" },
+	{ 0x54f, "cc", &wst_int_s, "connection time till connect" },
+	{ 0x5d8, "pa", &wst_pressure, "pressure absolute" },
+	{ 0x5e2, "pr", &wst_pressure, "pressure relative" },
+	{ 0x5ec, "pc", &wst_pressure, "pressure correction" },
+	{ 0x5f6, "pal", &wst_pressure, "pressure absolute min", "pa" },
+	{ 0x600, "prl", &wst_pressure, "pressure relative min", "pr" },
+	{ 0x60a, "pah", &wst_pressure, "pressure absolute max", "pa" },
+	{ 0x614, "prh", &wst_pressure, "pressure relative max", "pr" },
+	{ 0x61e, "plw", &wst_tstamp, "pressure min when", "sw" },
+	{ 0x628, "phw", &wst_tstamp, "pressure max when", "sw" },
+	{ 0x63c, "pla", &wst_pressure, "pressure min alarm" },
+	{ 0x650, "pha", &wst_pressure, "pressure max alarm" },
+	{ 0x6b2, "hi", &wst_int_m, "history interval" },
+	{ 0x6b5, "hc", &wst_int_m, "history time till sample" },
+	{ 0x6b8, "hw", &wst_tstamp, "history last sample when" },
+	{ 0x6c2, "hp", &wst_rec_nbr, "history last record pointer", "0" },
+	{ 0x6c4, "hn", &wst_rec_nbr, "history number of records", "0"}
 };
 
 /* ws23xx memory, ordered by id */
@@ -184,41 +214,6 @@ usage(FILE *out, int code)
 
 	exit(code);
 }
-
-#if 1
-static inline uint8_t
-nybble_at(const uint8_t *buf, size_t i)
-{
-	return (i & 0x1) ? buf[i / 2] >> 4 : buf[i / 2] & 0xF;
-
-}
-
-static void
-print_nybbles(const uint8_t *buf, size_t nel)
-{
-	printf("(");
-	for (int j = 0; j < nel; j++) {
-		if (j > 0) {
-			printf(", ");
-		}
-		printf("%d", nybble_at(buf, j));
-	}
-	printf(")\n");
-}
-
-static void
-print_hex(const uint8_t *buf, size_t nel)
-{
-	printf("(");
-	for (int j = 0; j < nel; j++) {
-		if (j > 0) {
-			printf(", ");
-		}
-		printf("%.2x", buf[j]);
-	}
-	printf(")\n");
-}
-#endif
 
 /**
  * Copy nybble data.
@@ -278,7 +273,7 @@ read_measures(int fd, char * const ids[], int nel) {
 
 	for (int i = 0; i < array_len(mem_addr); i++) {
 		const struct ws_measure *m = &mem_addr[i];
-		const struct ws_conv *c = ws_get_conv(m->type);
+		const struct ws_type *t = m->type;
 
 		for (int j = 0; j < nel; j++) {
 			if (strcmp(ids[j], m->id) == 0) {
@@ -295,14 +290,14 @@ read_measures(int fd, char * const ids[], int nel) {
 				}
 
 				if (same_area) {
-					nnybble[opt_sz-1] = m->addr + c->nybble - addr[opt_sz-1];
+					nnybble[opt_sz-1] = m->addr + t->nybble - addr[opt_sz-1];
 				} else {
 					if (opt_sz > 0) {
 						nbyte += (nnybble[opt_sz-1] + 1) / 2;
 					}
 
 					addr[opt_sz] = m->addr;
-					nnybble[opt_sz] = c->nybble;
+					nnybble[opt_sz] = t->nybble;
 					buf[opt_sz] = data + nbyte;
 
 					opt_sz++;
@@ -327,37 +322,41 @@ read_measures(int fd, char * const ids[], int nel) {
 		char nyb_str[128];
 
 		const struct ws_measure *m = mids[i];
-		const struct ws_conv *c = ws_get_conv(m->type);
+		const struct ws_type *t = m->type;
 
-		nybcpy(nyb_data, data, off[i], c->nybble);
+		nybcpy(nyb_data, data, off[i], t->nybble);
 
-		switch (m->type) {
+		switch (t->id) {
 		case WS_TEMP:
-			ws_temp_str(nyb_data, nyb_str, sizeof(nyb_str));
-			break;
-
-		case WS_INT_SEC:
-			ws_interval_sec_str(nyb_data, nyb_str, sizeof(nyb_str));
-			break;
-
-		case WS_INT_MIN:
-			ws_interval_min_str(nyb_data, nyb_str, sizeof(nyb_str));
-			break;
-
-		case WS_BIN_2NYB:
-			ws_2nyb_str(nyb_data, nyb_str, sizeof(nyb_str));
-			break;
-
-		case WS_DATETIME:
-			ws_datetime_str(nyb_data, nyb_str, sizeof(nyb_str));
-			break;
-
-		case WS_TIMESTAMP:
-			ws_timestamp_str(nyb_data, nyb_str, sizeof(nyb_str));
+			ws_temp_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
 			break;
 
 		case WS_PRESSURE:
-			ws_pressure_str(nyb_data, nyb_str, sizeof(nyb_str));
+			ws_pressure_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_DATETIME:
+			ws_datetime_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_TIMESTAMP:
+			ws_timestamp_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_INT_SEC:
+			ws_interval_sec_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_INT_MIN:
+			ws_interval_min_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_BIN_2NYB:
+			ws_bin_2nyb_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_CONNECTION:
+			ws_connection_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
 			break;
 
 		default:
@@ -365,8 +364,8 @@ read_measures(int fd, char * const ids[], int nel) {
 			break;
 		}
 
-		if (c->units != NULL) {
-			printf("%s = %s %s\n", m->desc, nyb_str, c->units);
+		if (t->units != NULL) {
+			printf("%s = %s %s\n", m->desc, nyb_str, t->units);
 		} else {
 			printf("%s = %s\n", m->desc, nyb_str);
 		}
@@ -392,20 +391,47 @@ init() {
 }
 
 static void
-do_help()
+do_help(int argc, char* const argv[])
 {
-	int i;
+	int c;
+	int errflg = 0;
 
-	for (i = 0; i < array_len(mem_id); i++) {
-		const struct ws_measure *m = mem_id[i];
-		const struct ws_conv *c = ws_get_conv(m->type);
+	size_t nel = array_len(mem_id);
+	int addr_order = 0;
 
-		if (c->units != NULL) {
+	/* Parse sub-command arguments */
+	while ((c = getopt(argc, argv, "+A")) != -1) {
+		switch (c) {
+		case 'A':
+			addr_order = 1;
+			break;
+
+		case ':':
+			fprintf(stderr, "Option -%c requires an operand\n", optopt);
+			errflg++;
+			break;
+
+		case '?':
+			fprintf(stderr, "Unrecognized option: '-%c'\n", optopt);
+			errflg++;
+			break;
+		}
+	}
+
+	if (errflg) {
+		usage(stderr, 1);
+	}
+
+	for (int i = 0; i < nel; i++) {
+		const struct ws_measure *m = addr_order ? &mem_addr[i] : mem_id[i];
+		const struct ws_type *t = m->type;
+
+		if (t->units != NULL) {
 			printf("%-5s %-30s 0x%3x:%-2d  %s, %s\n", m->id, m->desc, m->addr,
-					c->nybble, c->units, c->descr);
+					t->nybble, t->units, t->desc);
 		} else {
 			printf("%-5s %-30s 0x%3x:%-2d  %s\n", m->id, m->desc, m->addr,
-					c->nybble, c->descr);
+					t->nybble, t->desc);
 		}
 	}
 }
@@ -425,36 +451,46 @@ do_fetch(int argc, char* const argv[]) {
 
 static void
 do_history(int argc, char* const argv[]) {
-	const char* device = argv[optind++];
+	int c;
+	int errflg = 0;
+
+	size_t hist_count = 0;
+	const char *device = NULL;
+
+	/* Parse sub-command arguments */
+	while ((c = getopt(argc, argv, "+l:")) != -1) {
+		switch (c) {
+		case 'd':
+			ws_io_delay = strtol(optarg, NULL, 10);
+			break;
+
+		case ':':
+			fprintf(stderr, "Option -%c requires an operand\n", optopt);
+			errflg++;
+			break;
+
+		case '?':
+			fprintf(stderr, "Unrecognized option: '-%c'\n", optopt);
+			errflg++;
+			break;
+		}
+	}
+
+	if (errflg) {
+		usage(stderr, 1);
+	}
+
+	device = argv[optind++];
 
 	/* Loading data */
-	int fd = ws_open(device);
-	if (fd == -1) {
+	int fd;
+	struct ws_history hbuf[WS_HISTORY_SIZE];
+
+	if ((fd = ws_open(device)) == -1) {
 		exit(1);
 	}
 
-	/* Read history settings */
-	uint8_t buf[1024];
-
-	if (ws_read_safe(fd, 0x6B2, 20, buf) == -1) {
-		exit(1);
-	}
-
-	print_nybbles(buf, 2);
-
-	if (ws_read_safe(fd, 0x6c6, 24 * 19, buf) == -1) {
-		exit(1);
-	}
-
-	for (int i = 0; i < 24; i++) {
-		uint8_t nyb_data[19];
-		struct ws_history h;
-
-		nybcpy(nyb_data, buf, i * 19, 19);
-		ws_decode_history(nyb_data, &h);
-		printf("%.2f,%.2f,%.1f,%d,%d,%.2f,%.1f,%.1f\n", h.temp_in, h.temp_out, h.abs_pressure, h.humidity_in, h.humidity_out, h.rain, h.wind_speed, h.wind_dir);
-	}
-
+	ws_fetch_history(fd, hbuf, hist_count);
 	ws_close(fd);
 }
 
@@ -469,10 +505,9 @@ main(int argc, char * const argv[])
 	init();
 
 	/* Parse arguments */
-	while ((c = getopt(argc, argv, "hd:")) != -1) {
+	while ((c = getopt(argc, argv, "+hd:")) != -1) {
 		switch (c) {
 		case 'h':
-			do_help();
 			usage(stdout, 0);
 			break;
 
@@ -499,7 +534,7 @@ main(int argc, char * const argv[])
 	cmd = argv[optind++];
 
 	if (strcmp("help", cmd) == 0) {
-		do_help();
+		do_help(argc, argv);
 	} else if (strcmp("fetch", cmd) == 0) {
 		do_fetch(argc, argv);
 	} else if (strcmp("history", cmd) == 0) {
