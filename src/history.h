@@ -1,5 +1,5 @@
-#ifndef _UTIL_H
-#define _UTIL_H
+#ifndef _HISTORY_H
+#define _HISTORY_H
 
 #define WS_HISTORY_SIZE	175
 
@@ -13,8 +13,12 @@ struct ws_history
 	double rain;
 	double wind_speed;
 	double wind_dir;
+
+	time_t tstamp;				/* sample timestamp (computed) */
+	double windchill;			/* sample windchill (computed) */
+	double dewpoint;			/* sample dewpoint (computed) */
 };
 
-extern int ws_fetch_history(int fd, struct ws_history *h, size_t nel);
+extern ssize_t ws_fetch_history(int fd, struct ws_history *h, size_t nel);
 
-#endif	/* _UTIL_H */
+#endif	/* _HISTORY_H */

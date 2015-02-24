@@ -10,6 +10,7 @@
 #include "ws2300.h"
 
 #define PROGNAME	"ws2300"
+#define CSV_DATE	"%Y-%m-%dT%H:%M"
 
 #define array_len(a)	(sizeof(a) / sizeof(a[0]))
 
@@ -33,8 +34,8 @@ static const struct ws_type wst_rec_nbr = { WS_BIN_2NYB, NULL, 2, "record number
 
 /* Date and time converters */
 static const struct ws_type wst_date = { WS_DATE, NULL, 6, "yyyy-mm-dd" };
-static const struct ws_type wst_tstamp = { WS_TIMESTAMP, NULL, 10, "yyy-mm-dd hh:mm" };
-static const struct ws_type wst_datetime = { WS_DATETIME, NULL, 11, "yyy-mm-dd hh:mm" };
+static const struct ws_type wst_tstamp = { WS_TIMESTAMP, NULL, 10, "yyyy-mm-dd hh:mm" };
+static const struct ws_type wst_datetime = { WS_DATETIME, NULL, 11, "yyyy-mm-dd hh:mm" };
 static const struct ws_type wst_time = { WS_TIME, NULL, 6, "hh:mm:ss" };
 
 /* Text converters */
@@ -214,9 +215,9 @@ usage(FILE *out, int code)
 	fprintf(out, "\n");
 	fprintf(out, "Available commands:\n");
 	fprintf(out, "    help [-A]\n");
-	fprintf(out, "    hex [-n] device offset length\n");
 	fprintf(out, "    fetch device measure...\n");
-	fprintf(out, "    history [-l count] device [file]\n");
+	fprintf(out, "    history [-l count] [-s sep] device [file]\n");
+	fprintf(out, "    hex [-n] device offset length\n");
 
 	exit(code);
 }
@@ -295,7 +296,7 @@ read_measures(int fd, char * const ids[], int nel) {
 	int nbyte = 0;
 	uint8_t data[1024];
 
-	memset(data, 0xFF, sizeof(data));
+	memset(mids, 0, sizeof(mids));
 
 	for (size_t i = 0; i < array_len(mem_addr); i++) {
 		const struct ws_measure *m = &mem_addr[i];
@@ -337,6 +338,20 @@ read_measures(int fd, char * const ids[], int nel) {
 		}
 	}
 
+	/* Check input measures */
+	int errflg = 0;
+
+	for (int j = 0; j < nel; j++) {
+		if (mids[j] == NULL) {
+			errflg++;
+			fprintf(stderr, "Unknown measure: %s\n", ids[j]);
+		}
+	}
+
+	if (errflg) {
+		goto error;
+	}
+
 	/* Read */
 	if (ws_read_batch(fd, addr, nnybble, opt_sz, buf) == -1) {
 		return -1;
@@ -369,6 +384,10 @@ read_measures(int fd, char * const ids[], int nel) {
 			ws_timestamp_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
 			break;
 
+		case WS_HUMIDITY:
+			ws_humidity_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
 		case WS_INT_SEC:
 			ws_interval_sec_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
 			break;
@@ -386,6 +405,7 @@ read_measures(int fd, char * const ids[], int nel) {
 			break;
 
 		default:
+			snprintf(nyb_str, sizeof(nyb_str), "-");
 			fprintf(stderr, "not yet supported");
 			break;
 		}
@@ -398,6 +418,9 @@ read_measures(int fd, char * const ids[], int nel) {
 	}
 
 	return 0;
+
+error:
+	return -1;
 }
 
 /**
@@ -422,7 +445,7 @@ init() {
 }
 
 static void
-do_help(int argc, char* const argv[])
+main_help(int argc, char* const argv[])
 {
 	int c;
 
@@ -460,23 +483,23 @@ do_help(int argc, char* const argv[])
 }
 
 static void
-do_hex(int argc, char* const argv[]) {
+main_hex(int argc, char* const argv[]) {
 	int c;
 
 	/* Default values */
 	const char *device = NULL;
 	uint16_t addr;
-	uint16_t length;
+	uint16_t nnybles;
 
-	int disp_sz = 2;
-	int print_nybble = 0;
+	int disp_sz = 1;
+	int print_hex = 0;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "n")) != -1) {
+	while ((c = getopt(argc, argv, "x")) != -1) {
 		switch (c) {
-		case 'n':
-			disp_sz = 1;
-			print_nybble = 1;
+		case 'x':
+			disp_sz = 2;
+			print_hex = 1;
 			break;
 
 		default:
@@ -491,42 +514,35 @@ do_hex(int argc, char* const argv[]) {
 
 	device = argv[optind++];
 	addr = strtol(argv[optind++], NULL, 16);
-	length = strtol(argv[optind++], NULL, 10);
+	nnybles = strtol(argv[optind++], NULL, 10);
 
 	/* Process sub-command */
 	int fd;
-	int nbytes;
-	uint8_t buf[length];
+	uint8_t buf[nnybles];
 
 	if ((fd = ws_open(device)) == -1) {
 		exit(1);
 	}
 
-	if (print_nybble) {
-		nbytes = (length + 1) / 2;
-	} else {
-		nbytes = length;
-	}
-
-	if (ws_read_safe(fd, addr, nbytes, buf) == -1) {
+	if (ws_read_safe(fd, addr, nnybles, buf) == -1) {
 		goto error;
 	}
 
-	for (uint16_t i = 0; i < length; ) {
-		printf("%.4x", addr + disp_sz * i);
+	for (uint16_t i = 0; i < nnybles; ) {
+		printf("%.4x", addr + i);
 
-		for (uint16_t j = 0; j < 16 && i < length; j++) {
+		for (uint16_t j = 0; j < 16 && i < nnybles; j++) {
 			uint8_t v;
 
-			if (print_nybble) {
-				v = ws_nybble(buf, i);
-			} else {
+			if (print_hex) {
 				v = buf[i];
+			} else {
+				v = ws_nybble(buf, i);
 			}
 
 			printf(" %.*x", disp_sz, v);
 
-			i++;
+			i += disp_sz;
 		}
 
 		printf("\n");
@@ -542,7 +558,7 @@ error:
 }
 
 static void
-do_fetch(int argc, char* const argv[]) {
+main_fetch(int argc, char* const argv[]) {
 	int c;
 
 	/* Default values */
@@ -573,19 +589,23 @@ do_fetch(int argc, char* const argv[]) {
 }
 
 static void
-do_history(int argc, char* const argv[]) {
+main_history(int argc, char* const argv[]) {
 	int c;
 
 	/* Default values */
+	char sep = ',';
 	size_t hist_count = 0;
 	const char *device = NULL;
 	const char *file = NULL;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "l:")) != -1) {
+	while ((c = getopt(argc, argv, "l:s:")) != -1) {
 		switch (c) {
 		case 'l':
 			hist_count = strtol(optarg, NULL, 10);
+			break;
+		case 's':
+			sep = optarg[0];
 			break;
 
 		default:
@@ -594,18 +614,82 @@ do_history(int argc, char* const argv[]) {
 		}
 	}
 
-	device = argv[optind++];
+	if (optind < argc) {
+		device = argv[optind++];
+
+		if (optind < argc) {
+			file = argv[optind++];
+		}
+
+		if (optind < argc) {
+			usage(stderr, 1);
+		}
+	} else {
+		usage(stderr, 1);
+	}
 
 	/* Loading data */
 	int fd;
-	struct ws_history hbuf[WS_HISTORY_SIZE];
 
 	if ((fd = ws_open(device)) == -1) {
 		exit(1);
 	}
 
-	ws_fetch_history(fd, hbuf, hist_count);
+	/* Parse output file */
+	FILE *out = stdout;
+
+	time_t last_record = 0;
+	struct ws_history hbuf[WS_HISTORY_SIZE];
+
+	if (file != NULL) {
+		if ((out = fopen(file, "a+")) == NULL) {
+			goto error;
+		}
+
+		/* Find last entry */
+		char line[1024];
+
+		while (fgets(line, sizeof(line), out) != NULL) {
+			struct tm tm;
+			char *p;
+
+			p = strptime(line, CSV_DATE, &tm);
+
+			if (p == NULL || *p != sep) {
+				fprintf(stderr, "Fail to parse: %s\n", file);
+				goto error;
+			}
+
+			last_record = mktime(&tm);
+		}
+	}
+
+	ssize_t nel = ws_fetch_history(fd, hbuf, hist_count);
+
+	/* Display output */
+	char cbuf[32];
+
+	for (int i = 0; i < nel; i++) {
+		struct ws_history *h = &hbuf[i];
+
+		struct tm tm;
+		localtime_r(&h->tstamp, &tm);
+		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
+
+		fprintf(out, "%s%c%.2f%c%.2f%c%.1f%c%d%c%d%c%.2f%c%.1f%c%.1f%c%.2f%c%.2f\n",
+				cbuf, sep, h->temp_in, sep, h->temp_out, sep,
+				h->abs_pressure, sep, h->humidity_in, sep, h->humidity_out, sep,
+				h->rain, sep, h->wind_speed, sep, h->wind_dir, sep,
+				h->windchill, sep, h->dewpoint);
+	}
+
 	ws_close(fd);
+
+	return;
+
+error:
+	ws_close(fd);
+	exit(1);
 }
 
 int
@@ -641,13 +725,13 @@ main(int argc, char * const argv[])
 
 	/* Process command */
 	if (strcmp("help", cmd) == 0) {
-		do_help(argc, argv);
-	} else if (strcmp("hex", cmd) == 0) {
-		do_hex(argc, argv);
+		main_help(argc, argv);
 	} else if (strcmp("fetch", cmd) == 0) {
-		do_fetch(argc, argv);
+		main_fetch(argc, argv);
 	} else if (strcmp("history", cmd) == 0) {
-		do_history(argc, argv);
+		main_history(argc, argv);
+	} else if (strcmp("hex", cmd) == 0) {
+		main_hex(argc, argv);
 	}
 
 	exit(0);

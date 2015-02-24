@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <math.h>
 #include <time.h>
 #include <string.h>
 
@@ -292,7 +291,7 @@ ws_connection_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 		snprintf(s, len, "%s", "wireless");
 		break;
 	default:
-		snprintf(s, len, "%x - %s", v, "error");
+		snprintf(s, len, "%x (%s)", v, "error");
 		break;
 	}
 

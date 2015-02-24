@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "util.h"
 #include "ws2300.h"
 #include "history.h"
 
@@ -23,11 +24,11 @@ conv_history(const uint8_t *buf, struct ws_history *h)
 
 	h->humidity_out = (buf[5] >> 4) * 10 + (buf[5] & 0xF);
 	h->rain = ((buf[7] & 0xF) * 256 + buf[6]) * 0.518;
-	h->wind_speed = (buf[8] * 16 + (buf[7] >> 4))/ 10.0;
+	h->wind_speed = (buf[8] * 16 + (buf[7] >> 4)) / 10.0;
 	h->wind_dir = (buf[9] & 0xF) * 22.5;
 }
 
-int
+ssize_t
 ws_fetch_history(int fd, struct ws_history *h, size_t nel) {
 	uint8_t buf[20];
 
@@ -55,26 +56,23 @@ ws_fetch_history(int fd, struct ws_history *h, size_t nel) {
 		nel = record_count;
 	}
 
-//	for (int i = 0; i < nel; i++) {
-//		uint8_t nyb_data[19];
-//
-//		if (ws_read_safe(fd, 0x6c6 + (last_record - i + 1) * 19, buf) == -1) {
-//			goto error;
-//		}
-//
-//		conv_history(nyb_data, &h[i]);
-//	}
-//
-//	/* Display output */
-//	for (int i = 0; i < nel; i++) {
-//		struct ws_history = &h[i];
-//
-//		printf("%.2f,%.2f,%.1f,%d,%d,%.2f,%.1f,%.1f\n", h->temp_in, h->temp_out,
-//				h->abs_pressure, h->humidity_in, h->humidity_out, h->rain,
-//				h->wind_speed, h->wind_dir);
-//	}
+	for (size_t i = 0; i < nel; i++) {
+		uint8_t nyb_data[19];
+		struct ws_history *p = &h[nel - i - 1];
 
-	return 0;
+		if (ws_read_safe(fd, 0x6c6 + (last_record - i) * 19, 19, nyb_data) == -1) {
+			goto error;
+		}
+
+		conv_history(nyb_data, p);
+
+		/* Compute other fields */
+		p->tstamp = last_sample - i * save_int * 60;
+		p->windchill = ws_windchill(p->wind_speed, p->temp_out);
+		p->dewpoint = ws_dewpoint(p->temp_out, p->humidity_out);
+	}
+
+	return nel;
 
 error:
 	return -1;

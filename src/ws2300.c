@@ -16,12 +16,12 @@
 #define min(a,b)		((a) < (b) ? (a) : (b))
 
 static void
-encode(uint8_t op, const uint8_t *in, uint8_t *out, size_t len)
+encode(uint8_t op, const uint8_t *src, uint8_t *dest, size_t len)
 {
 	size_t i;
 
 	for (i = 0; i < len; i++) {
-		out[i] = op + (in[i] * 4);
+		dest[i] = op + (src[i] * 4);
 	}
 }
 
@@ -236,7 +236,7 @@ error:
 }
 
 /**
- * Reset the device and write a command, verifing it was written correctly.
+ * Reset the device and write a command, verifying it was written correctly.
  */
 int
 ws_write_safe(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf)
