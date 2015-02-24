@@ -6,9 +6,9 @@
 #include "decoder.h"
 
 static uint8_t
-nybble_at(const uint8_t *buf, size_t i)
+nybble_at(const uint8_t *buf, size_t offset)
 {
-	return (i & 0x1) ? buf[i / 2] >> 4 : buf[i / 2] & 0xF;
+	return (offset & 0x1) ? buf[offset / 2] >> 4 : buf[offset / 2] & 0xF;
 }
 
 static uint64_t
@@ -35,6 +35,12 @@ bin2num(const uint8_t *buf, uint8_t nnybble, size_t offset)
 	}
 
 	return res;
+}
+
+uint8_t
+ws_nybble(const uint8_t *buf, size_t offset)
+{
+	return nybble_at(buf, offset);
 }
 
 double *
@@ -151,7 +157,7 @@ ws_get_wind_speed(const uint8_t *buf, double *v, size_t offset)
 uint16_t *
 ws_interval_sec(const uint8_t *buf, uint16_t *v, size_t offset)
 {
-	*v = (uint16_t) bin2num(buf, 3, offset) * 5;
+	*v = (uint16_t) bin2num(buf, 3, offset) * 0.5;
 
 	return v;
 }

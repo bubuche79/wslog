@@ -210,7 +210,33 @@ static const struct ws_measure *mem_id[array_len(mem_addr)];
 static void
 usage(FILE *out, int code)
 {
-	fprintf(out, "Usage: [-h] %s device measure...\n", PROGNAME);
+	fprintf(out, "Usage: %s [-h] [-D] [-d ms] <command> [<args>]\n", PROGNAME);
+	fprintf(out, "\n");
+	fprintf(out, "Available commands:\n");
+	fprintf(out, "    help [-A]\n");
+	fprintf(out, "    hex [-n] device offset length\n");
+	fprintf(out, "    fetch device measure...\n");
+	fprintf(out, "    history [-l count] device [file]\n");
+
+	exit(code);
+}
+
+static void
+usage_opt(FILE *out, int opt, int code)
+{
+	switch (opt) {
+	case ':':
+		fprintf(out, "Option -%c requires an operand\n", optopt);
+		break;
+
+	case '?':
+		fprintf(out, "Unrecognized option: -%c\n", optopt);
+		break;
+
+	default:
+		fprintf(out, "Unhandled option: -%c\n", opt);
+		break;
+	}
 
 	exit(code);
 }
@@ -222,12 +248,12 @@ usage(FILE *out, int code)
  * #offset offset (nybbles offset), to memory area #dest.
  */
 static void
-nybcpy(uint8_t *dest, const uint8_t *src, size_t offset, size_t nnybble)
+nybcpy(uint8_t *dest, const uint8_t *src, uint16_t nnybble, size_t offset)
 {
 	src += offset / 2;
 
 	if (offset & 0x1) {
-		for (int i = 0; i < nnybble; i++) {
+		for (uint16_t i = 0; i < nnybble; i++) {
 			int j = 1 + i;
 
 			if (j & 0x1) {
@@ -271,7 +297,7 @@ read_measures(int fd, char * const ids[], int nel) {
 
 	memset(data, 0xFF, sizeof(data));
 
-	for (int i = 0; i < array_len(mem_addr); i++) {
+	for (size_t i = 0; i < array_len(mem_addr); i++) {
 		const struct ws_measure *m = &mem_addr[i];
 		const struct ws_type *t = m->type;
 
@@ -324,7 +350,7 @@ read_measures(int fd, char * const ids[], int nel) {
 		const struct ws_measure *m = mids[i];
 		const struct ws_type *t = m->type;
 
-		nybcpy(nyb_data, data, off[i], t->nybble);
+		nybcpy(nyb_data, data, t->nybble, off[i]);
 
 		switch (t->id) {
 		case WS_TEMP:
@@ -382,48 +408,45 @@ read_measures(int fd, char * const ids[], int nel) {
  */
 static void
 init() {
+	size_t nel = array_len(mem_id);
+
 	/* Sort mem_addr by id */
-	for (int i = 0; i < array_len(mem_id); i++) {
+	for (size_t i = 0; i < nel; i++) {
 		mem_id[i] = &mem_addr[i];
 	}
 
-	qsort(mem_id, array_len(mem_id), sizeof(mem_id[0]), wsmncmp);
+	qsort(mem_id, nel, sizeof(mem_id[0]), wsmncmp);
+
+	/* Set POSIX.2 behaviour for getopt() */
+	setenv("POSIXLY_CORRECT", "1", 1);
 }
 
 static void
 do_help(int argc, char* const argv[])
 {
 	int c;
-	int errflg = 0;
 
-	size_t nel = array_len(mem_id);
-	int addr_order = 0;
+	/* Default values */
+	int addr_ordered = 0;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "+A")) != -1) {
+	while ((c = getopt(argc, argv, "A")) != -1) {
 		switch (c) {
 		case 'A':
-			addr_order = 1;
+			addr_ordered = 1;
 			break;
 
-		case ':':
-			fprintf(stderr, "Option -%c requires an operand\n", optopt);
-			errflg++;
-			break;
-
-		case '?':
-			fprintf(stderr, "Unrecognized option: '-%c'\n", optopt);
-			errflg++;
+		default:
+			usage_opt(stderr, c, 1);
 			break;
 		}
 	}
 
-	if (errflg) {
-		usage(stderr, 1);
-	}
+	/* Process sub-command */
+	size_t nel = array_len(mem_id);
 
-	for (int i = 0; i < nel; i++) {
-		const struct ws_measure *m = addr_order ? &mem_addr[i] : mem_id[i];
+	for (size_t i = 0; i < nel; i++) {
+		const struct ws_measure *m = addr_ordered ? &mem_addr[i] : mem_id[i];
 		const struct ws_type *t = m->type;
 
 		if (t->units != NULL) {
@@ -437,10 +460,110 @@ do_help(int argc, char* const argv[])
 }
 
 static void
-do_fetch(int argc, char* const argv[]) {
-	const char* device = argv[optind++];
+do_hex(int argc, char* const argv[]) {
+	int c;
 
-	/* Loading data */
+	/* Default values */
+	const char *device = NULL;
+	uint16_t addr;
+	uint16_t length;
+
+	int disp_sz = 2;
+	int print_nybble = 0;
+
+	/* Parse sub-command arguments */
+	while ((c = getopt(argc, argv, "n")) != -1) {
+		switch (c) {
+		case 'n':
+			disp_sz = 1;
+			print_nybble = 1;
+			break;
+
+		default:
+			usage_opt(stderr, c, 1);
+			break;
+		}
+	}
+
+	if (argc - 3 < optind) {
+		usage(stderr, 1);
+	}
+
+	device = argv[optind++];
+	addr = strtol(argv[optind++], NULL, 16);
+	length = strtol(argv[optind++], NULL, 10);
+
+	/* Process sub-command */
+	int fd;
+	int nbytes;
+	uint8_t buf[length];
+
+	if ((fd = ws_open(device)) == -1) {
+		exit(1);
+	}
+
+	if (print_nybble) {
+		nbytes = (length + 1) / 2;
+	} else {
+		nbytes = length;
+	}
+
+	if (ws_read_safe(fd, addr, nbytes, buf) == -1) {
+		goto error;
+	}
+
+	for (uint16_t i = 0; i < length; ) {
+		printf("%.4x", addr + disp_sz * i);
+
+		for (uint16_t j = 0; j < 16 && i < length; j++) {
+			uint8_t v;
+
+			if (print_nybble) {
+				v = ws_nybble(buf, i);
+			} else {
+				v = buf[i];
+			}
+
+			printf(" %.*x", disp_sz, v);
+
+			i++;
+		}
+
+		printf("\n");
+	}
+
+	ws_close(fd);
+
+	return;
+
+error:
+	ws_close(fd);
+	exit(1);
+}
+
+static void
+do_fetch(int argc, char* const argv[]) {
+	int c;
+
+	/* Default values */
+	const char *device = NULL;
+
+	/* Parse sub-command arguments */
+	while ((c = getopt(argc, argv, "")) != -1) {
+		switch (c) {
+		default:
+			usage_opt(stderr, c, 1);
+			break;
+		}
+	}
+
+	if (argc - 2 < optind) {
+		usage(stderr, 1);
+	}
+
+	device = argv[optind++];
+
+	/* Process sub-command */
 	int fd = ws_open(device);
 	if (fd == -1) {
 		exit(1);
@@ -452,32 +575,23 @@ do_fetch(int argc, char* const argv[]) {
 static void
 do_history(int argc, char* const argv[]) {
 	int c;
-	int errflg = 0;
 
+	/* Default values */
 	size_t hist_count = 0;
 	const char *device = NULL;
+	const char *file = NULL;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "+l:")) != -1) {
+	while ((c = getopt(argc, argv, "l:")) != -1) {
 		switch (c) {
-		case 'd':
-			ws_io_delay = strtol(optarg, NULL, 10);
+		case 'l':
+			hist_count = strtol(optarg, NULL, 10);
 			break;
 
-		case ':':
-			fprintf(stderr, "Option -%c requires an operand\n", optopt);
-			errflg++;
-			break;
-
-		case '?':
-			fprintf(stderr, "Unrecognized option: '-%c'\n", optopt);
-			errflg++;
+		default:
+			usage_opt(stderr, c, 1);
 			break;
 		}
-	}
-
-	if (errflg) {
-		usage(stderr, 1);
 	}
 
 	device = argv[optind++];
@@ -498,14 +612,13 @@ int
 main(int argc, char * const argv[])
 {
 	int c;
-	int errflg = 0;
 
 	const char *cmd = NULL;
 
 	init();
 
 	/* Parse arguments */
-	while ((c = getopt(argc, argv, "+hd:")) != -1) {
+	while ((c = getopt(argc, argv, "hd:")) != -1) {
 		switch (c) {
 		case 'h':
 			usage(stdout, 0);
@@ -515,26 +628,22 @@ main(int argc, char * const argv[])
 			ws_io_delay = strtol(optarg, NULL, 10);
 			break;
 
-		case ':':
-			fprintf(stderr, "Option -%c requires an operand\n", optopt);
-			errflg++;
-			break;
-
-		case '?':
-			fprintf(stderr, "Unrecognized option: '-%c'\n", optopt);
-			errflg++;
-			break;
+		default:
+			usage_opt(stderr, c, 1);
 		}
 	}
 
-	if (errflg) {
+	if (optind == argc) {
 		usage(stderr, 1);
 	}
 
 	cmd = argv[optind++];
 
+	/* Process command */
 	if (strcmp("help", cmd) == 0) {
 		do_help(argc, argv);
+	} else if (strcmp("hex", cmd) == 0) {
+		do_hex(argc, argv);
 	} else if (strcmp("fetch", cmd) == 0) {
 		do_fetch(argc, argv);
 	} else if (strcmp("history", cmd) == 0) {

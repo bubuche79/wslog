@@ -1,6 +1,5 @@
 CC = gcc
-CFLAGS = -g -std=c11 -Wall -O2 -DHAVE_SELECT -D_XOPEN_SOURCE=700
-LD = gcc
+CFLAGS = -std=c11 -Wall -Wextra -Wno-missing-field-initializers -O2 -DHAVE_SELECT -D_XOPEN_SOURCE=700
 
 RM = rm -f
 MKDIR = mkdir
