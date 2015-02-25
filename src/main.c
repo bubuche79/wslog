@@ -213,11 +213,11 @@ usage(FILE *out, int code)
 {
 	fprintf(out, "Usage: %s [-h] [-D] [-d ms] <command> [<args>]\n", PROGNAME);
 	fprintf(out, "\n");
-	fprintf(out, "Available commands:\n");
+	fprintf(out, "Available %s commands:\n", PROGNAME);
 	fprintf(out, "    help [-A]\n");
 	fprintf(out, "    fetch device measure...\n");
-	fprintf(out, "    history [-l count] [-s sep] device [file]\n");
-	fprintf(out, "    hex [-n] device offset length\n");
+	fprintf(out, "    history [-l cnt] [-s sep] device [file]\n");
+	fprintf(out, "    hex [-x] device offset len\n");
 
 	exit(code);
 }
