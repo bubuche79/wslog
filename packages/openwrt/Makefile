@@ -23,7 +23,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/ws23xx
   SECTION:=utils
   CATEGORY:=Utilities
-  TITLE:=WS23XX weather station utilities
+  TITLE:=WS23XX weather station utility
 endef
 
 define Package/ws23xx/description
