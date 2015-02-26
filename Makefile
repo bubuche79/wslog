@@ -1,27 +1,33 @@
 CC := gcc
-CFLAGS := -std=c11 -Wall -Wextra -Wno-missing-field-initializers -O2 -DHAVE_SELECT -D_XOPEN_SOURCE=700 $(CFLAGS)
+CFLAGS := -std=c99 -Wall -Wextra -Wno-missing-field-initializers -O2 -DHAVE_SELECT -D_XOPEN_SOURCE=700 $(CFLAGS)
 TAR := tar
 
-RM = rm -f
-MKDIR = mkdir
+RM := rm -f
+MKDIR := mkdir
+MV := mv
+TOUCH := touch
 
-all: obj ws2300
+PKG_NAME := ws23xx
+PKG_VERSION := 0.1
+
+all: .deps ws2300
 
 clean:
-	$(RM) -r obj ws2300
+	$(RM) -r .deps/ src/*.o ws2300
 
-ws2300: obj/main.o obj/history.o obj/serial.o obj/ws2300.o obj/decoder.o obj/util.o
+ws2300: src/main.o src/history.o src/serial.o src/ws2300.o src/decoder.o src/util.o
 	$(CC) -o $@ $+ -lm
 
-obj:
+.deps:
 	$(MKDIR) $@
 
-obj/%.o: src/%.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+src/%.o: src/%.c
+	$(CC) $(CFLAGS) -MT $@ -MD -MP -MF .deps/$(notdir $@).Tpo -c -o $@ $<
+	$(MV) .deps/$(notdir $@).Tpo .deps/$(notdir $@).Po
 
 install:
 	install -d $(DESTDIR)/usr/bin
 	install ws2300 $(DESTDIR)/usr/bin
 
-package:
-	$(TAR) czf ws23xx-0.1.tar.gz --transform 's,^,ws23xx-0.1/,' -- src packages Makefile
+dist:
+	git archive --prefix $(PKG_NAME)-$(PKG_VERSION) -o $(PKG_NAME)-$(PKG_VERSION).tar.gz HEAD
