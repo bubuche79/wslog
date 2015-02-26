@@ -267,6 +267,38 @@ nybcpy(uint8_t *dest, const uint8_t *src, uint16_t nnybble, size_t offset)
 	}
 }
 
+static void
+nybprint(uint16_t addr, const uint8_t *buf, uint16_t nnybles, int hex)
+{
+	int disp_sz;
+
+	if (hex) {
+		disp_sz = 2;
+	} else {
+		disp_sz = 1;
+	}
+
+	for (uint16_t i = 0; i < nnybles;) {
+		printf("%.4x", addr + i);
+
+		for (uint16_t j = 0; j < 16 && i < nnybles; j++) {
+			uint8_t v;
+
+			if (hex) {
+				v = buf[i];
+			} else {
+				v = ws_nybble(buf, i);
+			}
+
+			printf(" %.*x", disp_sz, v);
+
+			i += disp_sz;
+		}
+
+		printf("\n");
+	}
+}
+
 /**
  * Compare two measures by id.
  */
@@ -368,8 +400,7 @@ read_measures(int fd, char * const ids[], int nel, const char *sep) {
 	off_t off[nel];						/* nybble offset in buffer */
 	const struct ws_measure *mids[nel];	/* measures */
 
-	int sz = 0;
-	int opt_sz = 0;
+	int opt_nel = 0;
 
 	/* Optimize I/O per area */
 	int nbyte = 0;
@@ -385,34 +416,32 @@ read_measures(int fd, char * const ids[], int nel, const char *sep) {
 			if (strcmp(ids[j], m->id) == 0) {
 				int same_area = 0;
 
-				if (opt_sz > 0) {
+				if (opt_nel > 0) {
 					/**
 					 * Using the same area saves 6 bytes read, and 5 bytes written,
 					 * so we may overlap here to save I/O.
 					 */
-					if (addr[opt_sz-1] + nnybble[opt_sz-1] + 11 >= m->addr) {
+					if (addr[opt_nel-1] + nnybble[opt_nel-1] + 11 >= m->addr) {
 						same_area = 1;
 					}
 				}
 
 				if (same_area) {
-					nnybble[opt_sz-1] = m->addr + t->nybble - addr[opt_sz-1];
+					nnybble[opt_nel-1] = m->addr + t->nybble - addr[opt_nel-1];
 				} else {
-					if (opt_sz > 0) {
-						nbyte += (nnybble[opt_sz-1] + 1) / 2;
+					if (opt_nel > 0) {
+						nbyte += (nnybble[opt_nel-1] + 1) / 2;
 					}
 
-					addr[opt_sz] = m->addr;
-					nnybble[opt_sz] = t->nybble;
-					buf[opt_sz] = data + nbyte;
+					addr[opt_nel] = m->addr;
+					nnybble[opt_nel] = t->nybble;
+					buf[opt_nel] = data + nbyte;
 
-					opt_sz++;
+					opt_nel++;
 				}
 
 				mids[j] = m;
-				off[sz] = 2 * nbyte + (m->addr - addr[opt_sz-1]);
-
-				sz++;
+				off[j] = 2 * nbyte + (m->addr - addr[opt_nel-1]);
 			}
 		}
 	}
@@ -432,7 +461,7 @@ read_measures(int fd, char * const ids[], int nel, const char *sep) {
 	}
 
 	/* Read */
-	if (ws_read_batch(fd, addr, nnybble, opt_sz, buf) == -1) {
+	if (ws_read_batch(fd, addr, nnybble, opt_nel, buf) == -1) {
 		return -1;
 	}
 
@@ -513,14 +542,12 @@ main_hex(int argc, char* const argv[]) {
 	uint16_t addr;
 	uint16_t nnybles;
 
-	int disp_sz = 1;
 	int print_hex = 0;
 
 	/* Parse sub-command arguments */
 	while ((c = getopt(argc, argv, "x")) != -1) {
 		switch (c) {
 		case 'x':
-			disp_sz = 2;
 			print_hex = 1;
 			break;
 
@@ -550,25 +577,7 @@ main_hex(int argc, char* const argv[]) {
 		goto error;
 	}
 
-	for (uint16_t i = 0; i < nnybles; ) {
-		printf("%.4x", addr + i);
-
-		for (uint16_t j = 0; j < 16 && i < nnybles; j++) {
-			uint8_t v;
-
-			if (print_hex) {
-				v = buf[i];
-			} else {
-				v = ws_nybble(buf, i);
-			}
-
-			printf(" %.*x", disp_sz, v);
-
-			i += disp_sz;
-		}
-
-		printf("\n");
-	}
+	nybprint(addr, buf, nnybles, print_hex);
 
 	ws_close(fd);
 
