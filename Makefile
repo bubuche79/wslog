@@ -30,4 +30,4 @@ install:
 	install ws2300 $(DESTDIR)/usr/bin
 
 dist:
-	git archive --prefix $(PKG_NAME)-$(PKG_VERSION) -o $(PKG_NAME)-$(PKG_VERSION).tar.gz HEAD
+	git archive --prefix $(PKG_NAME)-$(PKG_VERSION)/ -o $(PKG_NAME)-$(PKG_VERSION).tar.gz HEAD
