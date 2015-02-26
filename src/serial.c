@@ -163,7 +163,9 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 	}
 #endif	/* HAVE_SELECT */
 
-	if (DEBUG) printf("ws_read_byte: %d\n", ret);
+#if DEBUG >= 2
+	printf("ws_read_byte: %d\n", ret);
+#endif	/* DEBUG */
 
 	return ret;
 
@@ -188,7 +190,9 @@ ws_write_byte(int fd, uint8_t byte)
 		msleep(ws_io_delay);
 	}
 
-	if (DEBUG) printf("ws_write_byte: %d\n", ret);
+#if DEBUG >= 2
+	printf("ws_write_byte: %d\n", ret);
+#endif	/* DEBUG */
 
 	return ret;
 

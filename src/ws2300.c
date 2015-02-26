@@ -142,7 +142,9 @@ ws_reset_06(int fd)
 			return 0;
 		}
 
-		if (DEBUG) printf("ws_reset_06: %d\n", i);
+#if DEBUG >= 1
+		printf("ws_reset_06: %d\n", i);
+#endif	/* DEBUG */
 	}
 
 	errno = EAGAIN;
@@ -309,7 +311,9 @@ read_block(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
 {
 	size_t p, k;
 
-	if (DEBUG) printf("read_block %x (%lu)\n", addr, nnybble);
+#if DEBUG >= 1
+	printf("read_block %x (%lu)\n", addr, nnybble);
+#endif	/* DEBUG */
 
 	for (p = 0; p < nnybble; p += MAX_BLOCKS) {
 		for (k = 0; k < MAX_RETRIES; k++) {
