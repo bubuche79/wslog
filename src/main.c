@@ -9,7 +9,6 @@
 #include "history.h"
 #include "ws2300.h"
 
-#define PROGNAME	"ws2300"
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
 
 #define array_len(a)	(sizeof(a) / sizeof(a[0]))
@@ -215,7 +214,7 @@ usage(FILE *out, int code)
 	fprintf(out, "\n");
 	fprintf(out, "Available %s commands:\n", PROGNAME);
 	fprintf(out, "    help [-A]\n");
-	fprintf(out, "    fetch device measure...\n");
+	fprintf(out, "    fetch [-s sep] device measure...\n");
 	fprintf(out, "    history [-l cnt] [-s sep] device [file]\n");
 	fprintf(out, "    hex [-x] device offset len\n");
 
@@ -280,8 +279,88 @@ wsmncmp(const void *a, const void *b)
 	return strcmp(ma->id, mb->id);
 }
 
+static void
+print_measures(const struct ws_measure* mids[], const uint8_t *data,
+		const off_t *off, size_t nel, const char *sep) {
+	/* Print result */
+	for (size_t i = 0; i < nel; i++) {
+		uint8_t nyb_data[25];
+		char nyb_str[128];
+
+		const struct ws_measure *m = mids[i];
+		const struct ws_type *t = m->type;
+
+		nybcpy(nyb_data, data, t->nybble, off[i]);
+
+		switch (t->id) {
+		case WS_TEMP:
+			ws_temp_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_PRESSURE:
+			ws_pressure_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_DATETIME:
+			ws_datetime_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_TIMESTAMP:
+			ws_timestamp_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_HUMIDITY:
+			ws_humidity_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_SPEED:
+			ws_speed_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_INT_SEC:
+			ws_interval_sec_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_INT_MIN:
+			ws_interval_min_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_BIN_2NYB:
+			ws_bin_2nyb_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		case WS_CONNECTION:
+			ws_connection_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
+			break;
+
+		default:
+			snprintf(nyb_str, sizeof(nyb_str), "-");
+			fprintf(stderr, "not yet supported");
+			break;
+		}
+
+		if (sep == NULL) {
+			if (t->units != NULL) {
+				printf("%s = %s %s\n", m->desc, nyb_str, t->units);
+			} else {
+				printf("%s = %s\n", m->desc, nyb_str);
+			}
+		} else {
+			if (i > 0) {
+				printf("%s%s", sep, nyb_str);
+			} else {
+				printf("%s", nyb_str);
+			}
+		}
+	}
+
+	if (sep != NULL) {
+		printf("\n");
+	}
+}
+
 static int
-read_measures(int fd, char * const ids[], int nel) {
+read_measures(int fd, char * const ids[], int nel, const char *sep) {
 	uint16_t addr[nel];					/* address */
 	size_t nnybble[nel];				/* number of nybbles at address */
 	uint8_t *buf[nel];					/* data */
@@ -330,7 +409,7 @@ read_measures(int fd, char * const ids[], int nel) {
 					opt_sz++;
 				}
 
-				mids[sz] = m;
+				mids[j] = m;
 				off[sz] = 2 * nbyte + (m->addr - addr[opt_sz-1]);
 
 				sz++;
@@ -358,64 +437,7 @@ read_measures(int fd, char * const ids[], int nel) {
 	}
 
 	/* Print result */
-	for (int i = 0; i < nel; i++) {
-		uint8_t nyb_data[25];
-		char nyb_str[128];
-
-		const struct ws_measure *m = mids[i];
-		const struct ws_type *t = m->type;
-
-		nybcpy(nyb_data, data, t->nybble, off[i]);
-
-		switch (t->id) {
-		case WS_TEMP:
-			ws_temp_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_PRESSURE:
-			ws_pressure_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_DATETIME:
-			ws_datetime_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_TIMESTAMP:
-			ws_timestamp_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_HUMIDITY:
-			ws_humidity_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_INT_SEC:
-			ws_interval_sec_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_INT_MIN:
-			ws_interval_min_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_BIN_2NYB:
-			ws_bin_2nyb_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		case WS_CONNECTION:
-			ws_connection_str(nyb_data, nyb_str, sizeof(nyb_str), 0);
-			break;
-
-		default:
-			snprintf(nyb_str, sizeof(nyb_str), "-");
-			fprintf(stderr, "not yet supported");
-			break;
-		}
-
-		if (t->units != NULL) {
-			printf("%s = %s %s\n", m->desc, nyb_str, t->units);
-		} else {
-			printf("%s = %s\n", m->desc, nyb_str);
-		}
-	}
+	print_measures(mids, data, off, nel, sep);
 
 	return 0;
 
@@ -562,11 +584,16 @@ main_fetch(int argc, char* const argv[]) {
 	int c;
 
 	/* Default values */
+	const char *sep = NULL;
 	const char *device = NULL;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "")) != -1) {
+	while ((c = getopt(argc, argv, "s:")) != -1) {
 		switch (c) {
+		case 's':
+			sep = optarg;
+			break;
+
 		default:
 			usage_opt(stderr, c, 1);
 			break;
@@ -584,7 +611,7 @@ main_fetch(int argc, char* const argv[]) {
 	if (fd == -1) {
 		exit(1);
 	}
-	read_measures(fd, argv + optind, argc - optind);
+	read_measures(fd, argv + optind, argc - optind, sep);
 	ws_close(fd);
 }
 
@@ -702,10 +729,14 @@ main(int argc, char * const argv[])
 	init();
 
 	/* Parse arguments */
-	while ((c = getopt(argc, argv, "hd:")) != -1) {
+	while ((c = getopt(argc, argv, "hvd:")) != -1) {
 		switch (c) {
 		case 'h':
 			usage(stdout, 0);
+			break;
+		case 'v':
+			printf("%s %s\n", PROGNAME, VERSION);
+			exit(0);
 			break;
 
 		case 'd':
