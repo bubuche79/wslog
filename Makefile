@@ -1,14 +1,21 @@
+PKG_NAME := ws23xx
+PKG_VERSION := 0.1
+
 CC := gcc
-CFLAGS := -std=c99 -Wall -Wextra -Wno-missing-field-initializers -O2 -DHAVE_SELECT -D_XOPEN_SOURCE=700 $(CFLAGS)
+
+CFLAGS := -std=c99 \
+	-Wall -Wextra -Wno-missing-field-initializers \
+	-O2 \
+	-DHAVE_SELECT -D_XOPEN_SOURCE=700 \
+	-DPROGNAME=\"$(PKG_NAME)\" -DVERSION=\"$(PKG_VERSION)\" \
+	$(CFLAGS)
+
 TAR := tar
 
 RM := rm -f
 MKDIR := mkdir
 MV := mv
 TOUCH := touch
-
-PKG_NAME := ws23xx
-PKG_VERSION := 0.1
 
 all: .deps ws2300
 
