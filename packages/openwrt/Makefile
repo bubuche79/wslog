@@ -9,10 +9,10 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ws23xx
 PKG_VERSION:=0.1
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.foo-editor.org/dist/v2.3
+PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/ws2300
 #PKG_MD5SUM:=df3d201aecb3155a80633990cc467831
 
 PKG_INSTALL:=1
