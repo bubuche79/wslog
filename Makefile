@@ -16,6 +16,7 @@ RM := rm -f
 MKDIR := mkdir
 MV := mv
 TOUCH := touch
+TAR := tar
 
 all: .deps ws2300
 
@@ -37,4 +38,4 @@ install:
 	install ws2300 $(DESTDIR)/usr/bin
 
 dist:
-	git archive --prefix $(PKG_NAME)-$(PKG_VERSION)/ -o $(PKG_NAME)-$(PKG_VERSION).tar.gz HEAD
+	$(TAR) czf ws23xx-0.1.tar.gz --transform 's,^,ws23xx-0.1/,' -- src/*.{c,h} Makefile
