@@ -36,6 +36,11 @@ bin2num(const uint8_t *buf, uint8_t nnybble, size_t offset)
 	return res;
 }
 
+static uint8_t
+bit2num(const uint8_t *buf, size_t offset, uint8_t bit) {
+	return nybble_at(buf, offset) & (1 << bit);
+}
+
 uint8_t
 ws_nybble(const uint8_t *buf, size_t offset)
 {
@@ -293,6 +298,34 @@ ws_connection_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 	default:
 		snprintf(s, len, "%x (%s)", v, "error");
 		break;
+	}
+
+	return s;
+}
+
+char *
+ws_alarm_set_str(const uint8_t *buf, char *s, size_t len, size_t offset, uint8_t bit)
+{
+	uint8_t v = bit2num(buf, offset, bit);
+
+	if (v) {
+		strncpy(s, "on", len);
+	} else {
+		strncpy(s, "off", len);
+	}
+
+	return s;
+}
+
+char *
+ws_alarm_active_str(const uint8_t *buf, char *s, size_t len, size_t offset, uint8_t bit)
+{
+	uint8_t v = bit2num(buf, offset, bit);
+
+	if (v) {
+		strncpy(s, "active", len);
+	} else {
+		strncpy(s, "inactive", len);
 	}
 
 	return s;

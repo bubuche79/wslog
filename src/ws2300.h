@@ -25,28 +25,36 @@ enum ws_etype {
 	WS_INT_SEC,
 	WS_INT_MIN,
 	WS_BIN_2NYB,
-	WS_DATE,
+	WS_DATE,							/* write only */
 	WS_TIMESTAMP,
 	WS_DATETIME,
-	WS_TIME,
-	WS_CONNECTION
+	WS_TIME,							/* write only */
+	WS_CONNECTION,
+	WS_ALARM_SET_0,
+	WS_ALARM_SET_1,
+	WS_ALARM_SET_2,
+	WS_ALARM_SET_3,
+	WS_ALARM_ACTIVE_0,
+	WS_ALARM_ACTIVE_1,
+	WS_ALARM_ACTIVE_2,
+	WS_ALARM_ACTIVE_3,
 };
 
 struct ws_type
 {
-	enum ws_etype id;			/* internal id */
-	const char *units;			/* units name (eg hPa) */
-	uint8_t nybble;				/* nnybble count */
-	const char *desc;			/* type description (eg pressure) */
+	const enum ws_etype id;				/* internal id */
+	const char *units;					/* units name (eg hPa) */
+	const uint8_t nybble;				/* nybble count */
+	const char *desc;					/* type description (eg pressure) */
 };
 
 struct ws_measure
 {
-	uint16_t addr;				/* nnybble addr */
-	const char *id;				/* short name */
-	const struct ws_type *type;	/* data converter type */
-	const char *desc;			/* long name */
-	const char *reset;			/* id of measure to reset this one */
+	const uint16_t addr;				/* nnybble addr */
+	const char *id;						/* short name */
+	const struct ws_type *type;			/* data converter type */
+	const char *desc;					/* long name */
+	const char *reset;					/* id of measure to reset this one */
 };
 
 extern int ws_reset_06(int fd);
