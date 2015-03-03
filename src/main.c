@@ -16,10 +16,10 @@
 static const struct ws_type types[] =
 {
 	/* BCD converters */
-	{ WS_TEMP, "°C", 4, "temperature" },
-	{ WS_PRESSURE, "hPa", 5, "pressure" },
-	{ WS_HUMIDITY, "%", 2, "humidity" },
-	{ WS_RAIN, "mm", 6, "rain" },
+	{ WS_TEMP, "°C", 4, "temperature", .num = { 2 } },
+	{ WS_PRESSURE, "hPa", 5, "pressure", .num = { 1 } },
+	{ WS_HUMIDITY, "%", 2, "humidity", .num = { 0 } },
+	{ WS_RAIN, "mm", 6, "rain", .num = { 2 } },
 
 	/* Wind direction converter */
 	{ WS_WIND_DIR, "deg", 1, "wind direction, North=0 clockwise" },
@@ -28,10 +28,11 @@ static const struct ws_type types[] =
 	{ WS_WIND_VELOCITY, "ms,d", 4, "wind speed and direction" },
 
 	/* Bin converters */
-	{ WS_SPEED, "m/s", 3, "speed" },
-	{ WS_INT_SEC, "s", 2, "time interval" },
-	{ WS_INT_MIN, "min", 3, "time interval" },
-	{ WS_BIN_2NYB, NULL, 2, "record number" },
+	{ WS_SPEED, "m/s", 3, "speed", .num = { 1 } },
+	{ WS_INT_SEC, "s", 2, "time interval", .num = { 1 } },
+	{ WS_INT_MIN, "min", 3, "time interval", .num = { 0 } },
+	{ WS_BIN_2NYB, NULL, 2, "record number", .num = { 0 } },
+	{ WS_CONTRAST, NULL, 1, "contrast", .num = { 0 } },
 
 	/* Date and time converters */
 	{ WS_DATE, NULL, 6, "yyyy-mm-dd" },
@@ -40,28 +41,32 @@ static const struct ws_type types[] =
 	{ WS_TIME, NULL, 6, "hh:mm:ss" },
 
 	/* Text converters */
-	{ WS_CONNECTION, NULL, 1, "cable, lost, wireless" },
-//	{ 0, NULL, 1, "rainy, cloudy, sunny" },
-//	{ 0, NULL, 1, "m/s, knots, beaufort, km/h, mph" },
+	{ WS_CONNECTION, NULL, 1, .text.a = {{0, "cable"}, {3, "lost"}, {15, "wireless"}} },
+	{ WS_FORECAST, NULL, 1, .text.a = {{0, "rainy"}, {1, "cloudy"}, {2, "sunny"}} },
+	{ WS_TENDENCY, NULL, 1, .text.a = {{0, "steady"}, {1, "rising"}, {2, "falling"}} },
+	{ WS_SPEED_UNIT, NULL, 1, .text.a = {{0, "m/s"}, {1, "knots"}, {2, "beaufort"}, {3, "km/h"}, {4, "mph"}} },
+	{ WS_WIND_OVERFLOW, NULL, 1, .text.a = {{0, "no"}, {1, "overflow"}} },
+	{ WS_WIND_VALID, NULL, 1, .text.a = {{0, "ok"}, {1, "invalid"}, {2, "overflow"}} },
 
 	/* Bit converters */
-	{ WS_ALARM_SET_0, NULL, 1, "on, off" },
-	{ WS_ALARM_SET_1, NULL, 1, "on, off" },
-	{ WS_ALARM_SET_2, NULL, 1, "on, off" },
-	{ WS_ALARM_SET_3, NULL, 1, "on, off" },
-	{ WS_ALARM_ACTIVE_0, NULL, 1, "active, inactive" },
-	{ WS_ALARM_ACTIVE_1, NULL, 1, "active, inactive" },
-	{ WS_ALARM_ACTIVE_2, NULL, 1, "active, inactive" },
-	{ WS_ALARM_ACTIVE_3, NULL, 1, "active, inactive" },
+	{ WS_ALARM_SET_0, NULL, 1, .bit = { "off", "on" } },
+	{ WS_ALARM_SET_1, NULL, 1, .bit = { "off", "on" } },
+	{ WS_ALARM_SET_2, NULL, 1, .bit = { "off", "on" } },
+	{ WS_ALARM_SET_3, NULL, 1, .bit = { "off", "on" } },
+	{ WS_ALARM_ACTIVE_0, NULL, 1, .bit = { "inactive", "active" } },
+	{ WS_ALARM_ACTIVE_1, NULL, 1, .bit = { "inactive", "active" } },
+	{ WS_ALARM_ACTIVE_2, NULL, 1, .bit = { "inactive", "active" } },
+	{ WS_ALARM_ACTIVE_3, NULL, 1, .bit = { "inactive", "active" } },
+	{ WS_BUZZER, NULL, 1, .bit = { "on", "off" } },
+	{ WS_BACKLIGHT, NULL, 1, .bit = { "off", "on" } },
 };
 
 /* ws23xx memory, ordered by address */
 static const struct ws_measure mem_addr[] =
 {
-/*
-	{ 0x006, "bz", conv_buzz, "buzzer" },
-	{ 0x00f, "wsu", conv_spdu, "wind speed units" },
-	{ 0x016, "lb", conv_lbck, "lcd backlight" },*/
+	{ 0x006, "bz", &types[WS_BUZZER], "buzzer" },
+	{ 0x00f, "wsu", &types[WS_SPEED_UNIT], "wind speed units" },
+	{ 0x016, "lb", &types[WS_BACKLIGHT], "lcd backlight" },
 	{ 0x019, "sss", &types[WS_ALARM_SET_2], "storm warn alarm set" },
 	{ 0x019, "sts", &types[WS_ALARM_SET_0], "station time alarm set" },
 	{ 0x01a, "phs", &types[WS_ALARM_SET_3], "pressure max alarm set" },
@@ -126,9 +131,9 @@ static const struct ws_measure mem_addr[] =
 	{ 0x200, "st", &types[WS_TIME], "station set time", "ct" },
 	{ 0x23b, "sw", &types[WS_DATETIME], "station current date time" },
 	{ 0x24d, "sd", &types[WS_DATE], "station set date", "cd" },
-/*	{ 0x266, "lc", conv_lcon, "lcd contrast (ro)" },
-	{ 0x26b, "for", conv_fore, "forecast" },
-	{ 0x26c, "ten", conv_tend, "tendency" }, */
+	{ 0x266, "lc", &types[WS_CONTRAST], "lcd contrast (ro)" },
+	{ 0x26b, "for", &types[WS_FORECAST], "forecast" },
+	{ 0x26c, "ten", &types[WS_TENDENCY], "tendency" },
 	{ 0x346, "it", &types[WS_TEMP], "in temp" },
 	{ 0x34b, "itl", &types[WS_TEMP], "in temp min", "it" },
 	{ 0x350, "ith", &types[WS_TEMP], "in temp max", "it" },
@@ -185,8 +190,8 @@ static const struct ws_measure mem_addr[] =
 	{ 0x4f4, "wsh", &types[WS_SPEED], "wind speed max", "ws" },
 	{ 0x4f8, "wslw", &types[WS_TIMESTAMP], "wind speed min when", "sw" },
 	{ 0x502, "wshw", &types[WS_TIMESTAMP], "wind speed max when", "sw" },
-/*	{ 0x527, "wso", conv_wovr, "wind speed overflow" },
-	{ 0x528, "wsv", conv_wvld, "wind speed validity" },*/
+	{ 0x527, "wso", &types[WS_WIND_OVERFLOW], "wind speed overflow" },
+	{ 0x528, "wsv", &types[WS_WIND_VALID], "wind speed validity" },
 	{ 0x529, "wv", &types[WS_WIND_VELOCITY], "wind velocity" },
 	{ 0x529, "ws", &types[WS_SPEED], "wind speed" },
 	{ 0x52c, "w0", &types[WS_WIND_DIR], "wind direction" },
@@ -326,72 +331,68 @@ wsmncmp(const void *a, const void *b)
 
 static void
 print_measures(const struct ws_measure* mids[], const uint8_t *data,
-		const off_t *off, size_t nel, const char *sep) {
+		const size_t *off, size_t nel, const char *sep) {
 	/* Print result */
 	for (size_t i = 0; i < nel; i++) {
-		uint8_t nyb_data[25];
+		const struct ws_measure *m = mids[i];
+		const struct ws_type *t = m->type;
 
 		char str[128];
 		size_t len = sizeof(str);
 
-		const struct ws_measure *m = mids[i];
-		const struct ws_type *t = m->type;
-
-		nybcpy(nyb_data, data, t->nybble, off[i]);
-
 		switch (t->id) {
 		case WS_TEMP:
-			ws_temp_str(nyb_data, str, len, 0);
+			ws_temp_str(data, str, len, off[i]);
 			break;
 
 		case WS_PRESSURE:
-			ws_pressure_str(nyb_data, str, len, 0);
+			ws_pressure_str(data, str, len, off[i]);
 			break;
 
 		case WS_HUMIDITY:
-			ws_humidity_str(nyb_data, str, len, 0);
+			ws_humidity_str(data, str, len, off[i]);
 			break;
 
 		case WS_SPEED:
-			ws_speed_str(nyb_data, str, len, 0);
+			ws_speed_str(data, str, len, off[i]);
 			break;
 
 		case WS_INT_SEC:
-			ws_interval_sec_str(nyb_data, str, len, 0);
+			ws_interval_sec_str(data, str, len, off[i]);
 			break;
 
 		case WS_INT_MIN:
-			ws_interval_min_str(nyb_data, str, len, 0);
+			ws_interval_min_str(data, str, len, off[i]);
 			break;
 
 		case WS_BIN_2NYB:
-			ws_bin_2nyb_str(nyb_data, str, len, 0);
+			ws_bin_2nyb_str(data, str, len, off[i]);
 			break;
 
 		case WS_TIMESTAMP:
-			ws_timestamp_str(nyb_data, str, len, 0);
+			ws_timestamp_str(data, str, len, off[i]);
 			break;
 
 		case WS_DATETIME:
-			ws_datetime_str(nyb_data, str, len, 0);
+			ws_datetime_str(data, str, len, off[i]);
 			break;
 
 		case WS_CONNECTION:
-			ws_connection_str(nyb_data, str, len, 0);
+			ws_connection_str(data, str, len, off[i]);
 			break;
 
 		case WS_ALARM_SET_0:
 		case WS_ALARM_SET_1:
 		case WS_ALARM_SET_2:
 		case WS_ALARM_SET_3:
-			ws_alarm_set_str(nyb_data, str, len, 0, t->id - WS_ALARM_SET_0);
+			ws_alarm_set_str(data, str, len, off[i], t->id - WS_ALARM_SET_0);
 			break;
 
 		case WS_ALARM_ACTIVE_0:
 		case WS_ALARM_ACTIVE_1:
 		case WS_ALARM_ACTIVE_2:
 		case WS_ALARM_ACTIVE_3:
-			ws_alarm_active_str(nyb_data, str, len, 0, t->id - WS_ALARM_ACTIVE_0);
+			ws_alarm_active_str(data, str, len, off[i], t->id - WS_ALARM_ACTIVE_0);
 			break;
 
 		default:
@@ -426,7 +427,7 @@ read_measures(int fd, char * const ids[], int nel, const char *sep) {
 	size_t nnybble[nel];				/* number of nybbles at address */
 	uint8_t *buf[nel];					/* data */
 
-	off_t off[nel];						/* nybble offset in buffer */
+	size_t off[nel];					/* nybble offset in buffer */
 	const struct ws_measure *mids[nel];	/* measures */
 
 	int opt_nel = 0;
@@ -525,6 +526,37 @@ init() {
 }
 
 static void
+ws_desc(const struct ws_type *t, char *desc, size_t len) {
+	switch (t->id) {
+	case WS_ALARM_SET_0:
+	case WS_ALARM_SET_1:
+	case WS_ALARM_SET_2:
+	case WS_ALARM_SET_3:
+	case WS_ALARM_ACTIVE_0:
+	case WS_ALARM_ACTIVE_1:
+	case WS_ALARM_ACTIVE_2:
+	case WS_ALARM_ACTIVE_3:
+	case WS_BUZZER:
+	case WS_BACKLIGHT:
+		snprintf(desc, len, "0=%s,1=%s", t->bit.unset, t->bit.set);
+		break;
+
+	case WS_CONNECTION:
+	case WS_FORECAST:
+	case WS_TENDENCY:
+	case WS_SPEED_UNIT:
+	case WS_WIND_OVERFLOW:
+	case WS_WIND_VALID:
+		strncpy(desc, "TODO", len);
+		break;
+
+	default:
+		strncpy(desc, t->desc, len);
+		break;
+	}
+}
+
+static void
 main_help(int argc, char* const argv[])
 {
 	int c;
@@ -552,12 +584,16 @@ main_help(int argc, char* const argv[])
 		const struct ws_measure *m = addr_ordered ? &mem_addr[i] : mem_id[i];
 		const struct ws_type *t = m->type;
 
+		char desc[128];
+
+		ws_desc(t, desc, sizeof(desc));
+
 		if (t->units != NULL) {
 			printf("%-5s %-30s 0x%.3x:%-2d  %s, %s\n", m->id, m->desc, m->addr,
-					t->nybble, t->units, t->desc);
+					t->nybble, t->units, desc);
 		} else {
 			printf("%-5s %-30s 0x%.3x:%-2d  %s\n", m->id, m->desc, m->addr,
-					t->nybble, t->desc);
+					t->nybble, desc);
 		}
 	}
 }
