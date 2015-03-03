@@ -20,7 +20,6 @@ static const struct ws_type types[] =
 	{ WS_PRESSURE, "hPa", 5, "pressure" },
 	{ WS_HUMIDITY, "%", 2, "humidity" },
 	{ WS_RAIN, "mm", 6, "rain" },
-	{ WS_SPEED, "m/s", 3, "speed" },
 
 	/* Wind direction converter */
 	{ WS_WIND_DIR, "deg", 1, "wind direction, North=0 clockwise" },
@@ -29,6 +28,7 @@ static const struct ws_type types[] =
 	{ WS_WIND_VELOCITY, "ms,d", 4, "wind speed and direction" },
 
 	/* Bin converters */
+	{ WS_SPEED, "m/s", 3, "speed" },
 	{ WS_INT_SEC, "s", 2, "time interval" },
 	{ WS_INT_MIN, "min", 3, "time interval" },
 	{ WS_BIN_2NYB, NULL, 2, "record number" },

@@ -126,7 +126,7 @@ ws_rain_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 double *
 ws_get_speed(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = bcd2num(buf, 3, offset) / 10.0;
+	*v = bin2num(buf, 3, offset) / 10.0;
 
 	return v;
 }
@@ -153,7 +153,7 @@ ws_get_wind_dir(const uint8_t *buf, double *v, size_t offset)
 double *
 ws_get_wind_speed(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = bcd2num(buf, 2, offset) / 10.0 + bin2num(buf + 1, 2, offset) * 22.5;
+	*v = bin2num(buf, 2, offset) / 10.0 + bin2num(buf + 1, 2, offset) * 22.5;
 
 	return v;
 }
