@@ -19,6 +19,6 @@ struct ws_history
 	double dewpoint;			/* sample dewpoint (computed) */
 };
 
-extern ssize_t ws_fetch_history(int fd, struct ws_history *h, size_t nel);
+ssize_t ws_fetch_history(int fd, struct ws_history *h, size_t nel);
 
 #endif	/* _HISTORY_H */
