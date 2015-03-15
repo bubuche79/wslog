@@ -49,18 +49,18 @@ enum ws_etype {
 };
 
 struct ws_type {
-	const enum ws_etype id;				/* internal id */
+	enum ws_etype id;					/* internal id */
 	const char *units;					/* units name (eg hPa) */
-	const uint8_t nybble;				/* nybble count */
+	uint8_t nybble;						/* nybble count */
 	const char *desc;					/* type description (eg pressure) */
 
 	union {
 		struct {
-			const uint8_t scale;
+			uint8_t scale;
 		} num;
 		struct {
 			struct {
-				const uint8_t key;
+				uint8_t key;
 				const char *value;
 			} a[5];
 		} text;
@@ -71,9 +71,8 @@ struct ws_type {
 	};
 };
 
-struct ws_measure
-{
-	const uint16_t addr;				/* nnybble addr */
+struct ws_measure {
+	uint16_t addr;						/* nybble addr */
 	const char *id;						/* short name */
 	const struct ws_type *type;			/* data converter type */
 	const char *desc;					/* long name */
