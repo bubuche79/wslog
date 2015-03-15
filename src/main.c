@@ -11,6 +11,14 @@
 
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
 
+#ifndef PROGNAME
+#define PROGNAME	"ws2300"
+#endif
+
+#ifndef VERSION
+#define VERSION		"0.1"
+#endif
+
 #define array_len(a)	(sizeof(a) / sizeof(a[0]))
 
 static const struct ws_type types[] =
