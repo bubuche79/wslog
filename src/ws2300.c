@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "serial.h"
 #include "ws2300.h"
@@ -14,6 +16,32 @@
 #define WRITEACK		0x10
 
 #define min(a,b)		((a) < (b) ? (a) : (b))
+
+/**
+ * Copy nybble data.
+ *
+ * The #nybcpy() function copies #nyb nybbles from area #src, starting at
+ * #offset offset (nybbles offset), to memory area #dest.
+ */
+static void
+nybcpy(uint8_t *dest, const uint8_t *src, uint16_t nnyb, size_t offset)
+{
+	src += offset / 2;
+
+	if (offset & 0x1) {
+		for (uint16_t i = 0; i < nnyb; i++) {
+			int j = 1 + i;
+
+			if (j & 0x1) {
+				dest[i/2] = src[j/2] >> 4;
+			} else {
+				dest[i/2] |= src[j/2] << 4;
+			}
+		}
+	} else {
+		memcpy(dest, src, (nnyb + 1) / 2);
+	}
+}
 
 static void
 encode(uint8_t op, const uint8_t *src, uint8_t *dest, size_t len)
@@ -186,7 +214,7 @@ error:
  * @return 0 on success, -1 on error
  */
 int
-ws_write_data(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf)
+ws_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
 	size_t max_len;
 	uint8_t ack_constant;
@@ -211,7 +239,7 @@ ws_write_data(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf)
 		break;
 	}
 
-	if (max_len < len) {
+	if (max_len < nnyb) {
 		errno = EINVAL;
 		goto error;
 	}
@@ -220,9 +248,9 @@ ws_write_data(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf)
 		goto error;
 	}
 
-	encode(op, buf, encoded_data, len);
+	encode(op, buf, encoded_data, nnyb);
 
-	for (size_t i = 0; i < len; i++) {
+	for (size_t i = 0; i < nnyb; i++) {
 		uint8_t ack = buf[i] + ack_constant;
 
 		if (write_byte(fd, encoded_data[i], ack) == -1) {
@@ -241,14 +269,14 @@ error:
  * Reset the device and write a command, verifying it was written correctly.
  */
 int
-ws_write_safe(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf)
+ws_write_safe(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
 	for (int i = 0; i < MAX_RETRIES; i++) {
 		if (ws_reset_06(fd) == -1) {
 			goto error;
 		}
 
-		if (ws_write_data(fd, addr, len, op, buf) == 0) {
+		if (ws_write(fd, addr, nnyb, op, buf) == 0) {
 			return 0;
 		}
 	}
@@ -261,11 +289,11 @@ error:
 }
 
 int
-ws_read_data(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
+ws_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 {
 	uint8_t answer;
 
-	if (nnybble == 0 || nnybble > MAX_BLOCKS) {
+	if (nnyb == 0 || nnyb > MAX_BLOCKS) {
 		errno = EINVAL;
 		goto error;
 	}
@@ -276,7 +304,7 @@ ws_read_data(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
 	}
 
 	/* Write the number of bytes we want to read */
-	size_t nbyte = (nnybble + 1) / 2;
+	size_t nbyte = (nnyb + 1) / 2;
 	uint8_t byte = 0xC2 + nbyte * 4;
 	uint8_t ack = 0x30 + nbyte;
 
@@ -307,19 +335,19 @@ error:
 }
 
 static int
-read_block(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
+read_block(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 {
 	size_t p, k;
 
 #if DEBUG >= 1
-	printf("read_block %x (%lu)\n", addr, nnybble);
+	printf("read_block %x (%lu)\n", addr, nnyb);
 #endif	/* DEBUG */
 
-	for (p = 0; p < nnybble; p += MAX_BLOCKS) {
+	for (p = 0; p < nnyb; p += MAX_BLOCKS) {
 		for (k = 0; k < MAX_RETRIES; k++) {
-			int chunk = min(MAX_BLOCKS, nnybble - p);
+			int chunk = min(MAX_BLOCKS, nnyb - p);
 
-			if (ws_read_data(fd, addr + p, chunk, buf + (p + 1) / 2) == 0) {
+			if (ws_read(fd, addr + p, chunk, buf + (p + 1) / 2) == 0) {
 				break;
 			}
 			if (ws_reset_06(fd) == -1) {
@@ -340,8 +368,8 @@ error:
 	return -1;
 }
 
-int
-ws_read_batch(int fd, const uint16_t *addr, const size_t *nnybble, size_t sz, uint8_t *buf[])
+static int
+read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
 {
 	size_t i;
 
@@ -349,8 +377,8 @@ ws_read_batch(int fd, const uint16_t *addr, const size_t *nnybble, size_t sz, ui
 		goto error;
 	}
 
-	for (i = 0; i < sz; i++) {
-		if (read_block(fd, addr[i], nnybble[i], buf[i]) == -1) {
+	for (i = 0; i < nel; i++) {
+		if (read_block(fd, addr[i], nnyb[i], buf[i]) == -1) {
 			goto error;
 		}
 	}
@@ -362,8 +390,91 @@ error:
 	return -1;
 }
 
+static int
+cmp_addr(const uint16_t *a, const uint16_t *b)
+{
+	return (*a) - (*b);
+}
+
+static size_t
+sum(const size_t *a, size_t nel)
+{
+	size_t res = 0;
+
+	for (size_t i = 0; i < nel; i++) {
+		res += a[i];
+	}
+
+	return res;
+}
+
+int
+ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[]) {
+	uint16_t io_addr[nel];				/* address */
+	size_t io_nnyb[nel];				/* number of nybbles at address */
+	uint8_t *io_buf[nel];				/* data */
+
+	/* Sort input addresses */
+	memcpy(io_addr, addr, nel * sizeof(*addr));
+	qsort(io_addr, nel, sizeof(*io_addr), cmp_addr);
+
+	/* Optimize I/O per area */
+	size_t nbyte = 0;
+	size_t opt_nel = 0;
+	size_t len = sum(nnyb, nel);		/* number of bytes to read */
+
+	uint8_t data[len];					/* I/O buffer */
+	size_t off[nel];					/* nybble offset in data buffer */
+
+	for (size_t i = 0; i < nel; i++) {
+		for (size_t j = 0; j < nel; j++) {
+			if (io_addr[i] == addr[j]) {
+				int same_area = 0;
+
+				if (opt_nel > 0) {
+					/**
+					 * Using the same area saves 6 bytes read, and 5 bytes written,
+					 * so we may overlap here to save I/O.
+					 */
+					if (io_addr[opt_nel-1] + io_nnyb[opt_nel-1] + 11 >= addr[j]) {
+						same_area = 1;
+					}
+				}
+
+				if (same_area) {
+					io_nnyb[opt_nel-1] = addr[j] + nnyb[j] - io_addr[opt_nel-1];
+				} else {
+					if (opt_nel > 0) {
+						nbyte += (io_nnyb[opt_nel-1] + 1) / 2;
+					}
+
+					io_addr[opt_nel] = addr[j];
+					io_nnyb[opt_nel] = nnyb[j];
+					io_buf[opt_nel] = data + nbyte;
+
+					opt_nel++;
+				}
+
+				off[j] = 2 * nbyte + (addr[j] - io_addr[opt_nel-1]);
+			}
+		}
+	}
+
+	/* Read */
+	if (read_batch(fd, io_addr, io_nnyb, opt_nel, io_buf) == -1) {
+		return -1;
+	}
+
+	/* Re-order data */
+	for (size_t i = 0; i < nel; i++) {
+		nybcpy(buf[i], data, nnyb[i], off[i]);
+	}
+
+	return 0;
+}
+
 int
 ws_read_safe(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
 {
-	return ws_read_batch(fd, &addr, &nnybble, 1, &buf);
+	return read_batch(fd, &addr, &nnybble, 1, &buf);
 }

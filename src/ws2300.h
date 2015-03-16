@@ -82,10 +82,10 @@ struct ws_measure {
 int ws_reset_06(int fd);
 int ws_write_addr(int fd, uint16_t addr);
 
-int ws_write_data(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf);
+int ws_write(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf);
 int ws_write_safe(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf);
-int ws_read_data(int fd, uint16_t addr, size_t nnybble, uint8_t *buf);
-int ws_read_safe(int fd, uint16_t addr, size_t nnybble, uint8_t *buf);
-int ws_read_batch(int fd, const uint16_t *addr, const size_t *nnybble, size_t sz, uint8_t *buf[]);
+int ws_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf);
+int ws_read_safe(int fd, uint16_t addr, size_t nnyb, uint8_t *buf);
+int ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[]);
 
 #endif	/* ws2300.h */
