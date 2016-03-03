@@ -365,6 +365,10 @@ print_measures(const struct ws_measure* mids[], const uint8_t *data,
 			ws_speed_str(data, str, len, off[i]);
 			break;
 
+		case WS_WIND_DIR:
+			ws_wind_dir_str(data, str, len, off[i]);
+			break;
+
 		case WS_INT_SEC:
 			ws_interval_sec_str(data, str, len, off[i]);
 			break;

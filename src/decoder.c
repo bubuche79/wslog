@@ -48,7 +48,7 @@ ws_nybble(const uint8_t *buf, size_t offset)
 }
 
 double *
-ws_get_temp(const uint8_t *buf, double *v, size_t offset)
+ws_temp(const uint8_t *buf, double *v, size_t offset)
 {
 	*v = (bcd2num(buf, 4, offset) - 3000) / 100.0;
 
@@ -60,14 +60,14 @@ ws_temp_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 {
 	double v;
 
-	ws_get_temp(buf, &v, offset);
+	ws_temp(buf, &v, offset);
 	snprintf(s, len, "%.2f", v);
 
 	return s;
 }
 
 double *
-ws_get_pressure(const uint8_t *buf, double *v, size_t offset)
+ws_pressure(const uint8_t *buf, double *v, size_t offset)
 {
 	*v = bcd2num(buf, 5, offset) / 10.0;
 
@@ -79,14 +79,14 @@ ws_pressure_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 {
 	double v;
 
-	ws_get_pressure(buf, &v, offset);
+	ws_pressure(buf, &v, offset);
 	snprintf(s, len, "%.1f", v);
 
 	return s;
 }
 
 uint8_t *
-ws_get_humidity(const uint8_t *buf, uint8_t *v, size_t offset)
+ws_humidity(const uint8_t *buf, uint8_t *v, size_t offset)
 {
 	*v = (uint8_t) bcd2num(buf, 2, offset);
 
@@ -98,14 +98,14 @@ ws_humidity_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 {
 	uint8_t v;
 
-	ws_get_humidity(buf, &v, offset);
+	ws_humidity(buf, &v, offset);
 	snprintf(s, len, "%hhu", v);
 
 	return s;
 }
 
 double *
-ws_get_rain(const uint8_t *buf, double *v, size_t offset)
+ws_rain(const uint8_t *buf, double *v, size_t offset)
 {
 	*v = bcd2num(buf, 6, offset) / 100.0;
 
@@ -117,14 +117,14 @@ ws_rain_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 {
 	double v;
 
-	ws_get_rain(buf, &v, offset);
+	ws_rain(buf, &v, offset);
 	snprintf(s, len, "%.2f", v);
 
 	return s;
 }
 
 double *
-ws_get_speed(const uint8_t *buf, double *v, size_t offset)
+ws_speed(const uint8_t *buf, double *v, size_t offset)
 {
 	*v = bin2num(buf, 3, offset) / 10.0;
 
@@ -136,22 +136,33 @@ ws_speed_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 {
 	double v;
 
-	ws_get_speed(buf, &v, offset);
+	ws_speed(buf, &v, offset);
 	snprintf(s, len, "%.1f", v);
 
 	return s;
 }
 
 double *
-ws_get_wind_dir(const uint8_t *buf, double *v, size_t offset)
+ws_wind_dir(const uint8_t *buf, double *v, size_t offset)
 {
 	*v = nybble_at(buf, offset) * 22.5;
 
 	return v;
 }
 
+char *
+ws_wind_dir_str(const uint8_t *buf, char *s, size_t len, size_t offset)
+{
+	double v;
+
+	ws_wind_dir(buf, &v, offset);
+	snprintf(s, len, "%.1f", v);
+
+	return s;
+}
+
 double *
-ws_get_wind_speed(const uint8_t *buf, double *v, size_t offset)
+ws_wind_speed(const uint8_t *buf, double *v, size_t offset)
 {
 	*v = bin2num(buf, 2, offset) / 10.0 + bin2num(buf + 1, 2, offset) * 22.5;
 
