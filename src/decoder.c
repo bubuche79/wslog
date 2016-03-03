@@ -158,10 +158,10 @@ ws_get_wind_speed(const uint8_t *buf, double *v, size_t offset)
 	return v;
 }
 
-uint16_t *
-ws_interval_sec(const uint8_t *buf, uint16_t *v, size_t offset)
+double *
+ws_interval_sec(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = (uint16_t) bin2num(buf, 3, offset) * 0.5;
+	*v = (double) bin2num(buf, 2, offset) * 0.5;
 
 	return v;
 }
@@ -169,10 +169,10 @@ ws_interval_sec(const uint8_t *buf, uint16_t *v, size_t offset)
 char *
 ws_interval_sec_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 {
-	uint16_t v;
+	double v;
 
-	ws_interval_min(buf, &v, offset);
-	snprintf(s, len, "%hu", v);
+	ws_interval_sec(buf, &v, offset);
+	snprintf(s, len, "%.1f", v);
 
 	return s;
 }

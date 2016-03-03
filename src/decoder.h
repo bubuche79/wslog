@@ -25,7 +25,7 @@ double *ws_get_wind_dir(const uint8_t *buf, double *v, size_t offset);
 
 double *ws_get_wind_speed(const uint8_t *buf, double *v, size_t offset);
 
-uint16_t *ws_interval_sec(const uint8_t *buf, uint16_t *v, size_t offset);
+double *ws_interval_sec(const uint8_t *buf, double *v, size_t offset);
 char *ws_interval_sec_str(const uint8_t *buf, char *s, size_t len, size_t offset);
 
 uint16_t *ws_interval_min(const uint8_t *buf, uint16_t *v, size_t offset);
