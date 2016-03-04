@@ -369,6 +369,10 @@ print_measures(const struct ws_measure* mids[], const uint8_t *data,
 			ws_wind_dir_str(data, str, len, off[i]);
 			break;
 
+		case WS_RAIN:
+			ws_rain_str(data, str, len, off[i]);
+			break;
+
 		case WS_INT_SEC:
 			ws_interval_sec_str(data, str, len, off[i]);
 			break;
