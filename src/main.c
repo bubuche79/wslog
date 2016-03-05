@@ -909,20 +909,20 @@ main_cron(int argc, char* const argv[]) {
 
 	ws_close(fd);
 
+	for (size_t i = 0; i < nel; i++) {
+		const struct ws_io *io = &a[i];
+		const struct ws_measure *m = search(io->id);
+
+		decode(buf[i], m->type->id, io->buf, 0);
+	}
+
+	char cbuf[18];
+	char sep = ',';
+	struct tm tm;
+
 	switch (cnx) {
-	case 0:				/* wireless */
-	case 15:			/* cable */
-		for (size_t i = 0; i < nel; i++) {
-			const struct ws_io *io = &a[i];
-			const struct ws_measure *m = search(io->id);
-
-			decode(buf[i], m->type->id, io->buf, 0);
-		}
-
-		char cbuf[18];
-		char sep = ',';
-
-		struct tm tm;
+	case 0:				/* cable */
+	case 15:			/* wireless */
 		localtime_r(&w.time, &tm);
 		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
 
@@ -937,7 +937,7 @@ main_cron(int argc, char* const argv[]) {
 		break;
 
 	default:
-		fprintf(stderr, "Connection: lost\n");
+		fprintf(stderr, "Connection: %x lost\n", cnx);
 		exit(1);
 		break;
 	}
