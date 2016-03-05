@@ -24,6 +24,7 @@ define Package/ws23xx
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=WS23XX weather station utility
+  DEPENDS:=+libcurl
 endef
 
 define Package/ws23xx/description
