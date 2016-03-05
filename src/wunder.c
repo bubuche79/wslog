@@ -10,7 +10,7 @@
 #define PASSWORD	"m7qg8QR5kXbFU2G5pcGbBqK9"
 
 static size_t
-strfutc(char *s, size_t max, const time_t *timep, const char *fmt)
+gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 {
 	struct tm tm;
 
@@ -25,37 +25,47 @@ int
 ws_wunder_upload(const struct ws_wunder *w)
 {
 	CURL *curl;
+	CURLcode res;
  
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	curl = curl_easy_init();
 
 	if (curl) {
-		CURLcode res;
-
-		char url[1024];					/* final url */
-		char ctime[24];					/* date utc */
+		int sz;
+		char url[512];					/* final url */
+		char ctime[22];					/* date utc */
 
 		/* Convert date */
-		strfutc(ctime, sizeof(ctime), &w->time, "%F %T");
+		gmftime(ctime, sizeof(ctime), &w->time, "%F %T");
 
 		/* URL encode parameters */
 		char *dateutc = curl_easy_escape(curl, ctime, 0);
 		char *password = curl_easy_escape(curl, PASSWORD, 0);
 
 		/* Compute GET request */
-		sprintf(url, "%s?action=%s&ID=%s&PASSWORD=%s&dateutc=%s&winddir=%d&windspeedmph=%.2f&humidity=%d&dewptf=%.2f&tempf=%.2f&rainin=%.2f&dailyrainin=%.2f&indoortempf=%.2f&indoorhumidity=%d",
-				URL, "updateraw", ID,
-				password,
-				dateutc,
-				w->wind_dir,
-				ws_mph(w->wind_speed),
-				w->humidity,
-				ws_fahrenheit(w->dew_point),
-				ws_fahrenheit(w->temp),
-				ws_inch(w->rain),
-				ws_inch(w->daily_rain),
-				ws_fahrenheit(w->temp_in),
-				w->humidity_in);
+		sz = snprintf(url, sizeof(url),
+				"%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%d&%s=%f&%s=%d&%s=%f&%s=%f&%s=%f&%s=%f&%s=%f&%s=%d",
+				URL,
+				"action", "updateraw",
+				"ID", ID,
+				"PASSWORD", password,
+				"dateutc", dateutc,
+				"winddir", w->wind_dir,
+				"windspeedmph", ws_mph(w->wind_speed),
+				"humidity", w->humidity,
+				"dewptf", ws_fahrenheit(w->dew_point),
+				"tempf", ws_fahrenheit(w->temp),
+				"rainin", ws_inch(w->rain),
+				"dailyrainin", ws_inch(w->daily_rain),
+				"indoortempf", ws_fahrenheit(w->temp_in),
+				"indoorhumidity", w->humidity_in);
+
+		if (sz == -1) {
+
+		} else if (sizeof(url) <= (size_t) sz) {
+			fprintf(stderr, "Buffer overflow for URL (%d bytes required)", sz);
+			return -1;
+		}
 
 		curl_free(dateutc);
 		curl_free(password);
@@ -64,18 +74,28 @@ ws_wunder_upload(const struct ws_wunder *w)
 		curl_easy_setopt(curl, CURLOPT_URL, url);
 
 		/* Perform the request, res will get the return code */ 
-//		res = curl_easy_perform(curl);
-		/* Check for errors */ 
+		res = curl_easy_perform(curl);
+
 		if (res != CURLE_OK) {
-			fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+			goto curl_error;
 		}
  
 		/* Cleanup */
-		curl_easy_cleanup(curl);		
+		curl_easy_cleanup(curl);
+	} else {
+		fprintf(stderr, "libcurl init error");
+		return -1;
 	}
 
 	curl_global_cleanup();
 
 	return 0;
-}
 
+curl_error:
+	fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+
+	curl_easy_cleanup(curl);
+	curl_global_cleanup();
+
+	return -1;
+}

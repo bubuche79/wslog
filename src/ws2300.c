@@ -397,19 +397,20 @@ cmp_addr(const uint16_t *a, const uint16_t *b)
 }
 
 static size_t
-sum(const size_t *a, size_t nel)
+nybsz(const size_t *a, size_t nel)
 {
 	size_t res = 0;
 
 	for (size_t i = 0; i < nel; i++) {
-		res += a[i];
+		res += (a[i] + 1) / 2;
 	}
 
 	return res;
 }
 
 int
-ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[]) {
+ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
+{
 	uint16_t io_addr[nel];				/* address */
 	size_t io_nnyb[nel];				/* number of nybbles at address */
 	uint8_t *io_buf[nel];				/* data */
@@ -421,7 +422,7 @@ ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint
 	/* Optimize I/O per area */
 	size_t nbyte = 0;
 	size_t opt_nel = 0;
-	size_t len = sum(nnyb, nel);		/* number of bytes to read */
+	size_t len = nybsz(nnyb, nel);		/* max number of bytes */
 
 	uint8_t data[len];					/* I/O buffer */
 	size_t off[nel];					/* nybble offset in data buffer */
