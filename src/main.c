@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 
 #include "decoder.h"
 #include "serial.h"
@@ -231,6 +232,12 @@ static const struct ws_measure mem_addr[] =
 	{ 0x6c4, "hn", &types[WS_BIN_2NYB], "history number of records", "0"}
 };
 
+struct ws_io
+{
+	const char *id;
+	void *buf;
+};
+
 /* ws23xx memory, ordered by id */
 static const struct ws_measure *mem_id[array_len(mem_addr)];
 
@@ -266,32 +273,6 @@ usage_opt(FILE *out, int opt, int code)
 	}
 
 	exit(code);
-}
-
-/**
- * Copy nybble data.
- *
- * The #nybcpy() function copies #nybble nybbles from area #src, starting at
- * #offset offset (nybbles offset), to memory area #dest.
- */
-static void
-nybcpy(uint8_t *dest, const uint8_t *src, uint16_t nnybble, size_t offset)
-{
-	src += offset / 2;
-
-	if (offset & 0x1) {
-		for (uint16_t i = 0; i < nnybble; i++) {
-			int j = 1 + i;
-
-			if (j & 0x1) {
-				dest[i/2] = src[j/2] >> 4;
-			} else {
-				dest[i/2] |= src[j/2] << 4;
-			}
-		}
-	} else {
-		memcpy(dest, src, (nnybble + 1) / 2);
-	}
 }
 
 static void
@@ -330,7 +311,7 @@ nybprint(uint16_t addr, const uint8_t *buf, uint16_t nnybles, int hex)
  * Compare two measures by id.
  */
 static int
-wsmncmp(const void *a, const void *b)
+wsmcmp(const void *a, const void *b)
 {
 	const struct ws_measure *ma = * (struct ws_measure **) a;
 	const struct ws_measure *mb = * (struct ws_measure **) b;
@@ -338,8 +319,17 @@ wsmncmp(const void *a, const void *b)
 	return strcmp(ma->id, mb->id);
 }
 
+static int
+wsmkeycmp(const void *a, const void *b)
+{
+	const char *key = a;
+	const struct ws_measure *mb = * (struct ws_measure **) b;
+
+	return strcmp(key, mb->id);
+}
+
 static void
-print_measures(const struct ws_measure* mids[], const uint8_t *data,
+print_measures(const struct ws_measure *mids[], const uint8_t *data,
 		const size_t *off, size_t nel, const char *sep) {
 	/* Print result */
 	for (size_t i = 0; i < nel; i++) {
@@ -438,89 +428,6 @@ print_measures(const struct ws_measure* mids[], const uint8_t *data,
 	}
 }
 
-static int
-read_measures(int fd, char * const ids[], int nel, const char *sep) {
-	uint16_t addr[nel];					/* address */
-	size_t nnybble[nel];				/* number of nybbles at address */
-	uint8_t *buf[nel];					/* data */
-
-	size_t off[nel];					/* nybble offset in buffer */
-	const struct ws_measure *mids[nel];	/* measures */
-
-	int opt_nel = 0;
-
-	/* Optimize I/O per area */
-	int nbyte = 0;
-	uint8_t data[1024];
-
-	memset(mids, 0, sizeof(mids));
-
-	for (size_t i = 0; i < array_len(mem_addr); i++) {
-		const struct ws_measure *m = &mem_addr[i];
-		const struct ws_type *t = m->type;
-
-		for (int j = 0; j < nel; j++) {
-			if (strcmp(ids[j], m->id) == 0) {
-				int same_area = 0;
-
-				if (opt_nel > 0) {
-					/**
-					 * Using the same area saves 6 bytes read, and 5 bytes written,
-					 * so we may overlap here to save I/O.
-					 */
-					if (addr[opt_nel-1] + nnybble[opt_nel-1] + 11 >= m->addr) {
-						same_area = 1;
-					}
-				}
-
-				if (same_area) {
-					nnybble[opt_nel-1] = m->addr + t->nybble - addr[opt_nel-1];
-				} else {
-					if (opt_nel > 0) {
-						nbyte += (nnybble[opt_nel-1] + 1) / 2;
-					}
-
-					addr[opt_nel] = m->addr;
-					nnybble[opt_nel] = t->nybble;
-					buf[opt_nel] = data + nbyte;
-
-					opt_nel++;
-				}
-
-				mids[j] = m;
-				off[j] = 2 * nbyte + (m->addr - addr[opt_nel-1]);
-			}
-		}
-	}
-
-	/* Check input measures */
-	int errflg = 0;
-
-	for (int j = 0; j < nel; j++) {
-		if (mids[j] == NULL) {
-			errflg++;
-			fprintf(stderr, "Unknown measure: %s\n", ids[j]);
-		}
-	}
-
-	if (errflg) {
-		goto error;
-	}
-
-	/* Read */
-	if (ws_read_batch(fd, addr, nnybble, opt_nel, buf) == -1) {
-		return -1;
-	}
-
-	/* Print result */
-	print_measures(mids, data, off, nel, sep);
-
-	return 0;
-
-error:
-	return -1;
-}
-
 /**
  * Initialize static memory.
  *
@@ -528,7 +435,8 @@ error:
  * like the #mem_id array (which is initialized in this function).
  */
 static void
-init() {
+init()
+{
 	size_t nel = array_len(mem_id);
 
 	/* Sort mem_addr by id */
@@ -536,14 +444,98 @@ init() {
 		mem_id[i] = &mem_addr[i];
 	}
 
-	qsort(mem_id, nel, sizeof(mem_id[0]), wsmncmp);
+	qsort(mem_id, nel, sizeof(mem_id[0]), wsmcmp);
 
 	/* Set POSIX.2 behaviour for getopt() */
 	setenv("POSIXLY_CORRECT", "1", 1);
 }
 
+static const struct ws_measure *
+search(const char *id)
+{
+	return * (const struct ws_measure **) bsearch(id, mem_id, array_len(mem_id), sizeof(*mem_id), wsmkeycmp);
+}
+
+static void *
+decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
+{
+	switch (type) {
+	case WS_TEMP:
+		ws_temp(buf, (double *) v, offset);
+		break;
+
+	case WS_PRESSURE:
+		ws_pressure(buf, (double *) v, offset);
+		break;
+
+	case WS_HUMIDITY:
+		ws_humidity(buf, (uint8_t *) v, offset);
+		break;
+
+	case WS_SPEED:
+		ws_speed(buf, (double *) v, offset);
+		break;
+
+	case WS_WIND_DIR:
+		ws_wind_dir(buf, (uint16_t *) v, offset);
+		break;
+
+	case WS_RAIN:
+		ws_rain(buf, (double *) v, offset);
+		break;
+
+	//		case WS_INT_SEC:
+	//			ws_interval_sec_str(data, str, len, off[i]);
+	//			break;
+	//
+	//		case WS_INT_MIN:
+	//			ws_interval_min_str(data, str, len, off[i]);
+	//			break;
+	//
+	//		case WS_BIN_2NYB:
+	//			ws_bin_2nyb_str(data, str, len, off[i]);
+	//			break;
+	//
+	//		case WS_TIMESTAMP:
+	//			ws_timestamp_str(data, str, len, off[i]);
+	//			break;
+
+	case WS_DATETIME:
+		ws_datetime(buf, (time_t *) v, offset);
+		break;
+
+	case WS_CONNECTION:
+		ws_connection(buf, (uint8_t *) v, offset);
+		break;
+	//
+	//		case WS_ALARM_SET_0:
+	//		case WS_ALARM_SET_1:
+	//		case WS_ALARM_SET_2:
+	//		case WS_ALARM_SET_3:
+	//			ws_alarm_set_str(data, str, len, off[i], t->id - WS_ALARM_SET_0);
+	//			break;
+	//
+	//		case WS_ALARM_ACTIVE_0:
+	//		case WS_ALARM_ACTIVE_1:
+	//		case WS_ALARM_ACTIVE_2:
+	//		case WS_ALARM_ACTIVE_3:
+	//			ws_alarm_active_str(data, str, len, off[i], t->id - WS_ALARM_ACTIVE_0);
+	//			break;
+	//
+	default:
+	//			fprintf(stderr, "not yet supported\n");
+		v = NULL;
+		errno = ENOTSUP;
+
+		break;
+	}
+
+	return v;
+}
+
 static void
-ws_desc(const struct ws_type *t, char *desc, size_t len) {
+ws_desc(const struct ws_type *t, char *desc, size_t len)
+{
 	switch (t->id) {
 	case WS_ALARM_SET_0:
 	case WS_ALARM_SET_1:
@@ -691,19 +683,61 @@ main_fetch(int argc, char* const argv[]) {
 		}
 	}
 
-	if (argc - 2 < optind) {
+	if (argc - 1 < optind) {
 		usage(stderr, 1);
 	}
 
 	device = argv[optind++];
+
+	/* Parse measure arguments */
+	size_t nel = (optind < argc) ? (size_t) argc - optind : array_len(mem_id);
+
+	uint8_t addr[nel];
+	size_t nnyb[nel];
+
+	if (optind < argc) {
+		int i = 0;
+
+		for (; argc < optind; optind++) {
+			const struct ws_measure *m;
+
+			m = search(argv[optind]);
+
+			if (m == NULL) {
+				fprintf(stderr, "Unknown measure: %s\n", argv[optind]);
+				exit(1);
+			}
+
+			addr[i] = m->addr;
+			nnyb[i] = m->type->nybble;
+		}
+	} else {
+		for (size_t i = 0; i < nel; i++) {
+			addr[i] = mem_addr[i].addr;
+			nnyb[i] = mem_addr[i].type->nybble;
+		}
+	}
 
 	/* Process sub-command */
 	int fd = ws_open(device);
 	if (fd == -1) {
 		exit(1);
 	}
-	read_measures(fd, argv + optind, argc - optind, sep);
+
+//	uint8_t buf[1024];
+//
+//	if (ws_read_batch(fd, addr, nnyb, nel, buf) == -1) {
+//		goto error;
+//	}
+//
+//	read_measures(fd, addr, nnyb, nel, sep);
+
 	ws_close(fd);
+	return;
+
+error:
+	ws_close(fd);
+	exit(1);
 }
 
 static void
@@ -833,14 +867,80 @@ main_cron(int argc, char* const argv[]) {
 	device = argv[optind++];
 
 	/* Process sub-command */
+	uint8_t cnx;
+	struct ws_wunder w;
+
+	const struct ws_io a[] =
+	{
+			{ "cn", &cnx },
+			{ "sw", &w.time },
+			{ "dp", &w.dew_point },
+			{ "ot", &w.temp },
+			{ "oh", &w.humidity },
+			{ "rh", &w.rain },
+			{ "rd", &w.daily_rain },
+			{ "w0", &w.wind_dir },
+			{ "ws", &w.wind_speed },
+			{ "it", &w.temp_in },
+			{ "ih", &w.humidity_in }
+	};
+
+	size_t nel = array_len(a);
+
+	uint16_t addr[nel];
+	size_t nnyb[nel];
+	uint8_t *buf[nel];
+
+	for (size_t i = 0; i < nel; i++) {
+		const struct ws_io *io = &a[i];
+		const struct ws_measure *m = search(io->id);
+
+		addr[i] = m->addr;
+		nnyb[i] = m->type->nybble;
+		buf[i] = malloc(32);
+	}
+
 	int fd = ws_open(device);
 	if (fd == -1) {
 		exit(1);
 	}
 
-	// TODO
+	ws_read_batch(fd, addr, nnyb, nel, buf);
 
 	ws_close(fd);
+
+	switch (cnx) {
+	case 0:				/* wireless */
+	case 15:			/* cable */
+		for (size_t i = 0; i < nel; i++) {
+			const struct ws_io *io = &a[i];
+			const struct ws_measure *m = search(io->id);
+
+			decode(buf[i], m->type->id, io->buf, 0);
+		}
+
+		char cbuf[18];
+		char sep = ',';
+
+		struct tm tm;
+		localtime_r(&w.time, &tm);
+		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
+
+		fprintf(stdout, "%s%c%.2f%c%hhu%c%.2f%c%hu%c%.2f%c%.2f%c%.2f%c%.2f%c%d\n",
+				cbuf, sep,
+				w.temp, sep, w.humidity, sep, w.dew_point, sep,
+				w.wind_dir, sep, w.wind_speed, sep,
+				w.rain, sep, w.daily_rain, sep,
+				w.temp_in, sep, w.humidity_in);
+
+		ws_wunder_upload(&w);
+		break;
+
+	default:
+		fprintf(stderr, "Connection: lost\n");
+		exit(1);
+		break;
+	}
 }
 
 int

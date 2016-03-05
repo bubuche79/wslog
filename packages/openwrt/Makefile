@@ -8,8 +8,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ws23xx
-PKG_VERSION:=0.1
-PKG_RELEASE:=5
+PKG_VERSION:=0.2
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/ws2300
