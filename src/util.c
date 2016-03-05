@@ -28,12 +28,13 @@ ws_windchill(double speed, double temp)
 }
 
 /**
- * Calculate dewpoint
+ * Calculate dewpoint.
+ *
  * REF http://www.faqs.org/faqs/meteorology/temp-dewpoint/
  *
  * @param temp the outdoor temperator
  * @param humidity the outdoor humidity
- * @return the windchill
+ * @return the dew point
  */
 double
 ws_dewpoint(double temp, double humidity)
@@ -43,4 +44,40 @@ ws_dewpoint(double temp, double humidity)
 	double C = (A * temp) / (B + temp) + log(humidity / 100.0);
 
 	return B * C / (A - C);
+}
+
+/**
+ * Converts temperature from Celsius to Fahrenheit.
+ *
+ * @param temp temperature, celsius
+ * @return temperature, fahrenheit
+ */
+double
+ws_fahrenheit(double temp)
+{
+	return 1.8 * temp + 32;
+}
+
+/**
+ * Converts speed from m/s to miles/hour.
+ *
+ * @param speed speed, m/s
+ * @return speed, miles/hour
+ */
+double
+ws_mph(double speed)
+{
+	return speed / 0.44704;
+}
+
+/**
+ * Converts length from mm to inches.
+ *
+ * @param len length, millimeter
+ * @return length, inches
+ */
+double
+ws_inch(double len)
+{
+	return len / 25.4;
 }

@@ -23,8 +23,8 @@ all: .deps ws2300
 clean:
 	$(RM) -r .deps/ src/*.o ws2300
 
-ws2300: src/main.o src/history.o src/serial.o src/ws2300.o src/decoder.o src/util.o
-	$(CC) -o $@ $+ -lm
+ws2300: src/main.o src/history.o src/serial.o src/ws2300.o src/decoder.o src/util.o src/wunder.o
+	$(CC) -o $@ $+ -lm -lcurl
 
 .deps:
 	$(MKDIR) $@

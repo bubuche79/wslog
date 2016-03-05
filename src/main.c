@@ -8,6 +8,7 @@
 #include "serial.h"
 #include "history.h"
 #include "ws2300.h"
+#include "wunder.h"
 
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
 
@@ -809,6 +810,39 @@ error:
 	exit(1);
 }
 
+static void
+main_cron(int argc, char* const argv[]) {
+	int c;
+
+	/* Default values */
+	const char *device = NULL;
+
+	/* Parse sub-command arguments */
+	while ((c = getopt(argc, argv, "")) != -1) {
+		switch (c) {
+		default:
+			usage_opt(stderr, c, 1);
+			break;
+		}
+	}
+
+	if (argc - 1 < optind) {
+		usage(stderr, 1);
+	}
+
+	device = argv[optind++];
+
+	/* Process sub-command */
+	int fd = ws_open(device);
+	if (fd == -1) {
+		exit(1);
+	}
+
+	// TODO
+
+	ws_close(fd);
+}
+
 int
 main(int argc, char * const argv[])
 {
@@ -851,6 +885,8 @@ main(int argc, char * const argv[])
 		main_fetch(argc, argv);
 	} else if (strcmp("history", cmd) == 0) {
 		main_history(argc, argv);
+	} else if (strcmp("cron", cmd) == 0) {
+		main_cron(argc, argv);
 	} else if (strcmp("hex", cmd) == 0) {
 		main_hex(argc, argv);
 	}
