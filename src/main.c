@@ -307,9 +307,15 @@ nybprint(uint16_t addr, const uint8_t *buf, uint16_t nnybles, int hex)
 	}
 }
 
-/**
- * Compare two measures by id.
- */
+static int
+wsmaddrcmp(const void *a, const void *b)
+{
+	const uint16_t *key = a;
+	const struct ws_measure *mb = (struct ws_measure *) b;
+
+	return *key - mb->addr;
+}
+
 static int
 wsmcmp(const void *a, const void *b)
 {
@@ -328,104 +334,16 @@ wsmkeycmp(const void *a, const void *b)
 	return strcmp(key, mb->id);
 }
 
-static void
-print_measures(const struct ws_measure *mids[], const uint8_t *data,
-		const size_t *off, size_t nel, const char *sep) {
-	/* Print result */
-	for (size_t i = 0; i < nel; i++) {
-		const struct ws_measure *m = mids[i];
-		const struct ws_type *t = m->type;
+static const struct ws_measure *
+search_addr(uint16_t addr)
+{
+	return (const struct ws_measure *) bsearch(&addr, mem_addr, array_len(mem_addr), sizeof(*mem_addr), wsmaddrcmp);
+}
 
-		char str[128];
-		size_t len = sizeof(str);
-
-		switch (t->id) {
-		case WS_TEMP:
-			ws_temp_str(data, str, len, off[i]);
-			break;
-
-		case WS_PRESSURE:
-			ws_pressure_str(data, str, len, off[i]);
-			break;
-
-		case WS_HUMIDITY:
-			ws_humidity_str(data, str, len, off[i]);
-			break;
-
-		case WS_SPEED:
-			ws_speed_str(data, str, len, off[i]);
-			break;
-
-		case WS_WIND_DIR:
-			ws_wind_dir_str(data, str, len, off[i]);
-			break;
-
-		case WS_RAIN:
-			ws_rain_str(data, str, len, off[i]);
-			break;
-
-		case WS_INT_SEC:
-			ws_interval_sec_str(data, str, len, off[i]);
-			break;
-
-		case WS_INT_MIN:
-			ws_interval_min_str(data, str, len, off[i]);
-			break;
-
-		case WS_BIN_2NYB:
-			ws_bin_2nyb_str(data, str, len, off[i]);
-			break;
-
-		case WS_TIMESTAMP:
-			ws_timestamp_str(data, str, len, off[i]);
-			break;
-
-		case WS_DATETIME:
-			ws_datetime_str(data, str, len, off[i]);
-			break;
-
-		case WS_CONNECTION:
-			ws_connection_str(data, str, len, off[i]);
-			break;
-
-		case WS_ALARM_SET_0:
-		case WS_ALARM_SET_1:
-		case WS_ALARM_SET_2:
-		case WS_ALARM_SET_3:
-			ws_alarm_set_str(data, str, len, off[i], t->id - WS_ALARM_SET_0);
-			break;
-
-		case WS_ALARM_ACTIVE_0:
-		case WS_ALARM_ACTIVE_1:
-		case WS_ALARM_ACTIVE_2:
-		case WS_ALARM_ACTIVE_3:
-			ws_alarm_active_str(data, str, len, off[i], t->id - WS_ALARM_ACTIVE_0);
-			break;
-
-		default:
-			snprintf(str, len, "-");
-			fprintf(stderr, "not yet supported");
-			break;
-		}
-
-		if (sep == NULL) {
-			if (t->units != NULL) {
-				printf("%s = %s %s\n", m->desc, str, t->units);
-			} else {
-				printf("%s = %s\n", m->desc, str);
-			}
-		} else {
-			if (i > 0) {
-				printf("%s%s", sep, str);
-			} else {
-				printf("%s", str);
-			}
-		}
-	}
-
-	if (sep != NULL) {
-		printf("\n");
-	}
+static const struct ws_measure *
+search_id(const char *id)
+{
+	return * (const struct ws_measure **) bsearch(id, mem_id, array_len(mem_id), sizeof(*mem_id), wsmkeycmp);
 }
 
 /**
@@ -448,12 +366,6 @@ init()
 
 	/* Set POSIX.2 behaviour for getopt() */
 	setenv("POSIXLY_CORRECT", "1", 1);
-}
-
-static const struct ws_measure *
-search(const char *id)
-{
-	return * (const struct ws_measure **) bsearch(id, mem_id, array_len(mem_id), sizeof(*mem_id), wsmkeycmp);
 }
 
 static void *
@@ -485,19 +397,19 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 		break;
 
 	//		case WS_INT_SEC:
-	//			ws_interval_sec_str(data, str, len, off[i]);
+	//			ws_interval_sec_str(data, str, len, offset);
 	//			break;
 	//
 	//		case WS_INT_MIN:
-	//			ws_interval_min_str(data, str, len, off[i]);
+	//			ws_interval_min_str(data, str, len, offset);
 	//			break;
 	//
 	//		case WS_BIN_2NYB:
-	//			ws_bin_2nyb_str(data, str, len, off[i]);
+	//			ws_bin_2nyb_str(data, str, len, offset);
 	//			break;
 	//
 	//		case WS_TIMESTAMP:
-	//			ws_timestamp_str(data, str, len, off[i]);
+	//			ws_timestamp_str(data, str, len, offset);
 	//			break;
 
 	case WS_DATETIME:
@@ -512,14 +424,14 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 	//		case WS_ALARM_SET_1:
 	//		case WS_ALARM_SET_2:
 	//		case WS_ALARM_SET_3:
-	//			ws_alarm_set_str(data, str, len, off[i], t->id - WS_ALARM_SET_0);
+	//			ws_alarm_set_str(data, str, len, offset, t->id - WS_ALARM_SET_0);
 	//			break;
 	//
 	//		case WS_ALARM_ACTIVE_0:
 	//		case WS_ALARM_ACTIVE_1:
 	//		case WS_ALARM_ACTIVE_2:
 	//		case WS_ALARM_ACTIVE_3:
-	//			ws_alarm_active_str(data, str, len, off[i], t->id - WS_ALARM_ACTIVE_0);
+	//			ws_alarm_active_str(data, str, len, offset, t->id - WS_ALARM_ACTIVE_0);
 	//			break;
 	//
 	default:
@@ -531,6 +443,81 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 	}
 
 	return v;
+}
+
+static char *
+decode_str(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
+{
+	switch (type) {
+	case WS_TEMP:
+		ws_temp_str(buf, s, len, offset);
+		break;
+
+	case WS_PRESSURE:
+		ws_pressure_str(buf, s, len, offset);
+		break;
+
+	case WS_HUMIDITY:
+		ws_humidity_str(buf, s, len, offset);
+		break;
+
+	case WS_SPEED:
+		ws_speed_str(buf, s, len, offset);
+		break;
+
+	case WS_WIND_DIR:
+		ws_wind_dir_str(buf, s, len, offset);
+		break;
+
+	case WS_RAIN:
+		ws_rain_str(buf, s, len, offset);
+		break;
+
+	case WS_INT_SEC:
+		ws_interval_sec_str(buf, s, len, offset);
+		break;
+
+	case WS_INT_MIN:
+		ws_interval_min_str(buf, s, len, offset);
+		break;
+
+	case WS_BIN_2NYB:
+		ws_bin_2nyb_str(buf, s, len, offset);
+		break;
+
+	case WS_TIMESTAMP:
+		ws_timestamp_str(buf, s, len, offset);
+		break;
+
+	case WS_DATETIME:
+		ws_datetime_str(buf, s, len, offset);
+		break;
+
+	case WS_CONNECTION:
+		ws_connection_str(buf, s, len, offset);
+		break;
+
+	case WS_ALARM_SET_0:
+	case WS_ALARM_SET_1:
+	case WS_ALARM_SET_2:
+	case WS_ALARM_SET_3:
+		ws_alarm_set_str(buf, s, len, offset, type - WS_ALARM_SET_0);
+		break;
+
+	case WS_ALARM_ACTIVE_0:
+	case WS_ALARM_ACTIVE_1:
+	case WS_ALARM_ACTIVE_2:
+	case WS_ALARM_ACTIVE_3:
+		ws_alarm_active_str(buf, s, len, offset, type - WS_ALARM_ACTIVE_0);
+		break;
+
+	default:
+		snprintf(s, len, "-");
+		fprintf(stderr, "not yet supported");
+		break;
+	}
+
+	return s;
 }
 
 static void
@@ -663,6 +650,40 @@ error:
 }
 
 static void
+print_measures(const uint16_t *addr, const uint8_t *buf[], size_t nel, const char *sep)
+{
+	/* Print result */
+	for (size_t i = 0; i < nel; i++) {
+		const struct ws_measure *m = search_addr(addr[i]);
+		printf("%d\n", m->addr);
+		const struct ws_type *t = m->type;
+
+		char str[128];
+		size_t len = sizeof(str);
+
+		decode_str(buf[i], t->id, str, len, 0);
+
+		if (sep == NULL) {
+			if (t->units != NULL) {
+				printf("%s = %s %s\n", m->desc, str, t->units);
+			} else {
+				printf("%s = %s\n", m->desc, str);
+			}
+		} else {
+			if (i > 0) {
+				printf("%s%s", sep, str);
+			} else {
+				printf("%s", str);
+			}
+		}
+	}
+
+	if (sep != NULL) {
+		printf("\n");
+	}
+}
+
+static void
 main_fetch(int argc, char* const argv[]) {
 	int c;
 
@@ -692,16 +713,17 @@ main_fetch(int argc, char* const argv[]) {
 	/* Parse measure arguments */
 	size_t nel = (optind < argc) ? (size_t) argc - optind : array_len(mem_id);
 
-	uint8_t addr[nel];
+	uint16_t addr[nel];
 	size_t nnyb[nel];
+	uint8_t *buf[nel];
 
 	if (optind < argc) {
 		int i = 0;
 
-		for (; argc < optind; optind++) {
+		for (; optind < argc; optind++) {
 			const struct ws_measure *m;
 
-			m = search(argv[optind]);
+			m = search_id(argv[optind]);
 
 			if (m == NULL) {
 				fprintf(stderr, "Unknown measure: %s\n", argv[optind]);
@@ -710,11 +732,13 @@ main_fetch(int argc, char* const argv[]) {
 
 			addr[i] = m->addr;
 			nnyb[i] = m->type->nybble;
+			buf[i] = malloc(32);
 		}
 	} else {
 		for (size_t i = 0; i < nel; i++) {
 			addr[i] = mem_addr[i].addr;
 			nnyb[i] = mem_addr[i].type->nybble;
+			buf[i] = malloc(32);
 		}
 	}
 
@@ -724,13 +748,11 @@ main_fetch(int argc, char* const argv[]) {
 		exit(1);
 	}
 
-//	uint8_t buf[1024];
-//
-//	if (ws_read_batch(fd, addr, nnyb, nel, buf) == -1) {
-//		goto error;
-//	}
-//
-//	read_measures(fd, addr, nnyb, nel, sep);
+	if (ws_read_batch(fd, addr, nnyb, nel, buf) == -1) {
+		goto error;
+	}
+
+	print_measures(addr, buf, nel, sep);
 
 	ws_close(fd);
 	return;
@@ -893,7 +915,7 @@ main_cron(int argc, char* const argv[]) {
 
 	for (size_t i = 0; i < nel; i++) {
 		const struct ws_io *io = &a[i];
-		const struct ws_measure *m = search(io->id);
+		const struct ws_measure *m = search_id(io->id);
 
 		addr[i] = m->addr;
 		nnyb[i] = m->type->nybble;
@@ -911,7 +933,7 @@ main_cron(int argc, char* const argv[]) {
 
 	for (size_t i = 0; i < nel; i++) {
 		const struct ws_io *io = &a[i];
-		const struct ws_measure *m = search(io->id);
+		const struct ws_measure *m = search_id(io->id);
 
 		decode(buf[i], m->type->id, io->buf, 0);
 	}
