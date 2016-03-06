@@ -50,7 +50,7 @@ ws_nybble(const uint8_t *buf, size_t offset)
 double *
 ws_temp(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = (bcd2num(buf, 4, offset) - 3000) / 100.0;
+	*v = ((int64_t) bcd2num(buf, 4, offset) - 3000) / 100.0;
 
 	return v;
 }
