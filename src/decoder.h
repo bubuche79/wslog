@@ -5,6 +5,7 @@
 #include <time.h>
 
 uint8_t ws_nybble(const uint8_t *buf, size_t offset);
+uint8_t ws_bit(const uint8_t *buf, size_t offset, uint8_t bit);
 
 double *ws_temp(const uint8_t *buf, double *v, size_t offset);
 char *ws_temp_str(const uint8_t *buf, char *s, size_t len, size_t offset);
@@ -42,9 +43,8 @@ time_t *ws_datetime(const uint8_t *buf, time_t *v, size_t offset);
 char *ws_datetime_str(const uint8_t *buf, char *s, size_t len, size_t offset);
 
 uint8_t *ws_connection(const uint8_t *buf, uint8_t *v, size_t offset);
-char *ws_connection_str(const uint8_t *buf, char *s, size_t len, size_t offset);
 
-char *ws_alarm_set_str(const uint8_t *buf, char *s, size_t len, size_t offset, uint8_t bit);
-char *ws_alarm_active_str(const uint8_t *buf, char *s, size_t len, size_t offset, uint8_t bit);
+uint8_t *ws_alarm_set(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit);
+uint8_t *ws_alarm_active(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit);
 
 #endif	/* _SCONVERT_H */

@@ -59,16 +59,16 @@ static const struct ws_type types[] =
 	{ WS_WIND_VALID, NULL, 1, .text.a = {{0, "ok"}, {1, "invalid"}, {2, "overflow"}} },
 
 	/* Bit converters */
-	{ WS_ALARM_SET_0, NULL, 1, .bit = { "off", "on" } },
-	{ WS_ALARM_SET_1, NULL, 1, .bit = { "off", "on" } },
-	{ WS_ALARM_SET_2, NULL, 1, .bit = { "off", "on" } },
-	{ WS_ALARM_SET_3, NULL, 1, .bit = { "off", "on" } },
-	{ WS_ALARM_ACTIVE_0, NULL, 1, .bit = { "inactive", "active" } },
-	{ WS_ALARM_ACTIVE_1, NULL, 1, .bit = { "inactive", "active" } },
-	{ WS_ALARM_ACTIVE_2, NULL, 1, .bit = { "inactive", "active" } },
-	{ WS_ALARM_ACTIVE_3, NULL, 1, .bit = { "inactive", "active" } },
-	{ WS_BUZZER, NULL, 1, .bit = { "on", "off" } },
-	{ WS_BACKLIGHT, NULL, 1, .bit = { "off", "on" } },
+	{ WS_ALARM_SET_0, NULL, 1, .bit = { 0, "off", "on" } },
+	{ WS_ALARM_SET_1, NULL, 1, .bit = { 1, "off", "on" } },
+	{ WS_ALARM_SET_2, NULL, 1, .bit = { 2, "off", "on" } },
+	{ WS_ALARM_SET_3, NULL, 1, .bit = { 3, "off", "on" } },
+	{ WS_ALARM_ACTIVE_0, NULL, 1, .bit = { 0, "inactive", "active" } },
+	{ WS_ALARM_ACTIVE_1, NULL, 1, .bit = { 1, "inactive", "active" } },
+	{ WS_ALARM_ACTIVE_2, NULL, 1, .bit = { 2, "inactive", "active" } },
+	{ WS_ALARM_ACTIVE_3, NULL, 1, .bit = { 3, "inactive", "active" } },
+	{ WS_BUZZER, NULL, 1, .bit = { 3, "on", "off" } },
+	{ WS_BACKLIGHT, NULL, 1, .bit = { 0, "off", "on" } },
 };
 
 /* ws23xx memory, ordered by address */
@@ -446,6 +446,38 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 }
 
 static char *
+decode_str_bit(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
+{
+	const struct ws_type *t = &types[type];
+	uint8_t v = ws_bit(buf, offset, t->bit.b);
+
+	strncpy(s, v ? t->bit.set : t->bit.unset, len);
+
+	return s;
+}
+
+static char *
+decode_str_text(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
+{
+	int i;
+
+	const struct ws_type *t = &types[type];
+	uint8_t v = ws_nybble(buf, offset);
+
+	for (i = 0; t->text.a[i].value != NULL && v != t->text.a[i].key; i++) {
+		/* loop */
+	}
+
+	if (t->text.a[i].value == NULL) {
+		snprintf(s, len, "%x (%s)", v, "error");
+	} else {
+		strncpy(s, t->text.a[i].value, len);
+	}
+
+	return s;
+}
+
+static char *
 decode_str(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
 {
 	switch (type) {
@@ -493,27 +525,31 @@ decode_str(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t o
 		ws_datetime_str(buf, s, len, offset);
 		break;
 
-	case WS_CONNECTION:
-		ws_connection_str(buf, s, len, offset);
-		break;
-
 	case WS_ALARM_SET_0:
 	case WS_ALARM_SET_1:
 	case WS_ALARM_SET_2:
 	case WS_ALARM_SET_3:
-		ws_alarm_set_str(buf, s, len, offset, type - WS_ALARM_SET_0);
-		break;
-
 	case WS_ALARM_ACTIVE_0:
 	case WS_ALARM_ACTIVE_1:
 	case WS_ALARM_ACTIVE_2:
 	case WS_ALARM_ACTIVE_3:
-		ws_alarm_active_str(buf, s, len, offset, type - WS_ALARM_ACTIVE_0);
+	case WS_BACKLIGHT:
+	case WS_BUZZER:
+		decode_str_bit(buf, type, s, len, offset);
+		break;
+
+	case WS_CONNECTION:
+	case WS_FORECAST:
+	case WS_TENDENCY:
+	case WS_SPEED_UNIT:
+	case WS_WIND_OVERFLOW:
+	case WS_WIND_VALID:
+		decode_str_text(buf, type, s, len, offset);
 		break;
 
 	default:
 		snprintf(s, len, "-");
-		fprintf(stderr, "not yet supported");
+		fprintf(stderr, "not yet supported\n");
 		break;
 	}
 

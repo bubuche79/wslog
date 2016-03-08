@@ -47,6 +47,12 @@ ws_nybble(const uint8_t *buf, size_t offset)
 	return nybble_at(buf, offset);
 }
 
+uint8_t
+ws_bit(const uint8_t *buf, size_t offset, uint8_t bit)
+{
+	return bit2num(buf, offset, bit);
+}
+
 double *
 ws_temp(const uint8_t *buf, double *v, size_t offset)
 {
@@ -299,55 +305,18 @@ ws_connection(const uint8_t *buf, uint8_t *v, size_t offset)
 	return v;
 }
 
-char *
-ws_connection_str(const uint8_t *buf, char *s, size_t len, size_t offset)
+uint8_t *
+ws_alarm_set(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit)
 {
-	uint8_t v;
+	*v = bit2num(buf, offset, bit);
 
-	ws_connection(buf, &v, offset);
-
-	switch (v) {
-	case 0:
-		snprintf(s, len, "%s", "cable");
-		break;
-	case 3:
-		snprintf(s, len, "%s", "lost");
-		break;
-	case 15:
-		snprintf(s, len, "%s", "wireless");
-		break;
-	default:
-		snprintf(s, len, "%x (%s)", v, "error");
-		break;
-	}
-
-	return s;
+	return v;
 }
 
-char *
-ws_alarm_set_str(const uint8_t *buf, char *s, size_t len, size_t offset, uint8_t bit)
+uint8_t *
+ws_alarm_active(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit)
 {
-	uint8_t v = bit2num(buf, offset, bit);
+	*v = bit2num(buf, offset, bit);
 
-	if (v) {
-		strncpy(s, "on", len);
-	} else {
-		strncpy(s, "off", len);
-	}
-
-	return s;
-}
-
-char *
-ws_alarm_active_str(const uint8_t *buf, char *s, size_t len, size_t offset, uint8_t bit)
-{
-	uint8_t v = bit2num(buf, offset, bit);
-
-	if (v) {
-		strncpy(s, "active", len);
-	} else {
-		strncpy(s, "inactive", len);
-	}
-
-	return s;
+	return v;
 }

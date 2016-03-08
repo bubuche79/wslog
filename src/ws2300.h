@@ -65,6 +65,7 @@ struct ws_type {
 			} a[6];
 		} text;
 		struct {
+			uint8_t b;
 			const char *unset;
 			const char *set;
 		} bit;
