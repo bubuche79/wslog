@@ -1,5 +1,5 @@
 PKG_NAME := ws23xx
-PKG_VERSION := 0.1
+PKG_VERSION := 0.4
 
 CC := gcc
 
@@ -10,6 +10,16 @@ CFLAGS := -std=c99 \
 	-DPROGNAME=\"$(PKG_NAME)\" -DVERSION=\"$(PKG_VERSION)\" \
 	$(CFLAGS)
 
+OBJS := \
+	src/decoder.o \
+	src/history.o \
+	src/main.o \
+	src/serial.o \
+	src/util.o \
+	src/ws2300.o \
+	src/wunder.o
+
+GIT := git
 TAR := tar
 
 RM := rm -f
@@ -23,14 +33,14 @@ all: .deps ws2300
 clean:
 	$(RM) -r .deps/ src/*.o ws2300
 
-ws2300: src/main.o src/history.o src/serial.o src/ws2300.o src/decoder.o src/util.o src/wunder.o
+ws2300: $(OBJS)
 	$(CC) -o $@ $+ -lm -lcurl
 
 .deps:
 	$(MKDIR) $@
 
 src/%.o: src/%.c
-	$(CC) $(CFLAGS) -MT $@ -MD -MP -MF .deps/$(notdir $@).Tpo -c -o $@ $<
+	$(CC) $(CFLAGS) -MT $@ -MD -MP -MF .deps/$(notdir $@).Tpo -c -o $@ -Isrc $<
 	$(MV) .deps/$(notdir $@).Tpo .deps/$(notdir $@).Po
 
 install:
@@ -38,4 +48,4 @@ install:
 	install ws2300 $(DESTDIR)/usr/bin
 
 dist:
-	$(TAR) czf ws23xx-0.1.tar.gz --transform 's,^,ws23xx-0.1/,' -- src/*.{c,h} Makefile
+	$(GIT) archive --prefix=$(PKG_NAME)-$(PKG_VERSION)/ -o $(PKG_NAME)-$(PKG_VERSION).tar.gz HEAD
