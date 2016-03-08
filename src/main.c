@@ -871,11 +871,16 @@ main_cron(int argc, char* const argv[]) {
 	int c;
 
 	/* Default values */
+	int wunder = 1;
 	const char *device = NULL;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "")) != -1) {
+	while ((c = getopt(argc, argv, "W")) != -1) {
 		switch (c) {
+		case 'W':
+			wunder = 0;
+			break;
+
 		default:
 			usage_opt(stderr, c, 1);
 			break;
@@ -955,7 +960,9 @@ main_cron(int argc, char* const argv[]) {
 				w.rain, sep, w.daily_rain, sep,
 				w.temp_in, sep, w.humidity_in);
 
-		ws_wunder_upload(&w);
+		if (wunder) {
+			ws_wunder_upload(&w);
+		}
 		break;
 
 	default:
