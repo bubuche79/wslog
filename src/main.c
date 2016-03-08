@@ -521,6 +521,24 @@ decode_str(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t o
 }
 
 static void
+desc_bit(const struct ws_type *t, char *desc, size_t len)
+{
+	snprintf(desc, len, "0=%s, 1=%s", t->bit.unset, t->bit.set);
+}
+
+static void
+desc_text(const struct ws_type *t, char *desc, size_t len)
+{
+	int i;
+	int sz = 0;
+
+	for (i = 0; sz < (int) len && t->text.a[i].value != NULL; i++) {
+		sz += snprintf(desc + sz, len - sz, "%s%hhu=%s",
+				(i > 0) ? ", " : "", t->text.a[i].key, t->text.a[i].value);
+	}
+}
+
+static void
 ws_desc(const struct ws_type *t, char *desc, size_t len)
 {
 	switch (t->id) {
@@ -534,7 +552,7 @@ ws_desc(const struct ws_type *t, char *desc, size_t len)
 	case WS_ALARM_ACTIVE_3:
 	case WS_BUZZER:
 	case WS_BACKLIGHT:
-		snprintf(desc, len, "0=%s,1=%s", t->bit.unset, t->bit.set);
+		desc_bit(t, desc, len);
 		break;
 
 	case WS_CONNECTION:
@@ -543,7 +561,7 @@ ws_desc(const struct ws_type *t, char *desc, size_t len)
 	case WS_SPEED_UNIT:
 	case WS_WIND_OVERFLOW:
 	case WS_WIND_VALID:
-		strncpy(desc, "TODO", len);
+		desc_text(t, desc, len);
 		break;
 
 	default:

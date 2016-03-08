@@ -62,7 +62,7 @@ struct ws_type {
 			struct {
 				uint8_t key;
 				const char *value;
-			} a[5];
+			} a[6];
 		} text;
 		struct {
 			const char *unset;
