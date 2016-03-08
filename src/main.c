@@ -673,7 +673,6 @@ print_measures(const uint16_t *addr, const uint8_t *buf[], size_t nel, const cha
 	/* Print result */
 	for (size_t i = 0; i < nel; i++) {
 		const struct ws_measure *m = search_addr(addr[i]);
-		printf("%d\n", m->addr);
 		const struct ws_type *t = m->type;
 
 		char str[128];
@@ -751,6 +750,8 @@ main_fetch(int argc, char* const argv[]) {
 			addr[i] = m->addr;
 			nnyb[i] = m->type->nybble;
 			buf[i] = malloc(32);
+
+			i++;
 		}
 	} else {
 		for (size_t i = 0; i < nel; i++) {
