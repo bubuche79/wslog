@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "core/nybble.h"
+
 #include "serial.h"
 #include "ws2300.h"
 
@@ -16,32 +18,6 @@
 #define WRITEACK		0x10
 
 #define min(a,b)		((a) < (b) ? (a) : (b))
-
-/**
- * Copy nybble data.
- *
- * The #nybcpy() function copies #nyb nybbles from area #src, starting at
- * #offset offset (nybbles offset), to memory area #dest.
- */
-static void
-nybcpy(uint8_t *dest, const uint8_t *src, uint16_t nnyb, size_t offset)
-{
-	src += offset / 2;
-
-	if (offset & 0x1) {
-		for (uint16_t i = 0; i < nnyb; i++) {
-			int j = 1 + i;
-
-			if (j & 0x1) {
-				dest[i/2] = src[j/2] >> 4;
-			} else {
-				dest[i/2] |= src[j/2] << 4;
-			}
-		}
-	} else {
-		memcpy(dest, src, (nnyb + 1) / 2);
-	}
-}
 
 static void
 encode(uint8_t op, const uint8_t *src, uint8_t *dest, size_t len)

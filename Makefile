@@ -11,6 +11,8 @@ CFLAGS := -std=c99 \
 	$(CFLAGS)
 
 OBJS := \
+	src/core/bitfield.o \
+	src/core/nybble.o \
 	src/decoder.o \
 	src/history.o \
 	src/main.o \
