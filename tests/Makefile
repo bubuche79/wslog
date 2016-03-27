@@ -7,7 +7,10 @@ CFLAGS := -std=c99 \
 	-DPROGNAME=\"$(PKG_NAME)\" -DVERSION=\"$(PKG_VERSION)\" \
 	$(CFLAGS)
 
-test: check_nybble
+all: check_nybble
+
+check: check_nybble
+	./check_nybble
 
 check_nybble: check_nybble.o ../src/core/nybble.o
 	$(CC) -o $@ $+ -lcheck

@@ -3,12 +3,18 @@ PKG_VERSION := 0.4
 
 CC := gcc
 
-CFLAGS := -std=c99 \
+CFLAGS := \
+	-pedantic \
+	-std=c11 \
 	-Wall -Wextra -Wno-missing-field-initializers \
+	-Wstrict-prototypes -Wmissing-prototypes -Wshadow \
 	-O2 \
 	-DHAVE_SELECT -D_XOPEN_SOURCE=700 \
 	-DPROGNAME=\"$(PKG_NAME)\" -DVERSION=\"$(PKG_VERSION)\" \
 	$(CFLAGS)
+
+LDFLAGS := \
+	$(LDFLAGS)
 
 OBJS := \
 	src/core/bitfield.o \
@@ -29,25 +35,39 @@ MKDIR := mkdir
 MV := mv
 TOUCH := touch
 TAR := tar
+INSTALL := install
 
-all: .deps ws2300
+SUBDIRS = \
+	src/core \
+	src
+
+SUBDIRS_DEPS = \
+	$(addsuffix /.deps, $(SUBDIRS))
+
+all: $(SUBDIRS_DEPS) ws2300
 
 clean:
-	$(RM) -r .deps/ src/*.o ws2300
+	$(RM) -r $(SUBDIRS_DEPS) src/*.o ws2300
 
 ws2300: $(OBJS)
-	$(CC) -o $@ $+ -lm -lcurl
+	$(CC) $(LDFLAGS) -o $@ $+ -lcurl -lm
 
-.deps:
+$(SUBDIRS_DEPS):
 	$(MKDIR) $@
 
-src/%.o: src/%.c
-	$(CC) $(CFLAGS) -MT $@ -MD -MP -MF .deps/$(notdir $@).Tpo -c -o $@ -Isrc $<
-	$(MV) .deps/$(notdir $@).Tpo .deps/$(notdir $@).Po
+%.o: %.c
+	$(CC) $(CFLAGS) -MT $@ -MD -MF $(dir $@).deps/$(notdir $@).Tpo -c -o $@ -Isrc $<
+	$(MV) $(dir $@).deps/$(notdir $@).Tpo $(dir $@).deps/$(notdir $@).Po
 
 install:
-	install -d $(DESTDIR)/usr/bin
-	install ws2300 $(DESTDIR)/usr/bin
+	$(INSTALL) -d $(DESTDIR)/usr/bin
+	$(INSTALL) ws2300 $(DESTDIR)/usr/bin
+
+check:
+	$(MAKE) -C tests check
 
 dist:
 	$(GIT) archive --prefix=$(PKG_NAME)-$(PKG_VERSION)/ -o $(PKG_NAME)-$(PKG_VERSION).tar.gz HEAD
+
+# Dependencies
+include $(wildcard $(addsuffix /*.Po, $(SUBDIRS_DEPS)))
