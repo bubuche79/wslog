@@ -5,6 +5,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "core/nybble.h"
+
 #include "decoder.h"
 #include "serial.h"
 #include "history.h"
@@ -295,7 +297,7 @@ nybprint(uint16_t addr, const uint8_t *buf, uint16_t nnybles, int hex)
 			if (hex) {
 				v = buf[i];
 			} else {
-				v = ws_nybble(buf, i);
+				v = nybat(buf, i);
 			}
 
 			printf(" %.*x", disp_sz, v);
@@ -353,7 +355,7 @@ search_id(const char *id)
  * like the #mem_id array (which is initialized in this function).
  */
 static void
-init()
+init(void)
 {
 	size_t nel = array_len(mem_id);
 
@@ -462,7 +464,7 @@ decode_str_text(const uint8_t *buf, enum ws_etype type, char *s, size_t len, siz
 	int i;
 
 	const struct ws_type *t = &types[type];
-	uint8_t v = ws_nybble(buf, offset);
+	uint8_t v = nybat(buf, offset);
 
 	for (i = 0; t->text.a[i].value != NULL && v != t->text.a[i].key; i++) {
 		/* loop */

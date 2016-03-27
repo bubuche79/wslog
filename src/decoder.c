@@ -2,49 +2,13 @@
 #include <time.h>
 #include <string.h>
 
+#include "core/nybble.h"
+
 #include "decoder.h"
 
 static uint8_t
-nybble_at(const uint8_t *buf, size_t offset)
-{
-	return (offset & 0x1) ? buf[offset / 2] >> 4 : buf[offset / 2] & 0xF;
-}
-
-static uint64_t
-bcd2num(const uint8_t *buf, uint8_t nnybble, size_t offset)
-{
-	int i;
-	uint64_t res = 0;
-
-	for (i = nnybble - 1; 0 <= i; i--) {
-		res = 10 * res + nybble_at(buf, offset + i);
-	}
-
-	return res;
-}
-
-static uint64_t
-bin2num(const uint8_t *buf, uint8_t nnybble, size_t offset)
-{
-	int i;
-	uint64_t res = 0;
-
-	for (i = nnybble - 1; 0 <= i; i--) {
-		res = 16 * res + nybble_at(buf, offset + i);
-	}
-
-	return res;
-}
-
-static uint8_t
 bit2num(const uint8_t *buf, size_t offset, uint8_t bit) {
-	return nybble_at(buf, offset) & (1 << bit);
-}
-
-uint8_t
-ws_nybble(const uint8_t *buf, size_t offset)
-{
-	return nybble_at(buf, offset);
+	return nybat(buf, offset) & (1 << bit);
 }
 
 uint8_t
@@ -56,7 +20,7 @@ ws_bit(const uint8_t *buf, size_t offset, uint8_t bit)
 double *
 ws_temp(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = ((int64_t) bcd2num(buf, 4, offset) - 3000) / 100.0;
+	*v = ((int64_t) nybdtol(buf, 4, offset) - 3000) / 100.0;
 
 	return v;
 }
@@ -75,7 +39,7 @@ ws_temp_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 double *
 ws_pressure(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = bcd2num(buf, 5, offset) / 10.0;
+	*v = nybdtol(buf, 5, offset) / 10.0;
 
 	return v;
 }
@@ -94,7 +58,7 @@ ws_pressure_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 uint8_t *
 ws_humidity(const uint8_t *buf, uint8_t *v, size_t offset)
 {
-	*v = (uint8_t) bcd2num(buf, 2, offset);
+	*v = (uint8_t) nybdtol(buf, 2, offset);
 
 	return v;
 }
@@ -113,7 +77,7 @@ ws_humidity_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 double *
 ws_rain(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = bcd2num(buf, 6, offset) / 100.0;
+	*v = nybdtol(buf, 6, offset) / 100.0;
 
 	return v;
 }
@@ -132,7 +96,7 @@ ws_rain_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 double *
 ws_speed(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = bin2num(buf, 3, offset) / 10.0;
+	*v = nybtol(buf, 3, offset) / 10.0;
 
 	return v;
 }
@@ -151,7 +115,7 @@ ws_speed_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 uint16_t *
 ws_wind_dir(const uint8_t *buf, uint16_t *v, size_t offset)
 {
-	*v = nybble_at(buf, offset) * 22.5;
+	*v = nybat(buf, offset) * 22.5;
 
 	return v;
 }
@@ -170,7 +134,7 @@ ws_wind_dir_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 double *
 ws_wind_speed(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = bin2num(buf, 2, offset) / 10.0 + bin2num(buf + 1, 2, offset) * 22.5;
+	*v = nybtol(buf, 2, offset) / 10.0 + nybtol(buf + 1, 2, offset) * 22.5;
 
 	return v;
 }
@@ -178,7 +142,7 @@ ws_wind_speed(const uint8_t *buf, double *v, size_t offset)
 double *
 ws_interval_sec(const uint8_t *buf, double *v, size_t offset)
 {
-	*v = (double) bin2num(buf, 2, offset) * 0.5;
+	*v = (double) nybtol(buf, 2, offset) * 0.5;
 
 	return v;
 }
@@ -197,7 +161,7 @@ ws_interval_sec_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 uint16_t *
 ws_interval_min(const uint8_t *buf, uint16_t *v, size_t offset)
 {
-	*v = (uint16_t) bin2num(buf, 3, offset);
+	*v = (uint16_t) nybtol(buf, 3, offset);
 
 	return v;
 }
@@ -216,7 +180,7 @@ ws_interval_min_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 uint8_t *
 ws_bin_2nyb(const uint8_t *buf, uint8_t *v, size_t offset)
 {
-	*v = (uint8_t) bin2num(buf, 2, offset);
+	*v = (uint8_t) nybtol(buf, 2, offset);
 
 	return v;
 }
@@ -239,12 +203,12 @@ ws_datetime(const uint8_t *buf, time_t *v, size_t offset)
 
 	memset(&tm, 0, sizeof(tm));
 
-	tm.tm_min = bcd2num(buf, 2, offset);
-	tm.tm_hour = bcd2num(buf, 2, offset + 2);
-	tm.tm_wday = bcd2num(buf, 1, offset + 4) - 1;
-	tm.tm_mday = bcd2num(buf, 2, offset + 5);
-	tm.tm_mon = bcd2num(buf, 2, offset + 7) - 1;
-	tm.tm_year = bcd2num(buf, 2, offset + 9) + 100;
+	tm.tm_min = nybdtol(buf, 2, offset);
+	tm.tm_hour = nybdtol(buf, 2, offset + 2);
+	tm.tm_wday = nybdtol(buf, 1, offset + 4) - 1;
+	tm.tm_mday = nybdtol(buf, 2, offset + 5);
+	tm.tm_mon = nybdtol(buf, 2, offset + 7) - 1;
+	tm.tm_year = nybdtol(buf, 2, offset + 9) + 100;
 	tm.tm_isdst = -1;
 
 	*v = mktime(&tm);
@@ -272,11 +236,11 @@ ws_timestamp(const uint8_t *buf, time_t *v, size_t offset)
 
 	memset(&tm, 0, sizeof(tm));
 
-	tm.tm_min = bcd2num(buf, 2, offset);
-	tm.tm_hour = bcd2num(buf, 2, offset + 2);
-	tm.tm_mday = bcd2num(buf, 2, offset + 4);
-	tm.tm_mon = bcd2num(buf, 2, offset + 6) - 1;
-	tm.tm_year = bcd2num(buf, 2, offset + 8) + 100;
+	tm.tm_min = nybdtol(buf, 2, offset);
+	tm.tm_hour = nybdtol(buf, 2, offset + 2);
+	tm.tm_mday = nybdtol(buf, 2, offset + 4);
+	tm.tm_mon = nybdtol(buf, 2, offset + 6) - 1;
+	tm.tm_year = nybdtol(buf, 2, offset + 8) + 100;
 	tm.tm_isdst = -1;
 
 	*v = mktime(&tm);
@@ -300,7 +264,7 @@ ws_timestamp_str(const uint8_t *buf, char *s, size_t len, size_t offset)
 uint8_t *
 ws_connection(const uint8_t *buf, uint8_t *v, size_t offset)
 {
-	*v = nybble_at(buf, offset);
+	*v = nybat(buf, offset);
 
 	return v;
 }

@@ -1,9 +1,13 @@
-#include <stdlib.h>
 #include <check.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <errno.h>
 
-#include "core/nybble.h"
+#include "../src/core/nybble.h"
 
-static const uint8_t a1[] = { 0x12, 0x34 };
+static const uint8_t a1[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
+static const uint8_t a2[] = { 0xFD, 0xFF };
 
 START_TEST(test_nybat)
 {
@@ -14,19 +18,23 @@ START_TEST(test_nybat)
 }
 END_TEST
 
-START_TEST(test_nybtoi)
+START_TEST(test_nybtol)
 {
-	ck_assert_int_eq(nybtoi(a1, 2, 0), 18);
-	ck_assert_int_eq(nybtoi(a1, 4, 0), 13330);
-	ck_assert_int_eq(nybtoi(a1, 2, 1), 65);
+	ck_assert_int_eq(nybtol(a1, 2, 0), 18);
+	ck_assert_int_eq(nybtol(a1, 4, 0), 13330);
+	ck_assert_int_eq(nybtol(a1, 2, 1), 65);
+
+	ck_assert_int_eq(nybtol(a2, 2, 0), -3);
+	ck_assert_int_eq(nybtol(a2, 4, 0), -3);
+	ck_assert_int_eq(nybtol(a2, 2, 1), -1);
 }
 END_TEST
 
-START_TEST(test_nybdtoi)
+START_TEST(test_nybdtol)
 {
-	ck_assert_int_eq(nybdtoi(a1, 2, 0), 12);
-	ck_assert_int_eq(nybdtoi(a1, 4, 0), 3412);
-	ck_assert_int_eq(nybdtoi(a1, 2, 1), 41);
+	ck_assert_int_eq(nybdtol(a1, 2, 0), 12);
+	ck_assert_int_eq(nybdtol(a1, 4, 0), 3412);
+	ck_assert_int_eq(nybdtol(a1, 2, 1), 41);
 }
 END_TEST
 
@@ -42,15 +50,9 @@ Suite *nybble_suite(void)
 	tc_core = tcase_create("core");
 
 	tcase_add_test(tc_core, test_nybat);
-	tcase_add_test(tc_core, test_nybtoi);
-	tcase_add_test(tc_core, test_nybdtoi);
+	tcase_add_test(tc_core, test_nybtol);
+	tcase_add_test(tc_core, test_nybdtol);
 	suite_add_tcase(s, tc_core);
-
-	/* Limits test cases */
-	tc_limits = tcase_create("limits");
-//	tcase_add_test(tc_limits, test_money_create_neg);
-//	+    tcase_add_test(tc_limits, test_money_create_zero);
-	suite_add_tcase(s, tc_limits);
 
 	return s;
 }

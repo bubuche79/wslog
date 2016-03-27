@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <time.h>
 
-uint8_t ws_nybble(const uint8_t *buf, size_t offset);
 uint8_t ws_bit(const uint8_t *buf, size_t offset, uint8_t bit);
 
 double *ws_temp(const uint8_t *buf, double *v, size_t offset);

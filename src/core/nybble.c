@@ -13,99 +13,58 @@
 extern DSO_EXPORT uint8_t nybat(const uint8_t *buf, size_t off);
 
 /**
- * Convert nybbles to an integer.
- */
-DSO_EXPORT int
-nybtoi(const uint8_t *buf, size_t nnyb, size_t off)
-{
-	int i;
-	int res = 0;
-
-	if (nnyb > 8) {
-		goto error;
-	}
-
-	for (i = nnyb - 1; 0 <= i; i--) {
-		res = 16 * res + nybat(buf, off + i);
-	}
-
-	return res;
-
-error:
-	return -1;
-}
-
-/**
- * Convert Binary Codded Decimal (BCD) nybbles to an integer.
- */
-DSO_EXPORT int
-nybdtoi(const uint8_t *buf, size_t nnyb, size_t off)
-{
-	int i;
-
-	int err = 0;
-	int res = 0;
-
-	for (i = nnyb - 1; err == 0 && 0 <= i; i--) {
-		uint8_t v = nybat(buf, off + i);
-
-		if (v > 9) {
-			err = EINVAL;
-			res = INT_MIN;
-		} else {
-			res = 10 * res + v;
-		}
-	}
-
-	if (err) {
-		errno = err;
-	}
-
-	return res;
-}
-
-/**
  * Convert nybbles to a long integer.
  */
-DSO_EXPORT long long
-nybtoll(const uint8_t *buf, size_t nnyb, size_t off)
+DSO_EXPORT long int
+nybtol(const uint8_t *buf, size_t nnyb, size_t off)
 {
 	int i;
-	long long res = 0;
+	long int res;
 
-	for (i = nnyb - 1; 0 <= i; i--) {
-		res = 16 * res + nybat(buf, off + i);
+	int sign_bit = nybat(buf, off) & 0x8;
+
+	if (nnyb > 2 * sizeof(res)) {
+		errno = ERANGE;
+		res = sign_bit ? LONG_MIN : LONG_MAX;
+
+		goto exit;
 	}
 
+	res = sign_bit ? -1 : 0;
+
+	for (i = nnyb - 1; 0 <= i; i--) {
+		res = (res << 4) | nybat(buf, off + i);
+	}
+
+exit:
 	return res;
 }
 
 /**
  * Convert Binary Codded Decimal (BCD) nybbles to a long integer.
  */
-DSO_EXPORT long long
-nybdtoll(const uint8_t *buf, size_t nnyb, size_t off)
+DSO_EXPORT long int
+nybdtol(const uint8_t *buf, size_t nnyb, size_t off)
 {
 	int i;
+	long int res;
 
-	int err = 0;
-	long long res = 0;
+	res = 0;
 
-	for (i = nnyb - 1; err == 0 && 0 <= i; i--) {
+	for (i = nnyb - 1; 0 <= i; i--) {
 		uint8_t v = nybat(buf, off + i);
 
 		if (v > 9) {
-			err = EINVAL;
-			res = LLONG_MIN;
+			errno = EINVAL;
+			res = LONG_MAX;
+
+			goto exit;
 		} else {
 			res = 10 * res + v;
 		}
 	}
 
-	if (err) {
-		errno = err;
-	}
-
+exit:
 	return res;
 }
 

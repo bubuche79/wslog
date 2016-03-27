@@ -18,10 +18,8 @@ nybat(const uint8_t *buf, size_t off)
 	return (off & 0x1) ? buf[off / 2] >> 4 : buf[off / 2] & 0xF;
 }
 
-int nybtoi(const uint8_t *buf, size_t nnyb, size_t off);
-int nybdtoi(const uint8_t *buf, size_t nnyb, size_t off);
-long long nybtoll(const uint8_t *buf, size_t nnyb, size_t off);
-long long nybdtoll(const uint8_t *buf, size_t nnyb, size_t off);
+long int nybtol(const uint8_t *buf, size_t nnyb, size_t off);
+long int nybdtol(const uint8_t *buf, size_t nnyb, size_t off);
 
 void nybcpy(uint8_t *dest, const uint8_t *src, size_t nnyb, size_t off);
 
