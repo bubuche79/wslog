@@ -1,2 +1,4 @@
 *.o
-/Debug/
+.deps/
+ws2300
+tests/check_nybble
