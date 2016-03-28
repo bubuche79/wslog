@@ -56,8 +56,6 @@ nybdtol(const uint8_t *buf, size_t nnyb, size_t off)
 
 		if (v > 9) {
 			errno = EINVAL;
-			res = LONG_MAX;
-
 			goto exit;
 		} else {
 			res = 10 * res + v;
