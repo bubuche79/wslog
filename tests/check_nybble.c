@@ -6,54 +6,87 @@
 
 #include "../src/core/nybble.h"
 
-#define ck_assert_failure(X, Y, Z) do { \
-	ck_assert_int_eq(X, Y); \
-	ck_assert_int_eq(errno, Z); \
+#define ck_assert_err(X, Y, Z) do { \
+	ck_assert_uint_eq(X, Y); \
+	ck_assert_uint_eq(errno, Z); \
+} while (0)
+
+#define ck_assert_ultonyb(buf, nnyb, off, v, base) do { \
+	ultonyb(buf, nnyb, off, v, base); \
+	ck_assert_uint_eq(nybtoul(buf, nnyb, off, base), v); \
 } while (0)
 
 static const uint8_t a1[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x13 };
 static const uint8_t a2[] = { 0xFD, 0xFF, 0x36, 0x47, 0x58, 0x69, 0x7A, 0x8B, 0x9C };
 
-START_TEST(test_nybat)
+START_TEST(test_nybget)
 {
-	ck_assert_int_eq(nybat(a1, 0), 2);
-	ck_assert_int_eq(nybat(a1, 1), 1);
-	ck_assert_int_eq(nybat(a1, 2), 4);
-	ck_assert_int_eq(nybat(a1, 3), 3);
+	ck_assert_uint_eq(nybget(a1, 0), 2);
+	ck_assert_uint_eq(nybget(a1, 1), 1);
+	ck_assert_uint_eq(nybget(a1, 2), 4);
+	ck_assert_uint_eq(nybget(a1, 3), 3);
 }
 END_TEST
 
-START_TEST(test_nybtol)
+START_TEST(test_nybset_auto)
 {
-	ck_assert_int_eq(nybtol(a1, 2, 0), 18);
-	ck_assert_int_eq(nybtol(a1, 4, 0), 13330);
-	ck_assert_int_eq(nybtol(a1, 2, 1), 65);
+	int i;
+	size_t off;
+	uint8_t a[4];
 
-	ck_assert_int_eq(nybtol(a2, 2, 0), -3);
-	ck_assert_int_eq(nybtol(a2, 4, 0), -3);
-	ck_assert_int_eq(nybtol(a2, 2, 1), -1);
+	for (off = 0; off < 2 * sizeof(a); off++) {
+		for (i = 0; i < 16; i++) {
+			nybset(a, off, i);
+			ck_assert_uint_eq(nybget(a, off), i);
+		}
+	}
 }
 END_TEST
 
-START_TEST(test_nybdtol)
+START_TEST(test_nybtoul)
 {
-	ck_assert_int_eq(nybdtol(a1, 2, 0), 12);
-	ck_assert_int_eq(nybdtol(a1, 4, 0), 3412);
-	ck_assert_int_eq(nybdtol(a1, 2, 1), 41);
+	/* Base 16 */
+	ck_assert_uint_eq(nybtoul(a1, 2, 0, 16), 18);
+	ck_assert_uint_eq(nybtoul(a1, 4, 0, 16), 13330);
+	ck_assert_uint_eq(nybtoul(a1, 2, 1, 16), 65);
+
+	ck_assert_uint_eq(nybtoul(a2, 2, 0, 16), 253);
+	ck_assert_uint_eq(nybtoul(a2, 4, 0, 16), 65533);
+	ck_assert_uint_eq(nybtoul(a2, 2, 1, 16), 255);
+
+	/* Base 10 */
+	ck_assert_uint_eq(nybtoul(a1, 2, 0, 10), 12);
+	ck_assert_uint_eq(nybtoul(a1, 4, 0, 10), 3412);
+	ck_assert_uint_eq(nybtoul(a1, 2, 1, 10), 41);
 }
 END_TEST
 
-START_TEST(test_nybtol_limit)
+START_TEST(test_ultonyb)
 {
-	ck_assert_failure(nybtol(a1, 17, 0), LONG_MAX, ERANGE);
-	ck_assert_failure(nybtol(a2, 17, 0), LONG_MIN, ERANGE);
+	uint8_t a[4];
+
+	/* Base 16 */
+	ck_assert_ultonyb(a, 2, 0, 18, 16);
+	ck_assert_ultonyb(a, 3, 0, 18, 16);
+	ck_assert_ultonyb(a, 2, 1, 65, 16);
+	ck_assert_ultonyb(a, 2, 1, 255, 16);
+	ck_assert_ultonyb(a, 3, 1, 255, 16);
+
+	/* Base 10 */
+	ck_assert_ultonyb(a, 4, 0, 3412, 10);
 }
 END_TEST
 
-START_TEST(test_nybdtol_limit)
+START_TEST(test_nybtoul_erange)
 {
-	ck_assert_failure(nybdtol(a1, 1, 8), 0, EINVAL);
-	ck_assert_failure(nybdtol(a1, 2, 8), 9, EINVAL);
+	ck_assert_err(nybtoul(a1, 17, 0, 16), ULONG_MAX, ERANGE);
+}
+END_TEST
+
+START_TEST(test_nybtoul_einval)
+{
+	ck_assert_err(nybtoul(a1, 1, 8, 10), 0, EINVAL);
+	ck_assert_err(nybtoul(a1, 2, 8, 10), 9, EINVAL);
 }
 END_TEST
 
@@ -68,15 +101,16 @@ Suite *nybble_suite(void)
 	/* Core test cases */
 	tc_core = tcase_create("core");
 
-	tcase_add_test(tc_core, test_nybat);
-	tcase_add_test(tc_core, test_nybtol);
-	tcase_add_test(tc_core, test_nybdtol);
+	tcase_add_test(tc_core, test_nybget);
+	tcase_add_test(tc_core, test_nybset_auto);
+	tcase_add_test(tc_core, test_nybtoul);
+	tcase_add_test(tc_core, test_ultonyb);
 	suite_add_tcase(s, tc_core);
 
 	/* Limits test cases */
 	tc_limits = tcase_create("limits");
-	tcase_add_test(tc_limits, test_nybtol_limit);
-	tcase_add_test(tc_limits, test_nybdtol_limit);
+	tcase_add_test(tc_limits, test_nybtoul_erange);
+	tcase_add_test(tc_limits, test_nybtoul_einval);
 	suite_add_tcase(s, tc_limits);
 
 	return s;

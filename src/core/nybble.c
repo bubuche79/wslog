@@ -5,35 +5,46 @@
 #include <errno.h>
 #include <string.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include "defs/dso.h"
 
 #include "nybble.h"
 
-extern DSO_EXPORT uint8_t nybat(const uint8_t *buf, size_t off);
+extern DSO_EXPORT uint8_t nybget(const uint8_t *buf, size_t off);
 
 /**
- * Convert nybbles to a long integer.
+ * Convert nybbles to an unsigned long integer.
  */
-DSO_EXPORT long int
-nybtol(const uint8_t *buf, size_t nnyb, size_t off)
+DSO_EXPORT unsigned long int
+nybtoul(const uint8_t *buf, size_t nnyb, size_t off, int base)
 {
 	int i;
-	long int res;
+	unsigned long int res;
+	unsigned long int limit;
 
-	int sign_bit = nybat(buf, off) & 0x8;
-
-	if (nnyb > 2 * sizeof(res)) {
-		errno = ERANGE;
-		res = sign_bit ? LONG_MIN : LONG_MAX;
-
+	if (base < 2 || 16 < base) {
+		errno = EINVAL;
+		res = ULONG_MAX;
 		goto exit;
 	}
 
-	res = sign_bit ? -1 : 0;
+	res = 0;
+	limit = ULONG_MAX / base;
 
 	for (i = nnyb - 1; 0 <= i; i--) {
-		res = (res << 4) | nybat(buf, off + i);
+		uint8_t v = nybget(buf, off + i);
+
+		if (base <= v) {
+			errno = EINVAL;
+			goto exit;
+		} else if (limit < res) {
+			errno = ERANGE;
+			res = ULONG_MAX;
+			goto exit;
+		} else {
+			res = base * res + v;
+		}
 	}
 
 exit:
@@ -41,26 +52,29 @@ exit:
 }
 
 /**
- * Convert Binary Codded Decimal (BCD) nybbles to a long integer.
+ * Convert an unsigned long integer to nybbles.
  */
-DSO_EXPORT long int
-nybdtol(const uint8_t *buf, size_t nnyb, size_t off)
+DSO_EXPORT int
+ultonyb(uint8_t *buf, size_t nnyb, size_t off, unsigned long int v, int base)
 {
-	int i;
-	long int res;
+	size_t i;
+	int res;
+
+	res = -1;
+
+	if (base < 2 || 16 < base) {
+		errno = EINVAL;
+		goto exit;
+	}
+
+	for (i = 0; i < nnyb; i++) {
+		unsigned long int t = v / base;
+
+		nybset(buf, off + i, v - base * t);
+		v = t;
+	}
 
 	res = 0;
-
-	for (i = nnyb - 1; 0 <= i; i--) {
-		uint8_t v = nybat(buf, off + i);
-
-		if (v > 9) {
-			errno = EINVAL;
-			goto exit;
-		} else {
-			res = 10 * res + v;
-		}
-	}
 
 exit:
 	return res;
@@ -89,5 +103,37 @@ nybcpy(uint8_t *dest, const uint8_t *src, size_t nnyb, size_t off)
 		}
 	} else {
 		memcpy(dest, src, (nnyb + 1) / 2);
+	}
+}
+
+DSO_EXPORT void
+nybprint(uint16_t addr, const uint8_t *buf, size_t nnyb, int hex)
+{
+	int disp_sz;
+
+	if (hex) {
+		disp_sz = 2;
+	} else {
+		disp_sz = 1;
+	}
+
+	for (uint16_t i = 0; i < nnyb;) {
+		printf("%.4x", addr + i);
+
+		for (uint16_t j = 0; j < 16 && i < nnyb; j++) {
+			uint8_t v;
+
+			if (hex) {
+				v = buf[i / 2];
+			} else {
+				v = nybget(buf, i);
+			}
+
+			printf(" %.*x", disp_sz, v);
+
+			i += disp_sz;
+		}
+
+		printf("\n");
 	}
 }

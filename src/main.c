@@ -277,38 +277,6 @@ usage_opt(FILE *out, int opt, int code)
 	exit(code);
 }
 
-static void
-nybprint(uint16_t addr, const uint8_t *buf, uint16_t nnybles, int hex)
-{
-	int disp_sz;
-
-	if (hex) {
-		disp_sz = 2;
-	} else {
-		disp_sz = 1;
-	}
-
-	for (uint16_t i = 0; i < nnybles;) {
-		printf("%.4x", addr + i);
-
-		for (uint16_t j = 0; j < 16 && i < nnybles; j++) {
-			uint8_t v;
-
-			if (hex) {
-				v = buf[i];
-			} else {
-				v = nybat(buf, i);
-			}
-
-			printf(" %.*x", disp_sz, v);
-
-			i += disp_sz;
-		}
-
-		printf("\n");
-	}
-}
-
 static int
 wsmaddrcmp(const void *a, const void *b)
 {
@@ -464,7 +432,7 @@ decode_str_text(const uint8_t *buf, enum ws_etype type, char *s, size_t len, siz
 	int i;
 
 	const struct ws_type *t = &types[type];
-	uint8_t v = nybat(buf, offset);
+	uint8_t v = nybget(buf, offset);
 
 	for (i = 0; t->text.a[i].value != NULL && v != t->text.a[i].key; i++) {
 		/* loop */
