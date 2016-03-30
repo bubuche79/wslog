@@ -1,10 +1,9 @@
-PKG_NAME := ws23xx
-PKG_VERSION := 0.5
+include		Makefile.master
 
 #
 # List of all SUBDIRS to build
 #
-SUBDIRS =	src
+SUBDIRS =	lib cmd
 
 #
 # Targets and sub-directories to enter and build
@@ -18,10 +17,7 @@ $(TARGETS): $(SUBDIRS)
 $(SUBDIRS):
 	@cd $@; $(MAKE) $(MAKECMDGOALS)
 
-dist:
-	git archive --prefix=$(PKG_NAME)-$(PKG_VERSION)/ -o $(PKG_NAME)-$(PKG_VERSION).tar.gz HEAD
-
 #
 # Explicit dependencies for parallel builds
 #
-tests:		src
+cmd:		lib

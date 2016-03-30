@@ -5,7 +5,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "core/nybble.h"
+#include "libws/nybble.h"
 
 #include "decoder.h"
 #include "serial.h"

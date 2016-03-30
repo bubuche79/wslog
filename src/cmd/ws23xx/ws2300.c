@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "core/nybble.h"
+#include "libws/nybble.h"
 
 #include "serial.h"
 #include "ws2300.h"

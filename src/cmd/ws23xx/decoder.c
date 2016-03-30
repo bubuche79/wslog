@@ -2,7 +2,7 @@
 #include <time.h>
 #include <string.h>
 
-#include "core/nybble.h"
+#include "libws/nybble.h"
 
 #include "decoder.h"
 

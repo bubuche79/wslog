@@ -9,9 +9,10 @@
 
 #include "defs/dso.h"
 
-#include "nybble.h"
+#include "libws/nybble.h"
 
 extern DSO_EXPORT uint8_t nybget(const uint8_t *buf, size_t off);
+extern DSO_EXPORT void nybset(uint8_t *buf, size_t off, uint8_t v);
 
 /**
  * Convert nybbles to an unsigned long integer.

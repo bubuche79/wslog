@@ -11,7 +11,7 @@
 
 #include "defs/dso.h"
 
-#include "core/bitfield.h"
+#include "libws/bitfield.h"
 
 extern DSO_EXPORT void bfset(uint8_t *buf, size_t off);
 extern DSO_EXPORT void bfclear(uint8_t *buf, size_t off);
