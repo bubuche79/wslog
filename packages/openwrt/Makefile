@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ws23xx
-PKG_VERSION:=0.4
+PKG_VERSION:=0.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -30,6 +30,14 @@ endef
 define Package/ws23xx/description
   This is an utility suite used to communicate with and collect data from a
   WS23XX wheather station.
+endef
+
+define Build/Compile
+	$(MAKE) -C $(PKG_BUILD_DIR)/src
+endef
+
+define Build/Install
+	$(MAKE) -C $(PKG_BUILD_DIR)/src install
 endef
 
 define Package/ws23xx/install

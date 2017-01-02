@@ -4,7 +4,7 @@
 #include <limits.h>
 #include <errno.h>
 
-#include "../src/core/nybble.h"
+#include "libws/nybble.h"
 
 #define ck_assert_err(X, Y, Z) do { \
 	ck_assert_uint_eq(X, Y); \

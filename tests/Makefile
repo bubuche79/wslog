@@ -7,16 +7,18 @@ CFLAGS := -std=c99 \
 	-DPROGNAME=\"$(PKG_NAME)\" -DVERSION=\"$(PKG_VERSION)\" \
 	$(CFLAGS)
 
+LDFLAGS := -L../src/lib/libws
+
 all: check_nybble
 
 check: check_nybble
-	./check_nybble
+	LD_LIBRARY_PATH=../src/lib/libws ./check_nybble
 
-check_nybble: check_nybble.o ../src/core/nybble.o
-	$(CC) -o $@ $+ -lcheck
+check_nybble: check_nybble.o
+	$(CC) $(LDFLAGS) -o $@ $+ -lws -lcheck
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ -I../src -c $<
+	$(CC) $(CFLAGS) -o $@ -I../src/lib -c $<
 
 clean:
 	$(RM) -r *.o

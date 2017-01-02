@@ -24,4 +24,4 @@ dist:
 #
 # Explicit dependencies for parallel builds
 #
-tests:		src
+test:		src

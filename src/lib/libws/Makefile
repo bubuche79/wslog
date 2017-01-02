@@ -4,7 +4,8 @@ LIBRARY = libws.a
 VERS = .1
 OBJECTS = \
 	bitfield.o \
-	nybble.o
+	nybble.o \
+	conf.o
 
 include	../Makefile.lib
 
