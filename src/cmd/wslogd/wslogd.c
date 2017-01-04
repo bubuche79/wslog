@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <curl/curl.h>
 
 #include "libws/conf.h"
 
@@ -104,11 +103,14 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
-	curl_global_init(CURL_GLOBAL_DEFAULT);
+//	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	/* Detach, create new session */
 	if (!one_process_mode) {
-		daemon();
+		if (daemon() == -1) {
+			fprintf(stderr, "daemon: %s\n", strerror(errno));
+			return 1;
+		}
 	}
 
 	ret = 1;
@@ -140,7 +142,8 @@ exit:
 		syslog(LOG_EMERG, "Shutting down (abort)...");
 	}
 
-	curl_global_cleanup();
+//	curl_global_cleanup();
 	closelog();
+
 	return ret;
 }

@@ -21,7 +21,7 @@ strtouid(const char *str, uid_t *uid)
 	struct passwd pwd;
 	struct passwd *result;
 	char *buf;
-	long int bufsize;
+	long bufsize;
 	int s;
 
 	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
@@ -56,7 +56,7 @@ strtogid(const char *str, gid_t *gid)
 	struct group grp;
 	struct group *result;
 	char *buf;
-	long int bufsize;
+	long bufsize;
 	int s;
 
 	bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);

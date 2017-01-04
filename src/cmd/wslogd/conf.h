@@ -18,12 +18,13 @@ struct ws_conf
 	int log_mask;						/* syslog priority mask */
 
 	const char *tty;					/* tty device */
+	int freq;							/* read frequency */
 
 	struct
 	{
 		int disabled;					/* disabled flag */
 		const char *file;				/* output file */
-		int freq;						/* update frequency, in seconds */
+		int freq;						/* write frequency, in seconds */
 	} csv;
 
 	struct
@@ -32,7 +33,7 @@ struct ws_conf
 		const char *url;				/* wunderground.com protocol upload url*/
 		const char *user_id;			/* wunderground id */
 		const char *user_pwd;			/* wunderground password */
-		int freq;						/* update frequency, in seconds */
+		int freq;						/* write frequency, in seconds */
 	} wunder;
 };
 

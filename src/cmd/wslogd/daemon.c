@@ -9,9 +9,34 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <errno.h>
 
+#include "wslogd.h"
 #include "daemon.h"
+
+extern char **environ;
+
+static int
+close_fds(void)
+{
+	int fd;
+	int fdmax;
+
+	fdmax = sysconf(_SC_OPEN_MAX);
+
+	for (fd = 0; fd < fdmax; fd++) {
+		int ret;
+
+		ret = close(fd);
+
+		if (ret == -1 && errno != EBADF) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
 
 static int
 sanitize_stdfd(void)
@@ -23,7 +48,7 @@ sanitize_stdfd(void)
 		int i, oflag;
 		struct stat sbuf;
 
-		if (fstat(fd, &sbuf) == 0) {
+		if (fstat(fd, &sbuf) == -1) {
 			continue;
 		}
 
@@ -45,8 +70,42 @@ sanitize_stdfd(void)
 }
 
 static int
-close_all_fd(void)
+reset_signals(void)
 {
+	int si;
+	struct sigaction sa;
+
+	/* Reset signal handlers */
+	memset(&sa, 0, sizeof(sa));
+
+	sa.sa_flags = 0;
+	sa.sa_handler = SIG_DFL;
+	(void) sigemptyset(&sa.sa_mask);
+
+	for (si = 1; si < _NSIG; si++) {
+		if (sigaction(si, &sa, NULL) == -1) {
+			if (errno == EINVAL) {
+				/* Unmodifiable signal */
+			} else {
+				return -1;
+			}
+		}
+	}
+
+	/* Reset signal mask */
+//	sigset_t set;
+//	(void) sigfillset(&set);
+//
+//	return sigprocmask(SIG_BLOCK, &set, NULL);
+
+	return 0;
+}
+
+static int
+clear_env(void)
+{
+	environ = NULL;
+
 	return 0;
 }
 
@@ -55,14 +114,30 @@ wait_startup(int fd)
 {
 	int status;
 	char buf[128];
+	ssize_t sz;
 
 	read(fd, &status, sizeof(status));
-	read(fd, buf, sizeof(buf));
+	sz = read(fd, buf, sizeof(buf));
 
-	fprintf(stderr, "%s\n", buf);
 	if (status != 0) {
+		buf[sz] = 0;
+		fprintf(stderr, "%s\n", buf);
 		exit(status);
 	}
+
+	return 0;
+}
+
+static int
+write_pid_file(void)
+{
+	int fd = open(confp->pid_file, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	if (fd == -1) {
+		return -1;
+	}
+
+	dprintf(fd, "%d", getpid());
+	close(fd);
 
 	return 0;
 }
@@ -119,13 +194,19 @@ daemon(void)
 	int pipefd[2];
 
 	/* 1. Close open file descriptors */
-	close_all_fd();
+	if (close_fds() == -1) {
+		return -1;
+	}
+
+	/* 2 & 3. Reset signal handlers */
+	if (reset_signals() == -1) {
+		return -1;
+	}
 
 	/* 4. Clear environment */
-//	if (clearenv() == -1) {
-//		(void) fprintf(stderr, "clearenv: %s\n", strerror(errno));
-//		exit(1);
-//	}
+	if (clear_env() == -1) {
+		return -1;
+	}
 
 	/* 5. Create background process */
 	if (pipe(pipefd) == -1) {
@@ -138,7 +219,7 @@ daemon(void)
 		exit(1);
 	} else if (pid > 0) {
 		/* Wait startup to complete */
-		close(pipefd[1]);
+		(void) close(pipefd[1]);
 		wait_startup(pipefd[0]);
 
 		/* 15. Exit from original process */
@@ -175,9 +256,26 @@ daemon(void)
 		die(1, pipefd[1], "chdir: %s", strerror(errno));
 	}
 
+	/* 12. Write daemon PID file */
+	if (write_pid_file() == -1) {
+		die(1, pipefd[1], "write_pid(%s): %s", confp->pid_file, strerror(errno));
+	}
+
+	/* 13. Drop privileges */
+	if (confp->uid != (uid_t)-1) {
+		if (seteuid(confp->uid) == -1) {
+			die(1, pipefd[1], "seteuid: %s", strerror(errno));
+		}
+	}
+	if (confp->gid != (gid_t)-1) {
+		if (setegid(confp->gid) == -1) {
+			die(1, pipefd[1], "setegid: %s", strerror(errno));
+		}
+	}
+
 	notify(0, pipefd[1], "started");
 
-	close(pipefd[1]);
+	(void) close(pipefd[1]);
 
 	return 0;
 }

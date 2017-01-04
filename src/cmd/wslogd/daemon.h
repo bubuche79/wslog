@@ -1,5 +1,5 @@
 #ifndef _DAEMON_H
-#define _DAEMON_H
+#define _WSLOGD_H
 
 #include <sys/types.h>
 
