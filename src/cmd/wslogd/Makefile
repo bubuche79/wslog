@@ -3,6 +3,7 @@ SRC =		../..
 PROG =		wslogd
 OBJECTS = \
 	conf.o \
+	daemon.o \
 	wslogd.o
 
 include ../Makefile.cmd

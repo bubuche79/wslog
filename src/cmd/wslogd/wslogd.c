@@ -13,6 +13,7 @@
 #include "libws/conf.h"
 
 #include "conf.h"
+#include "daemon.h"
 
 static struct ws_conf conf;
 static int one_process_mode = 0;
@@ -28,13 +29,6 @@ usage(FILE *std, const char *bin)
 static int
 post_config(void)
 {
-	if (conf.log_facility == -1) {
-		conf.log_facility = LOG_LOCAL0;
-	}
-	if (conf.log_mask == -1) {
-		conf.log_mask = LOG_UPTO(LOG_NOTICE);
-	}
-
 	return 0;
 }
 
@@ -50,11 +44,10 @@ loop_init(void)
 static int
 loop_reinit(const char *config_file)
 {
-	/* (Re)open configuration */
-	if (ws_conf_load(&conf, config_file) == -1) {
+	conf_free(&conf);
+	if (conf_load(&conf, config_file) == -1) {
 		goto error;
 	}
-
 	if (post_config() == -1) {
 		goto error;
 	}
@@ -76,17 +69,11 @@ main(int argc, char *argv[])
 	int c;
 	int ret;
 	int halt;
-	pid_t pid;
 
 	/* Default parameters */
-	char *config_file = "/etc/ws.conf";
+	const char *config_file = "/etc/wslogd.conf";
 
 	(void) setlocale(LC_ALL, "");
-
-//	/* Ensure that fds 0, 1 and 2 are opened or directed to /dev/null */
-//	if (sanitise_stdfd() == -1) {
-//		return 1;
-//	}
 
 	/* Parse command line */
 	while ((c = getopt(argc, argv, "Xc:")) != -1) {
@@ -110,7 +97,7 @@ main(int argc, char *argv[])
 	}
 
 	/* Required stuff before fork() */
-	if (ws_conf_load(&conf, config_file) == -1) {
+	if (conf_load(&conf, config_file) == -1) {
 		return 1;
 	}
 	if (post_config() == -1) {
@@ -121,18 +108,7 @@ main(int argc, char *argv[])
 
 	/* Detach, create new session */
 	if (!one_process_mode) {
-		pid = fork();
-		if (pid == -1) {
-			(void) fprintf(stderr, "fork: %s\n", strerror(errno));
-			return 1;
-		} else if (pid > 0) {
-			return 0;
-		}
-
-		if (setsid() == -1) {
-			(void) fprintf(stderr, "setsid: %s\n", strerror(errno));
-			return 1;
-		}
+		daemon();
 	}
 
 	ret = 1;
@@ -145,6 +121,7 @@ main(int argc, char *argv[])
 //		if (prefork_main(&halt) == -1) {
 //			goto exit;
 //		}
+		sleep(120);
 
 		/* Restart loop */
 		if (!halt) {

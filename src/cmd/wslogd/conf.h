@@ -11,15 +11,19 @@ extern "C" {
 
 struct ws_conf
 {
-	const char *tty;					/* tty device */
-
+	uid_t uid;							/* effective user id */
+	gid_t gid;							/* effective group id */
+	const char *pid_file;				/* the daemon PID file */
 	int log_facility;					/* syslog facility */
 	int log_mask;						/* syslog priority mask */
+
+	const char *tty;					/* tty device */
 
 	struct
 	{
 		int disabled;					/* disabled flag */
 		const char *file;				/* output file */
+		int freq;						/* update frequency, in seconds */
 	} csv;
 
 	struct
@@ -28,11 +32,12 @@ struct ws_conf
 		const char *url;				/* wunderground.com protocol upload url*/
 		const char *user_id;			/* wunderground id */
 		const char *user_pwd;			/* wunderground password */
-		int freq;						/* refresh frequency, in seconds */
+		int freq;						/* update frequency, in seconds */
 	} wunder;
 };
 
-int ws_conf_load(struct ws_conf *cfg, const char *path);
+int conf_load(struct ws_conf *cfg, const char *path);
+void conf_free(struct ws_conf *cfg);
 
 #ifdef __cplusplus
 }
