@@ -12,6 +12,8 @@
 #include <signal.h>
 #include <errno.h>
 
+#include "libws/err.h"
+
 #include "wslogd.h"
 #include "daemon.h"
 
@@ -121,8 +123,7 @@ wait_startup(int fd)
 
 	if (status != 0) {
 		buf[sz] = 0;
-		fprintf(stderr, "%s\n", buf);
-		exit(status);
+		die(status, "%s\n", buf);
 	}
 
 	return 0;
@@ -171,7 +172,7 @@ notify(int status, int fd, const char *fmt, /* args */ ...)
 __attribute__ ((format (printf, 3, 4)))
 #endif
 static void
-die(int status, int fd, const char *fmt, /* args */ ...)
+daemon_die(int status, int fd, const char *fmt, /* args */ ...)
 {
 	va_list ap;
 
@@ -215,8 +216,7 @@ daemon(void)
 
 	pid = fork();
 	if (pid == -1) {
-		(void) fprintf(stderr, "fork: %s\n", strerror(errno));
-		exit(1);
+		die(1, "fork: %s\n", strerror(errno));
 	} else if (pid > 0) {
 		/* Wait startup to complete */
 		(void) close(pipefd[1]);
@@ -226,8 +226,7 @@ daemon(void)
 		exit(0);
 	} else {
 		if (close(pipefd[0]) == -1) {
-			(void) fprintf(stderr, "close(pipe): %s\n", strerror(errno));
-			exit(1);
+			die(1, "close(pipe): %s\n", strerror(errno));
 		}
 	}
 
@@ -240,7 +239,7 @@ daemon(void)
 	/* 7, 8. Ensure daemon cannot re-acquire terminal */
 	pid = fork();
 	if (pid == -1) {
-		die(1, pipefd[1], "fork: %s\n", strerror(errno));
+		daemon_die(1, pipefd[1], "fork: %s\n", strerror(errno));
 	} else if (pid > 0) {
 		exit(0);
 	}
@@ -253,23 +252,23 @@ daemon(void)
 
 	/* 11. Change current working directory */
 	if (chdir("/") == -1) {
-		die(1, pipefd[1], "chdir: %s", strerror(errno));
+		daemon_die(1, pipefd[1], "chdir: %s", strerror(errno));
 	}
 
 	/* 12. Write daemon PID file */
 	if (write_pid_file() == -1) {
-		die(1, pipefd[1], "write_pid(%s): %s", confp->pid_file, strerror(errno));
+		daemon_die(1, pipefd[1], "write_pid(%s): %s", confp->pid_file, strerror(errno));
 	}
 
 	/* 13. Drop privileges */
 	if (confp->uid != (uid_t)-1) {
 		if (seteuid(confp->uid) == -1) {
-			die(1, pipefd[1], "seteuid: %s", strerror(errno));
+			daemon_die(1, pipefd[1], "seteuid: %s", strerror(errno));
 		}
 	}
 	if (confp->gid != (gid_t)-1) {
 		if (setegid(confp->gid) == -1) {
-			die(1, pipefd[1], "setegid: %s", strerror(errno));
+			daemon_die(1, pipefd[1], "setegid: %s", strerror(errno));
 		}
 	}
 

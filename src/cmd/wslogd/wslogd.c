@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include "libws/err.h"
 #include "libws/conf.h"
 
 #include "conf.h"
@@ -108,8 +109,7 @@ main(int argc, char *argv[])
 	/* Detach, create new session */
 	if (!one_process_mode) {
 		if (daemon() == -1) {
-			fprintf(stderr, "daemon: %s\n", strerror(errno));
-			return 1;
+			die(1, "daemon: %s\n", strerror(errno));
 		}
 	}
 

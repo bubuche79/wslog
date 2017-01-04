@@ -5,7 +5,8 @@ VERS = .1
 OBJECTS = \
 	bitfield.o \
 	nybble.o \
-	conf.o
+	conf.o \
+	err.o
 
 include	../Makefile.lib
 
