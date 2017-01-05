@@ -7,10 +7,12 @@
 extern "C" {
 #endif
 
+#define S_I644 (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
+
 const struct ws_conf *confp;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _DAEMON_H */
+#endif /* _WSLOGD_H */

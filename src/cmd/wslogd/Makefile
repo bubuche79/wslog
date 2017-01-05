@@ -4,6 +4,8 @@ PROG =		wslogd
 OBJECTS = \
 	conf.o \
 	daemon.o \
+	board.o \
+	worker.o \
 	wslogd.o
 
 include ../Makefile.cmd

@@ -1,5 +1,7 @@
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef _CONF_H
+#define _CONF_H
+
+#include <sys/types.h>
 
 /*
  * Weather station configuration.
@@ -44,4 +46,4 @@ void conf_free(struct ws_conf *cfg);
 }
 #endif
 
-#endif /* _CONFIG_H */
+#endif /* _CONF_H */
