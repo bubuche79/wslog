@@ -14,6 +14,8 @@
 
 #include "conf.h"
 #include "daemon.h"
+#include "worker.h"
+#include "wslogd.h"
 
 static struct ws_conf conf;
 static int one_process_mode = 0;
@@ -104,8 +106,6 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
-//	curl_global_init(CURL_GLOBAL_DEFAULT);
-
 	/* Detach, create new session */
 	if (!one_process_mode) {
 		if (daemon() == -1) {
@@ -120,10 +120,9 @@ main(int argc, char *argv[])
 
 	halt = 0;
 	do {
-//		if (prefork_main(&halt) == -1) {
-//			goto exit;
-//		}
-		sleep(120);
+		if (worker_main() == -1) {
+			goto exit;
+		}
 
 		/* Restart loop */
 		if (!halt) {
@@ -142,7 +141,6 @@ exit:
 		syslog(LOG_EMERG, "Shutting down (abort)...");
 	}
 
-//	curl_global_cleanup();
 	closelog();
 
 	return ret;

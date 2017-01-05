@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-
+#include <syslog.h>
 #include "board.h"
 
 #define SHM_NAME "/wslog"			/* shared memory object name */
@@ -60,7 +60,9 @@ board_open(int rdonly)
 	int oflag, mflag;
 
 	shmfd = -1;
-	oflag = O_CREAT | (rdonly ? O_RDONLY : O_RDWR);
+	shmlen = sizeof(*boardp);
+
+	oflag = rdonly ? O_RDONLY : O_RDWR|O_CREAT;
 	mflag = PROT_READ | (rdonly ? 0 : PROT_WRITE);
 
 	/* Create shared memory */
@@ -69,7 +71,7 @@ board_open(int rdonly)
 		return -1;
 	}
 
-	if (oflag & O_WRONLY) {
+	if (!rdonly) {
 		if (ftruncate(shmfd, shmlen) == -1) {
 			goto error;
 		}
@@ -81,6 +83,7 @@ board_open(int rdonly)
 	}
 
 	(void) close(shmfd);
+	shmfd = -1;
 
 	boardp = shmbufp;
 
@@ -93,12 +96,12 @@ board_open(int rdonly)
 
 error:
 	errsv = errno;
-	if (shmbufp != MAP_FAILED) {
-		(void) munmap(shmbufp, shmlen);
-	}
 	if (shmfd != -1) {
 		(void) close(shmfd);
+	}
+	if (shmbufp != MAP_FAILED) {
 		(void) shm_unlink(SHM_NAME);
+		(void) munmap(shmbufp, shmlen);
 	}
 
 	errno = errsv;

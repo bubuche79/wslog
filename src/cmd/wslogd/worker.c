@@ -14,6 +14,20 @@
 static int startup = 1;
 //static pthread_t th[2];
 
+static int
+spawn_threads(void)
+{
+	return 0;
+}
+
+static int
+worker_destroy(void)
+{
+	board_unlink();
+
+	return 0;
+}
+
 int
 worker_main(void)
 {
@@ -24,68 +38,36 @@ worker_main(void)
 //		goto error;
 //	}
 
-	post_config();
+//	post_config();
 
 	/* Startup initialization */
 	if (startup) {
-		if (board_open(O_RDWR) == 1) {
-			syslog(LOG_EMERG, "init_shmem: %m");
+		if (board_open(0) == -1) {
+			syslog(LOG_EMERG, "board_open(): %m");
 			goto error;
 		}
 
+		syslog(LOG_INFO, "board_open(): success");
 		startup = 0;
 	}
 
-	/* Create initial pool of child servers */
-	if (startup_children(start_servers, 0) == -1) {
-		syslog(LOG_EMERG, "startup_children(%d): %m", start_servers);
+	sleep(120);
+
+	/* Spawn all threads */
+	if (spawn_threads() == -1) {
+		syslog(LOG_EMERG, "spawn_threads(): %m");
 		goto error;
 	}
 
-	/*
-	 * From now on, manage the pool of spare servers, and launch new
-	 * ones or kill some idle ones to keep their number as requested.
-	 */
-	while (!shutdown_pending && !hangup_pending) {
-		sigset_t sigmask;
-		siginfo_t info;
-		struct timespec timeout;
-
-		/* Signals to catch */
-		(void) sigemptyset(&sigmask);
-		(void) sigaddset(&sigmask, SIGHUP);
-		(void) sigaddset(&sigmask, SIGTERM);
-		(void) sigaddset(&sigmask, SIGCHLD);
-
-		timeout.tv_sec = SIGWAIT_TIMEOUT / 1000;
-		timeout.tv_nsec = (SIGWAIT_TIMEOUT % 1000) * 1000000;
-
-		if (sigtimedwait(&sigmask, &info, &timeout) > 0) {
-			switch (info.si_signo) {
-			case SIGHUP:
-				hangup_pending = 1;
-				break;
-			case SIGTERM:
-				shutdown_pending = 1;
-				break;
-			case SIGCHLD:
-				if (reap_children() == -1) {
-					syslog(LOG_EMERG, "reap_children: %m");
-					goto error;
-				}
-				break;
-			}
-		}
+	if (worker_destroy() == -1) {
+		syslog(LOG_ERR, "worker_destroy(): %m");
 	}
 
-	/* Release resources */
-	*halt = shutdown_pending;
-
-	return prefork_destroy(shutdown_pending);
+	return 0;
 
 error:
 	errsv = errno;
-	(void) prefork_destroy(1);
+	(void) worker_destroy();
 
 	errno = errsv;
 	return -1;
