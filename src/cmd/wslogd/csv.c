@@ -16,7 +16,7 @@ csv_init(void)
 
 	fd = open(confp->csv.file, O_CREAT|O_WRONLY|O_APPEND, S_I644);
 	if (fd == -1) {
-		syslog("open(%s): %m", confp->csv.file);
+		syslog(LOG_ERR, "open(%s): %m", confp->csv.file);
 		return -1;
 	}
 
@@ -38,13 +38,13 @@ csv_run(void)
 }
 
 int
-csv_destroy()
+csv_destroy(void)
 {
 	int ret = 0;
 
 	if (fd != -1) {
 		if (close(fd) == -1) {
-			syslog("close: %m");
+			syslog(LOG_ERR, "close: %m");
 			ret = -1;
 		}
 	}

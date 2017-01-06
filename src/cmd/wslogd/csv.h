@@ -9,9 +9,9 @@
 extern "C" {
 #endif
 
-int csv_init();
-int csv_run();
-int csv_destroy();
+int csv_init(void);
+int csv_run(void);
+int csv_destroy(void);
 
 #ifdef __cplusplus
 }

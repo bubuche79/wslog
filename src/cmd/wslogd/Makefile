@@ -2,9 +2,10 @@ SRC =		../..
 
 PROG =		wslogd
 OBJECTS = \
-	conf.o \
-	daemon.o \
 	board.o \
+	conf.o \
+	csv.o \
+	daemon.o \
 	worker.o \
 	wslogd.o
 
