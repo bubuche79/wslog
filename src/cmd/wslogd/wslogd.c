@@ -73,7 +73,7 @@ main(int argc, char *argv[])
 	int halt;
 
 	/* Default parameters */
-	const char *config_file = "/etc/wslogd.conf";
+	const char *conf_file = "/etc/wslogd.conf";
 
 	(void) setlocale(LC_ALL, "");
 
@@ -81,7 +81,10 @@ main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, "Xc:")) != -1) {
 		switch (c) {
 		case 'c':
-			config_file = optarg;
+			conf_file = optarg;
+			if (conf_file[0] != '/') {
+				die(1, "%s: Not an absolute file", conf_file);
+			}
 			break;
 		case 'X':
 			one_process_mode = 1;
@@ -99,7 +102,7 @@ main(int argc, char *argv[])
 	}
 
 	/* Required stuff before fork() */
-	if (conf_load(&conf, config_file) == -1) {
+	if (conf_load(&conf, conf_file) == -1) {
 		return 1;
 	}
 	if (post_config() == -1) {
@@ -120,13 +123,13 @@ main(int argc, char *argv[])
 
 	halt = 0;
 	do {
-		if (worker_main() == -1) {
+		if (worker_main(&halt) == -1) {
 			goto exit;
 		}
 
 		/* Restart loop */
 		if (!halt) {
-			if (loop_reinit(config_file) == -1) {
+			if (loop_reinit(conf_file) == -1) {
 				goto exit;
 			}
 		}
@@ -136,9 +139,9 @@ main(int argc, char *argv[])
 
 exit:
 	if (ret == 0) {
-		syslog(LOG_NOTICE, "Shutting down...");
+		syslog(LOG_NOTICE, "Shutdown complete...");
 	} else {
-		syslog(LOG_EMERG, "Shutting down (abort)...");
+		syslog(LOG_EMERG, "Shutdown complete (abort)...");
 	}
 
 	closelog();

@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-int worker_main(void);
+int worker_main(int *halt);
 
 #ifdef __cplusplus
 }
