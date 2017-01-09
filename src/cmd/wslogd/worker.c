@@ -16,23 +16,22 @@
 #include "wslogd.h"
 #include "worker.h"
 
-#define PTHREAD_NONE ((pthread_t) -1)
-
-static int startup = 1;
-
 struct daemon_thread {
 	int dt_signo;									/* signal number */
-	int (*dt_action) (void);						/* action on signal */
 	struct timespec dt_ifreq;						/* timer interval */
+	int (*dt_action) (void);						/* action on signal */
 
 	timer_t dt_timer;
 	pthread_t dt_thread;
 };
 
-static struct daemon_thread csv;
+static int startup = 1;
 
-static volatile sig_atomic_t shutdown_pending = 0;
-static volatile sig_atomic_t hangup_pending = 0;
+static volatile sig_atomic_t shutdown_pending;
+static volatile sig_atomic_t hangup_pending;
+
+static struct daemon_thread csv;
+static struct daemon_thread wunder;
 
 static int
 sig_block(void)
@@ -69,8 +68,6 @@ pthread_main(void *arg)
 	(void) sigaddset(&set, dt->dt_signo);
 	(void) pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-	printf("(%lu) started\n", pthread_self());
-
 	/* Create timer */
 	se.sigev_notify = SIGEV_SIGNAL;
 	se.sigev_signo = dt->dt_signo;
@@ -82,30 +79,38 @@ pthread_main(void *arg)
 	itimer.it_value.tv_nsec = 0;
 
 	if (timer_create(CLOCK_REALTIME, &se, &timer) == -1) {
-		syslog(LOG_EMERG, "timer_create(): %m");
+		syslog(LOG_ERR, "timer_create(): %m");
 		goto error;
 	}
 	if (timer_settime(timer, 0, &itimer, NULL) == -1) {
-		syslog(LOG_EMERG, "timer_settime(): %m");
+		syslog(LOG_ERR, "timer_settime(): %m");
 		goto error;
 	}
 
 	/* Signal notifications */
-	for (;;) {
+	while (!shutdown_pending && !hangup_pending) {
 		int ret;
 		siginfo_t info;
 
 		ret = sigwaitinfo(&set, &info);
 		if (ret == -1) {
-			syslog(LOG_ERR, "(%lu) sigwaitinfo(): %m", pthread_self());
+			syslog(LOG_ERR, "sigwaitinfo(): %m");
 			goto error;
-		} else if (dt->dt_action != NULL) {
-			ret = dt->dt_action();
 		} else {
-			syslog(LOG_ERR, "(%lu) %d signal", pthread_self(), ret);
-			goto error;
+			if (hangup_pending || shutdown_pending) {
+				/* Stop requested */
+			} else {
+				if (dt->dt_action != NULL) {
+					ret = dt->dt_action();
+				} else {
+					syslog(LOG_ERR, "Real-time signal %d", ret - SIGRTMIN);
+					goto error;
+				}
+			}
 		}
 	}
+
+	(void) timer_delete(&timer);
 
 	return NULL;
 
@@ -120,9 +125,14 @@ error:
 static int
 spawn_threads(void)
 {
+	int signo;
+
+	/* Signal */
+	signo = SIGRTMIN;
+
 	/* CSV thread */
 	if (!confp->csv.disabled) {
-		csv.dt_signo = SIGRTMIN;
+		csv.dt_signo = signo;
 		csv.dt_ifreq.tv_sec = confp->csv.freq;
 		csv.dt_ifreq.tv_nsec = 0;
 		csv.dt_action = csv_write;
@@ -135,8 +145,25 @@ spawn_threads(void)
 			syslog(LOG_EMERG, "pthread_create(csv): %m");
 			return -1;
 		}
+
+		signo++;
 	}
 
+	/* Wunder thread */
+//	if (!confp->wunder.disabled) {
+//		wunder.dt_signo = signo;
+//		wunder.dt_ifreq.tv_sec = confp->wunder.freq;
+//		wunder.dt_ifreq.tv_nsec = 0;
+////		csv.dt_action = wunder_write;
+//
+//		if (pthread_create(&wunder.dt_thread, NULL, pthread_main, &wunder) == -1) {
+//			syslog(LOG_EMERG, "pthread_create(wunder): %m");
+//			return -1;
+//		}
+//
+//		signo++;
+//	}
+//
 	return 0;
 }
 
@@ -145,37 +172,21 @@ worker_destroy(void)
 {
 	size_t i;
 	int ret = 0;
+	void *th_res;
 
-#if 0
-	pthread_t *pth[] = {
-			&csv_th
-	};
+	pthread_kill(csv.dt_thread, csv.dt_signo);
+	pthread_join(csv.dt_thread, &th_res);
 
-	/* Cancel threads */
-	for (i = 0; i < array_size(pth); i++) {
-		pthread_t th = *pth[i];
+	syslog(LOG_INFO, "threads stopped");
 
-		if (th != PTHREAD_NONE) {
-			if (pthread_cancel(th) == -1) {
-				ret = -1;
-			}
-			if (pthread_join(th, NULL) == -1) {
-				ret = -1;
-			}
-
-			*pth[i] = PTHREAD_NONE;
+	/* Shutdown requested */
+	if (shutdown_pending) {
+		/* Unlink shared board */
+		if (board_unlink() == -1) {
+			ret = -1;
 		}
-	}
-#endif
 
-//	if (timer_stop() == -1) {
-//		syslog(LOG_ERR, "timer_stop(): %m");
-//		ret = -1;
-//	}
-
-	/* Unlink shared board */
-	if (board_unlink() == -1) {
-		ret = -1;
+		syslog(LOG_INFO, "resources released");
 	}
 
 	return ret;
@@ -189,13 +200,13 @@ worker_main(int *halt)
 	shutdown_pending = 0;
 	hangup_pending = 0;
 
-	if (sig_block() == -1) {
-		syslog(LOG_ERR, "set_signals: %m");
-		return -1;
-	}
-
 	/* Startup initialization */
 	if (startup) {
+		if (sig_block() == -1) {
+			syslog(LOG_ERR, "set_signals: %m");
+			return -1;
+		}
+
 		if (board_open(0) == -1) {
 			syslog(LOG_EMERG, "board_open(): %m");
 			goto error;
@@ -204,9 +215,6 @@ worker_main(int *halt)
 		syslog(LOG_INFO, "board_open(): success");
 		startup = 0;
 	}
-
-
-	printf("(%lu) main\n", pthread_self());
 
 	/* Spawn all threads */
 	if (spawn_threads() == -1) {

@@ -10,7 +10,6 @@
 #include "csv.h"
 
 static int fd = -1;
-static int freq = 500;
 
 static size_t
 gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
@@ -24,8 +23,6 @@ gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 int
 csv_init(void)
 {
-	freq = confp->csv.freq;
-
 	fd = open(confp->csv.file, O_CREAT|O_WRONLY|O_APPEND, S_I644);
 	if (fd == -1) {
 		syslog(LOG_ERR, "open(%s): %m", confp->csv.file);
@@ -56,6 +53,8 @@ csv_write(void)
 	if (ret == -1) {
 		syslog(LOG_ERR, "dprintf(): %m");
 	}
+
+	(void) fsync(fd);
 
 	return ret;
 }
