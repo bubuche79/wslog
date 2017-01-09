@@ -2,12 +2,24 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <syslog.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include "wslogd.h"
+#include "board.h"
 #include "csv.h"
 
 static int fd = -1;
 static int freq = 500;
+
+static size_t
+gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
+{
+	struct tm tm;
+
+	gmtime_r(timep, &tm);
+	return strftime(s, max, fmt, &tm);
+}
 
 int
 csv_init(void)
@@ -24,17 +36,28 @@ csv_init(void)
 }
 
 int
-csv_run(void)
+csv_write(void)
 {
-	int halt = 0;
+	int ret;
 
-	while (!halt) {
-		dprintf(fd, "OK\n");
+	char ctime[22];					/* date utc */
+	const struct ws_ws23xx *dat;
 
-		sleep(freq);
+	dat = &boardp->buf[boardp->idx].ws23xx;
+
+	/* Convert date */
+	gmftime(ctime, sizeof(ctime), &dat->time, "%F %T");
+
+	/* Write CSV line */
+	ret = dprintf(fd, "%s,%hu,%.1f,%hu,%.1f,%.1f,%.1f,%.1f,%hu,%.1f\n",
+			ctime, dat->wind_dir, dat->wind_speed, dat->humidity,
+			dat->dew_point, dat->temp, dat->rain, dat->daily_rain,
+			dat->humidity_in, dat->temp_in);
+	if (ret == -1) {
+		syslog(LOG_ERR, "dprintf(): %m");
 	}
 
-	return 0;
+	return ret;
 }
 
 int

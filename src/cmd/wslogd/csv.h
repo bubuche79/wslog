@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 int csv_init(void);
-int csv_run(void);
+int csv_write(void);
 int csv_destroy(void);
 
 #ifdef __cplusplus

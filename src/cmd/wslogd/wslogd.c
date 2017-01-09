@@ -37,7 +37,11 @@ post_config(void)
 static int
 loop_init(void)
 {
-	openlog("wslogd", LOG_PID, conf.log_facility);
+	int option;
+
+	option = LOG_PID | (one_process_mode ? LOG_PERROR : 0);
+
+	openlog("wslogd", option, conf.log_facility);
 	(void) setlogmask(conf.log_mask);
 
 	return 0;

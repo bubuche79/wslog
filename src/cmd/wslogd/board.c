@@ -8,9 +8,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
+#include <string.h>
+
 #include "board.h"
 
 #define SHM_NAME "/wslog"			/* shared memory object name */
+
+#define LOG_SZ 10					/* log size */
 
 static size_t shmlen = 0;			/* shared memory size */
 static void *shmbufp = MAP_FAILED;	/* shared memory */
@@ -23,6 +27,7 @@ board_init(struct ws_board *p)
 	int errsv;
 	pthread_rwlockattr_t attr;
 
+	/* Shared lock */
 	if (pthread_rwlockattr_init(&attr) == -1) {
 		goto error;
 	}
@@ -35,6 +40,10 @@ board_init(struct ws_board *p)
 	}
 
 	(void) pthread_rwlockattr_destroy(&attr);
+
+	/* Pointers */
+	boardp->bufsz = LOG_SZ;
+	boardp->idx = 0;
 
 	return 0;
 
@@ -60,7 +69,7 @@ board_open(int rdonly)
 	int oflag, mflag;
 
 	shmfd = -1;
-	shmlen = sizeof(*boardp);
+	shmlen = sizeof(*boardp) + LOG_SZ * sizeof(*boardp->buf);
 
 	oflag = rdonly ? O_RDONLY : O_RDWR|O_CREAT;
 	mflag = PROT_READ | (rdonly ? 0 : PROT_WRITE);
@@ -86,6 +95,7 @@ board_open(int rdonly)
 	shmfd = -1;
 
 	boardp = shmbufp;
+	boardp->buf = shmbufp + sizeof(*boardp);
 
 	/* Initialize shared_memory content */
 	if (board_init(boardp) == -1) {
@@ -118,7 +128,6 @@ board_unlink()
 	if (munmap(shmbufp, shmlen) == -1) {
 		ret = -1;
 	}
-
 	if (shm_unlink(SHM_NAME) == -1) {
 		ret = -1;
 	}

@@ -117,6 +117,8 @@ conf_decode(void *p, const char *key, const char *value)
 		cfg->pid_file = strdup(value);
 	} else if (!strcmp(key, "tty")) {
 		cfg->tty = strdup(value);
+	} else if (!strcmp(key, "freq")) {
+		strtoint(value, &cfg->freq);
 	} else if (!strncmp(key, "csv.", 4)) {
 		if (!strcmp(key, "csv.disabled")) {
 			strtoint(value, &cfg->csv.disabled);

@@ -31,7 +31,8 @@ INS.rename =	$(INSTALL) -T -m $(FILEMODE) $< $@
 INS.link =	$(SYMLINK) $< $@
 
 # Turn warnings into errors
-STD_FLAGS =	-pedantic -std=c11
+STD_FLAGS =	-std=c11
+#STD_FLAGS =	-pedantic -std=c11
 ERR_FLAGS =	-Wall -Wextra \
 	-Wno-missing-field-initializers \
 	-Wstrict-prototypes -Wmissing-prototypes -Wshadow

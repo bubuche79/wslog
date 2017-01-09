@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <time.h>
 
 #include "defs/std.h"
 
@@ -19,60 +20,121 @@
 
 static int startup = 1;
 
-static pthread_t csv_th;
-static pthread_t wunder_th;
+struct daemon_thread {
+	int dt_signo;									/* signal number */
+	int (*dt_action) (void);						/* action on signal */
+	struct timespec dt_ifreq;						/* timer interval */
+
+	timer_t dt_timer;
+	pthread_t dt_thread;
+};
+
+static struct daemon_thread csv;
 
 static volatile sig_atomic_t shutdown_pending = 0;
 static volatile sig_atomic_t hangup_pending = 0;
 
 static int
-unset_signals(void)
+sig_block(void)
 {
-	sigset_t sigmask;
+	sigset_t set;
 
-	/* Unblock signals */
-	(void) sigemptyset(&sigmask);
-	(void) sigaddset(&sigmask, SIGHUP);
-	(void) sigaddset(&sigmask, SIGTERM);
-	(void) sigaddset(&sigmask, SIGCHLD);
+	(void) sigemptyset(&set);
+	(void) sigaddset(&set, SIGHUP);
+	(void) sigaddset(&set, SIGALRM);
+	(void) sigaddset(&set, SIGTERM);
 
-	return pthread_sigmask(SIG_UNBLOCK, &sigmask, NULL);
+	/* Signals handled by threads */
+	(void) sigaddset(&set, SIGRTMIN);
+
+	return pthread_sigmask(SIG_BLOCK, &set, NULL);
 }
 
-static int
-set_signals(void)
+static void *
+pthread_main(void *arg)
 {
-	sigset_t sigmask;
+	int errsv;
+	struct daemon_thread *dt;
 
-	(void) sigemptyset(&sigmask);
-	(void) sigaddset(&sigmask, SIGHUP);
-	(void) sigaddset(&sigmask, SIGTERM);
+	sigset_t set;
 
-	return pthread_sigmask(SIG_BLOCK, &sigmask, NULL);
+	timer_t timer;
+	struct sigevent se;
+	struct itimerspec itimer;
+
+	dt = (struct daemon_thread *) arg;
+
+	/* Change blocked signals */
+	(void) sigemptyset(&set);
+	(void) sigaddset(&set, dt->dt_signo);
+	(void) pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+	printf("(%lu) started\n", pthread_self());
+
+	/* Create timer */
+	se.sigev_notify = SIGEV_SIGNAL;
+	se.sigev_signo = dt->dt_signo;
+	se.sigev_value.sival_ptr = &dt->dt_timer;
+
+	itimer.it_interval.tv_sec = dt->dt_ifreq.tv_sec;
+	itimer.it_interval.tv_nsec = dt->dt_ifreq.tv_nsec;
+	itimer.it_value.tv_sec = 1;
+	itimer.it_value.tv_nsec = 0;
+
+	if (timer_create(CLOCK_REALTIME, &se, &timer) == -1) {
+		syslog(LOG_EMERG, "timer_create(): %m");
+		goto error;
+	}
+	if (timer_settime(timer, 0, &itimer, NULL) == -1) {
+		syslog(LOG_EMERG, "timer_settime(): %m");
+		goto error;
+	}
+
+	/* Signal notifications */
+	for (;;) {
+		int ret;
+		siginfo_t info;
+
+		ret = sigwaitinfo(&set, &info);
+		if (ret == -1) {
+			syslog(LOG_ERR, "(%lu) sigwaitinfo(): %m", pthread_self());
+			goto error;
+		} else if (dt->dt_action != NULL) {
+			ret = dt->dt_action();
+		} else {
+			syslog(LOG_ERR, "(%lu) %d signal", pthread_self(), ret);
+			goto error;
+		}
+	}
+
+	return NULL;
+
+error:
+	errsv = errno;
+	(void) timer_delete(&timer);
+
+	errno = errsv;
+	return NULL;
 }
 
 static int
 spawn_threads(void)
 {
-	/* Clear state */
-	csv_th = PTHREAD_NONE;
-	wunder_th = PTHREAD_NONE;
-
 	/* CSV thread */
 	if (!confp->csv.disabled) {
+		csv.dt_signo = SIGRTMIN;
+		csv.dt_ifreq.tv_sec = confp->csv.freq;
+		csv.dt_ifreq.tv_nsec = 0;
+		csv.dt_action = csv_write;
+
 		if (csv_init() == -1) {
 			syslog(LOG_EMERG, "csv_init(): %m");
 			return -1;
 		}
-		if (pthread_create(&csv_th, NULL, csv_run, NULL) == -1) {
+		if (pthread_create(&csv.dt_thread, NULL, pthread_main, &csv) == -1) {
 			syslog(LOG_EMERG, "pthread_create(csv): %m");
 			return -1;
 		}
-	}
-
-	/* Wunderground thread */
-	if (!confp->wunder.disabled) {
-
 	}
 
 	return 0;
@@ -84,6 +146,7 @@ worker_destroy(void)
 	size_t i;
 	int ret = 0;
 
+#if 0
 	pthread_t *pth[] = {
 			&csv_th
 	};
@@ -103,6 +166,12 @@ worker_destroy(void)
 			*pth[i] = PTHREAD_NONE;
 		}
 	}
+#endif
+
+//	if (timer_stop() == -1) {
+//		syslog(LOG_ERR, "timer_stop(): %m");
+//		ret = -1;
+//	}
 
 	/* Unlink shared board */
 	if (board_unlink() == -1) {
@@ -117,12 +186,13 @@ worker_main(int *halt)
 {
 	int errsv;
 
-	if (set_signals() == -1) {
+	shutdown_pending = 0;
+	hangup_pending = 0;
+
+	if (sig_block() == -1) {
 		syslog(LOG_ERR, "set_signals: %m");
 		return -1;
 	}
-
-//	post_config();
 
 	/* Startup initialization */
 	if (startup) {
@@ -134,6 +204,9 @@ worker_main(int *halt)
 		syslog(LOG_INFO, "board_open(): success");
 		startup = 0;
 	}
+
+
+	printf("(%lu) main\n", pthread_self());
 
 	/* Spawn all threads */
 	if (spawn_threads() == -1) {
@@ -166,6 +239,7 @@ worker_main(int *halt)
 				syslog(LOG_NOTICE, "TERM signal received");
 				break;
 			default:
+				syslog(LOG_ERR, "Signal: %d", ret);
 				break;
 			}
 		}
