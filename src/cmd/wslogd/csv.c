@@ -5,20 +5,13 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include "libws/util.h"
+
 #include "wslogd.h"
 #include "board.h"
 #include "csv.h"
 
 static int fd = -1;
-
-static size_t
-gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
-{
-	struct tm tm;
-
-	gmtime_r(timep, &tm);
-	return strftime(s, max, fmt, &tm);
-}
 
 int
 csv_init(void)
@@ -40,7 +33,7 @@ csv_write(void)
 	char ctime[22];					/* date utc */
 	const struct ws_ws23xx *dat;
 
-	dat = &boardp->buf[boardp->idx].ws23xx;
+	dat = board_last();
 
 	/* Convert date */
 	gmftime(ctime, sizeof(ctime), &dat->time, "%F %T");

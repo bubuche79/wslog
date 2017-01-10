@@ -3,40 +3,34 @@
 #include <curl/curl.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <syslog.h>
 
-#include "util.h"
+#include "libws/util.h"
+
+#include "conf.h"
+#include "board.h"
+#include "wslogd.h"
 #include "wunder.h"
 
-#define URL			"http://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
-#define ID			"IMIDIPYR166"
-#define PASSWORD	"m7qg8QR5kXbFU2G5pcGbBqK9"
+#define WUNDER_URL "http://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
 struct html {
-	char *ptr;
+	char *buf;
 	size_t len;							/* used size */
 };
-
-static size_t
-gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
-{
-	struct tm tm;
-
-	gmtime_r(timep, &tm);
-	return strftime(s, max, fmt, &tm);
-}
 
 static void
 html_init(struct html* s)
 {
 	s->len = 0;
-	s->ptr = NULL;
+	s->buf = NULL;
 }
 
 static void
 html_cleanup(struct html *s)
 {
 	if (s != NULL) {
-		free(s->ptr);
+		free(s->buf);
 	}
 }
 
@@ -46,24 +40,32 @@ html_write(char *ptr, size_t size, size_t nmemb, struct html *s)
 	size_t sz = size * nmemb;
 	size_t new_len = s->len + sz;
 
-	s->ptr = realloc(s->ptr, new_len + 1);
-	if (s->ptr == NULL) {
+	s->buf = realloc(s->buf, new_len + 1);
+	if (s->buf == NULL) {
 		fprintf(stderr, "realloc() failed\n");
 		exit(1);		// TODO
 	}
 
-	memcpy(s->ptr + s->len, ptr, sz);
-	s->ptr[new_len] = '\0';
+	memcpy(s->buf + s->len, ptr, sz);
+	s->buf[new_len] = '\0';
 	s->len = new_len;
 
 	return sz;
 }
 
+int
+wunder_init(void)
+{
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+
+	return 0;
+}
+
 /**
- * http://wiki.wunderground.com/index.php/PWS_-_Upload_Protocol
+ * See
  */
 int
-ws_wunder_upload(const struct ws_wunder *w)
+wunder_update(void)
 {
 	int rc;
 
@@ -72,28 +74,29 @@ ws_wunder_upload(const struct ws_wunder *w)
 	struct html p;						/* GET output data */
  
 	html_init(&p);
-	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	curl = curl_easy_init();
-
 	if (curl) {
 		int sz;
 		char url[512];					/* final url */
 		char ctime[22];					/* date utc */
+		const struct ws_ws23xx *w;
+
+		w = board_last();
 
 		/* Convert date */
 		gmftime(ctime, sizeof(ctime), &w->time, "%F %T");
 
 		/* URL encode parameters */
 		char *dateutc = curl_easy_escape(curl, ctime, 0);
-		char *password = curl_easy_escape(curl, PASSWORD, 0);
+		char *password = curl_easy_escape(curl, confp->wunder.user_pwd, 0);
 
 		/* Compute GET request */
 		sz = snprintf(url, sizeof(url),
 				"%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%d&%s=%f&%s=%d&%s=%f&%s=%f&%s=%f&%s=%f&%s=%f&%s=%d",
-				URL,
+				WUNDER_URL,
 				"action", "updateraw",
-				"ID", ID,
+				"ID", confp->wunder.user_id,
 				"PASSWORD", password,
 				"dateutc", dateutc,
 				"winddir", w->wind_dir,
@@ -105,9 +108,8 @@ ws_wunder_upload(const struct ws_wunder *w)
 				"dailyrainin", ws_inch(w->daily_rain),
 				"indoortempf", ws_fahrenheit(w->temp_in),
 				"indoorhumidity", w->humidity_in);
-
 		if (sz == -1) {
-			fprintf(stderr, "snprintf(): %s\n", strerror(errno));
+			syslog(LOG_ERR, "snprintf(): %m");
 			goto error;
 		} else if (sizeof(url) <= (size_t) sz) {
 			fprintf(stderr, "Buffer overflow for URL (%d bytes required)", sz);
@@ -135,13 +137,11 @@ ws_wunder_upload(const struct ws_wunder *w)
 		goto error;
 	}
 
-	curl_global_cleanup();
-
 	/* Check response */
-	rc = strcmp("success\n", p.ptr);
+	rc = strcmp("success\n", p.buf);
 
 	if (rc) {
-		fprintf(stderr, "wunderground.com response:\n%s\n", p.ptr);
+		fprintf(stderr, "wunderground.com response:\n%s\n", p.buf);
 	}
 
 	html_cleanup(&p);
@@ -155,8 +155,15 @@ error:
 	if (curl != NULL) {
 		curl_easy_cleanup(curl);
 	}
-	curl_global_cleanup();
 	html_cleanup(&p);
 
 	return -1;
+}
+
+int
+wunder_destroy(void)
+{
+	curl_global_cleanup();
+
+	return 0;
 }

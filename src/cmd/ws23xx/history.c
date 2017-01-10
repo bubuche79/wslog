@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "util.h"
+#include "libws/util.h"
+
 #include "ws2300.h"
 #include "history.h"
 

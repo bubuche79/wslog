@@ -135,3 +135,9 @@ board_unlink()
 	return ret;
 
 }
+
+struct ws_ws23xx*
+board_last()
+{
+	return &boardp->buf[boardp->idx].ws23xx;
+}

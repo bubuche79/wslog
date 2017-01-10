@@ -6,9 +6,7 @@ OBJECTS = \
 	history.o \
 	main.o \
 	serial.o \
-	util.o \
-	ws2300.o \
-	wunder.o
+	ws2300.o
 
 include ../Makefile.cmd
 

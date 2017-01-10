@@ -44,6 +44,8 @@ struct ws_board *boardp;
 int board_open(int oflag);
 int board_unlink(void);
 
+struct ws_ws23xx *board_last(void);
+
 #ifdef __cplusplus
 }
 #endif

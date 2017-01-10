@@ -1,5 +1,7 @@
 #include <math.h>
 
+#include "defs/dso.h"
+
 #include "util.h"
 
 /**
@@ -10,7 +12,7 @@
  * @param temp the outdoor temperator
  * @return the windchill
  */
-double
+DSO_EXPORT double
 ws_windchill(double speed, double temp)
 {
 	double windchill;
@@ -36,7 +38,7 @@ ws_windchill(double speed, double temp)
  * @param humidity the outdoor humidity
  * @return the dew point
  */
-double
+DSO_EXPORT double
 ws_dewpoint(double temp, double humidity)
 {
 	double A = 17.2694;
@@ -52,7 +54,7 @@ ws_dewpoint(double temp, double humidity)
  * @param temp temperature, celsius
  * @return temperature, fahrenheit
  */
-double
+DSO_EXPORT double
 ws_fahrenheit(double temp)
 {
 	return 1.8 * temp + 32;
@@ -64,7 +66,7 @@ ws_fahrenheit(double temp)
  * @param speed speed, m/s
  * @return speed, miles/hour
  */
-double
+DSO_EXPORT double
 ws_mph(double speed)
 {
 	return speed / 0.44704;
@@ -76,8 +78,17 @@ ws_mph(double speed)
  * @param len length, millimeter
  * @return length, inches
  */
-double
+DSO_EXPORT double
 ws_inch(double len)
 {
 	return len / 25.4;
+}
+
+DSO_EXPORT size_t
+gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
+{
+	struct tm tm;
+
+	gmtime_r(timep, &tm);
+	return strftime(s, max, fmt, &tm);
 }

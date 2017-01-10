@@ -2,7 +2,7 @@
 #define _CSV_H
 
 /*
- * CSV output.
+ * CSV support.
  */
 
 #ifdef __cplusplus

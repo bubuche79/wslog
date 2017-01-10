@@ -11,7 +11,6 @@
 #include "serial.h"
 #include "history.h"
 #include "ws2300.h"
-#include "wunder.h"
 
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
 
@@ -920,21 +919,21 @@ main_cron(int argc, char* const argv[]) {
 
 	/* Process sub-command */
 	uint8_t cnx;
-	struct ws_wunder w;
+//	struct ws_wunder w;
 
 	const struct ws_io a[] =
 	{
-			{ "cn", &cnx },
-			{ "sw", &w.time },
-			{ "dp", &w.dew_point },
-			{ "ot", &w.temp },
-			{ "oh", &w.humidity },
-			{ "rh", &w.rain },
-			{ "rd", &w.daily_rain },
-			{ "w0", &w.wind_dir },
-			{ "ws", &w.wind_speed },
-			{ "it", &w.temp_in },
-			{ "ih", &w.humidity_in }
+//			{ "cn", &cnx },
+//			{ "sw", &w.time },
+//			{ "dp", &w.dew_point },
+//			{ "ot", &w.temp },
+//			{ "oh", &w.humidity },
+//			{ "rh", &w.rain },
+//			{ "rd", &w.daily_rain },
+//			{ "w0", &w.wind_dir },
+//			{ "ws", &w.wind_speed },
+//			{ "it", &w.temp_in },
+//			{ "ih", &w.humidity_in }
 	};
 
 	size_t nel = array_len(a);
@@ -975,19 +974,19 @@ main_cron(int argc, char* const argv[]) {
 	switch (cnx) {
 	case 0:				/* cable */
 	case 15:			/* wireless */
-		localtime_r(&w.time, &tm);
-		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
-
-		fprintf(stdout, "%s%c%.2f%c%hhu%c%.2f%c%hu%c%.2f%c%.2f%c%.2f%c%.2f%c%d\n",
-				cbuf, sep,
-				w.temp, sep, w.humidity, sep, w.dew_point, sep,
-				w.wind_dir, sep, w.wind_speed, sep,
-				w.rain, sep, w.daily_rain, sep,
-				w.temp_in, sep, w.humidity_in);
-
-		if (wunder) {
-			ws_wunder_upload(&w);
-		}
+//		localtime_r(&w.time, &tm);
+//		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
+//
+//		fprintf(stdout, "%s%c%.2f%c%hhu%c%.2f%c%hu%c%.2f%c%.2f%c%.2f%c%.2f%c%d\n",
+//				cbuf, sep,
+//				w.temp, sep, w.humidity, sep, w.dew_point, sep,
+//				w.wind_dir, sep, w.wind_speed, sep,
+//				w.rain, sep, w.daily_rain, sep,
+//				w.temp_in, sep, w.humidity_in);
+//
+//		if (wunder) {
+//			ws_wunder_upload(&w);
+//		}
 		break;
 
 	default:

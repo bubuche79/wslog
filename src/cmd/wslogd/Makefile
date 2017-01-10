@@ -7,14 +7,15 @@ OBJECTS = \
 	csv.o \
 	daemon.o \
 	worker.o \
-	wslogd.o
+	wslogd.o \
+	wunder.o
 
 include ../Makefile.cmd
 
 CPPFLAGS +=	-DHAVE_SELECT \
 		-I$(SRC)/common -I$(SRC)/lib
 
-LDLIBS +=	-L$(SRC)/lib/libws -lws -lpthread -lrt
+LDLIBS +=	-L$(SRC)/lib/libws -lws -lcurl -lpthread -lrt
 
 all:		$(PROG)
 

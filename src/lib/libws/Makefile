@@ -4,16 +4,17 @@ LIBRARY = libws.a
 VERS = .1
 OBJECTS = \
 	bitfield.o \
-	nybble.o \
 	conf.o \
-	err.o
+	err.o \
+	nybble.o \
+	util.o
 
 include	../Makefile.lib
 
 LIBS = $(DYNLIB)
 
 CPPFLAGS += -I$(SRC)/common -I..
-#LDLIBS += -lrt
+LDLIBS += -lm
 
 all: $(LIBS) $(LIBLINK)
 
