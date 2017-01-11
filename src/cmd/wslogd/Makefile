@@ -14,6 +14,7 @@ OBJECTS = \
 include ../Makefile.cmd
 
 CPPFLAGS +=	-DHAVE_SELECT \
+		-D_USE_FORK \
 		-I$(SRC)/common -I$(SRC)/lib
 
 LDLIBS +=	-L$(SRC)/lib/libws -lws -lcurl -lpthread -lrt
