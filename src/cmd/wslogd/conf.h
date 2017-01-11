@@ -20,7 +20,7 @@ struct ws_conf
 	int log_mask;						/* syslog priority mask */
 
 	const char *tty;					/* tty device */
-	int freq;							/* read frequency */
+	int freq;							/* read frequency, in seconds */
 
 	struct
 	{

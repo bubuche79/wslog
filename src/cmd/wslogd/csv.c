@@ -22,6 +22,7 @@ csv_init(void)
 		return -1;
 	}
 
+	printf("csv_init\n");
 	return 0;
 }
 
@@ -31,18 +32,20 @@ csv_write(void)
 	int ret;
 
 	char ctime[22];					/* date utc */
-	const struct ws_ws23xx *dat;
+	struct ws_ws23xx ws;
 
-	dat = board_last();
+	board_get(&ws);
+
+	printf("csv_write\n");
 
 	/* Convert date */
-	gmftime(ctime, sizeof(ctime), &dat->time, "%F %T");
+	gmftime(ctime, sizeof(ctime), &ws.time, "%F %T");
 
 	/* Write CSV line */
 	ret = dprintf(fd, "%s,%hu,%.1f,%hu,%.1f,%.1f,%.1f,%.1f,%hu,%.1f\n",
-			ctime, dat->wind_dir, dat->wind_speed, dat->humidity,
-			dat->dew_point, dat->temp, dat->rain, dat->daily_rain,
-			dat->humidity_in, dat->temp_in);
+			ctime, ws.wind_dir, ws.wind_speed, ws.humidity,
+			ws.dew_point, ws.temp, ws.rain, ws.daily_rain,
+			ws.humidity_in, ws.temp_in);
 	if (ret == -1) {
 		syslog(LOG_ERR, "dprintf(): %m");
 	}

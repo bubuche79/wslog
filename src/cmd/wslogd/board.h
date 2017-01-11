@@ -30,7 +30,7 @@ struct ws_ws23xx
 
 struct ws_board
 {
-	pthread_rwlock_t rwlock;
+	pthread_mutex_t mutex;
 
 	union {
 		struct ws_ws23xx ws23xx;		/* buffer */
@@ -44,7 +44,8 @@ struct ws_board *boardp;
 int board_open(int oflag);
 int board_unlink(void);
 
-struct ws_ws23xx *board_last(void);
+int board_get(struct ws_ws23xx *p);
+int board_push(const struct ws_ws23xx *p);
 
 #ifdef __cplusplus
 }

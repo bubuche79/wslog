@@ -8,6 +8,7 @@ OBJECTS = \
 	daemon.o \
 	worker.o \
 	wslogd.o \
+	ws23xx.o \
 	wunder.o
 
 include ../Makefile.cmd

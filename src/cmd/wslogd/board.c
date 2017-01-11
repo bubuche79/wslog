@@ -25,21 +25,21 @@ static int
 board_init(struct ws_board *p)
 {
 	int errsv;
-	pthread_rwlockattr_t attr;
+	pthread_mutexattr_t attr;
 
 	/* Shared lock */
-	if (pthread_rwlockattr_init(&attr) == -1) {
+	if (pthread_mutexattr_init(&attr) == -1) {
 		goto error;
 	}
-	if (pthread_rwlockattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) == -1) {
-		goto error;
-	}
-
-	if (pthread_rwlock_init(&p->rwlock, &attr) == -1) {
+	if (pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) == -1) {
 		goto error;
 	}
 
-	(void) pthread_rwlockattr_destroy(&attr);
+	if (pthread_mutex_init(&p->mutex, &attr) == -1) {
+		goto error;
+	}
+
+	(void) pthread_mutexattr_destroy(&attr);
 
 	/* Pointers */
 	boardp->bufsz = LOG_SZ;
@@ -49,18 +49,12 @@ board_init(struct ws_board *p)
 
 error:
 	errsv = errno;
-	(void) pthread_rwlockattr_destroy(&attr);
+	(void) pthread_mutexattr_destroy(&attr);
 
 	errno = errsv;
 	return -1;
 }
 
-//static int
-//board_destroy(struct ws_board *p)
-//{
-//	return pthread_rwlock_destroy(p->rwlock);
-//}
-//
 int
 board_open(int rdonly)
 {
@@ -136,8 +130,55 @@ board_unlink()
 
 }
 
-struct ws_ws23xx*
-board_last()
+int
+board_get(struct ws_ws23xx *p)
 {
-	return &boardp->buf[boardp->idx].ws23xx;
+	int idx;
+	int ret;
+
+	ret = 0;
+
+	if (pthread_mutex_lock(&boardp->mutex) == -1) {
+		return -1;
+	}
+
+	idx = boardp->idx;
+
+	if (idx == -1) {
+		ret = -1;
+	} else {
+		memcpy(p, &boardp->buf[idx-1], sizeof(*p));
+	}
+
+	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
+		return -1;
+	}
+
+	return ret;
+}
+
+int
+board_push(const struct ws_ws23xx *p)
+{
+	size_t idx;
+
+	if (pthread_mutex_lock(&boardp->mutex) == -1) {
+		return -1;
+	}
+
+	idx = boardp->idx;
+
+	if (idx == -1) {
+		idx = 0;
+	}
+
+	memcpy(&boardp->buf[idx], p, sizeof(*p));
+
+	boardp->idx = (idx + 1) % boardp->bufsz;
+
+	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
+		return -1;
+	}
+
+	return 0;
 }
