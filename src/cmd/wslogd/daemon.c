@@ -189,7 +189,7 @@ daemon_die(int status, int fd, const char *fmt, /* args */ ...)
  * Implementation refers to daemon(7).
  */
 int
-daemon(void)
+daemon_create(void)
 {
 	pid_t pid;
 	int pipefd[2];

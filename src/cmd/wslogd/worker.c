@@ -7,10 +7,10 @@
 #include <errno.h>
 #include <syslog.h>
 #include <time.h>
-#ifdef _USE_FORK
+#if ! 0
+#include <linux/version.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <sys/wait.h>
+#include <sys/syscall.h>
 #endif
 
 #include "defs/std.h"
@@ -24,7 +24,6 @@
 #include "worker.h"
 
 struct worker {
-	const char *w_name;								/* worker name */
 	int w_signo;									/* signal number */
 	struct timespec w_ifreq;						/* timer interval */
 	int (*w_init) (void);
@@ -32,11 +31,7 @@ struct worker {
 	int (*w_destroy) (void);
 
 	timer_t w_timer;
-#ifdef _USE_FORK
-	pid_t w_pid;									/* child pid */
-#else
 	pthread_t w_thread;								/* thread id */
-#endif
 };
 
 static int startup = 1;
@@ -44,7 +39,7 @@ static int startup = 1;
 static volatile sig_atomic_t shutdown_pending;
 static volatile sig_atomic_t hangup_pending;
 
-static struct worker threads[3];				/* daemon threads */
+static struct worker threads[3];					/* daemon threads */
 static size_t threads_nel;							/* number of elements */
 
 static void
@@ -53,18 +48,8 @@ sig_set(sigset_t *set)
 	(void) sigemptyset(set);
 	(void) sigaddset(set, SIGHUP);
 	(void) sigaddset(set, SIGTERM);
-#ifdef _USE_FORK
-	(void) sigaddset(set, SIGCHLD);
-#endif
-}
-
-static void
-sigthread_exit(int status)
-{
-#ifdef _USE_FORK
-	exit(status);
-#else
-	pthread_exit(NULL);
+#if ! 0
+	(void) sigaddset(set, SIGALRM);
 #endif
 }
 
@@ -92,12 +77,14 @@ sigthread_main(void *arg)
 	/* Change blocked signals */
 	(void) sigemptyset(&set);
 	(void) sigaddset(&set, dt->w_signo);
-#ifdef _USE_FORK
-	(void) pthread_sigmask(SIG_SETMASK, &set, NULL);
-#endif
 
 	/* Create timer */
+#if 0
 	se.sigev_notify = SIGEV_SIGNAL;
+#else
+	se.sigev_notify = SIGEV_THREAD_ID;
+	se._sigev_un._tid = syscall(SYS_gettid);
+#endif
 	se.sigev_signo = dt->w_signo;
 	se.sigev_value.sival_ptr = &dt->w_timer;
 
@@ -147,8 +134,6 @@ sigthread_main(void *arg)
 		}
 	}
 
-	sigthread_exit(0);
-
 	return NULL;
 
 error:
@@ -157,32 +142,16 @@ error:
 	(void) dt->w_destroy();
 
 	errno = errsv;
-	sigthread_exit(1);
 	return NULL;
 }
 
 static int
 sigthread_create(struct worker *dt)
 {
-#ifdef _USE_FORK
-	pid_t pid;
-
-	pid = fork();
-	if (pid == -1) {
-		syslog(LOG_ALERT, "fork: %m");
-		return -1;
-	} else if (pid > 0) {
-		dt->w_pid = pid;
-	} else {
-		(void) sigthread_main(dt);
-	}
-
-#else
 	if (pthread_create(&dt->w_thread, NULL, sigthread_main, dt) == -1) {
 		syslog(LOG_EMERG, "pthread_create(): %m");
 		return -1;
 	}
-#endif /* _USE_FORK */
 
 	return 0;
 }
@@ -191,23 +160,12 @@ static int
 sigthread_kill(struct worker *dt)
 {
 	int ret;
-#ifdef _USE_FORK
-	siginfo_t info;
-#else
+#if 0
 	sigset_t set;
 #endif
 
 	ret = 0;
 
-#ifdef _USE_FORK
-	if (kill(dt->w_pid, SIGTERM) == -1) {
-		ret = -1;
-	} else {
-		if (waitid(P_PID, dt->w_pid, &info, 0) == -1) {
-			ret = -1;
-		}
-	}
-#else
 	/* Kill thread */
 	if (pthread_kill(dt->w_thread, dt->w_signo) == -1) {
 		ret = -1;
@@ -219,6 +177,7 @@ sigthread_kill(struct worker *dt)
 		}
 	}
 
+#if 0
 	/* Signal management */
 	(void) sigemptyset(&set);
 	(void) sigaddset(&set, dt->w_signo);
@@ -226,7 +185,7 @@ sigthread_kill(struct worker *dt)
 	if (pthread_sigmask(SIG_UNBLOCK, &set, NULL) == -1) {
 		return -1;
 	}
-#endif /* _USE_FORK */
+#endif
 
 	return ret;
 }
@@ -249,21 +208,21 @@ threads_start(void)
 {
 	int signo;
 	size_t i = 0;
-#ifndef _USE_FORK
+#if 0
 	sigset_t set;
 #endif
 
 	threads_count();
 
 	/* Signal */
-#ifdef _USE_FORK
-	signo = SIGALRM;
-#else
+#if 0
 	signo = SIGRTMIN;
+#else
+	signo = SIGALRM;
 #endif
 
 	/* Configure reader thread */
-	threads[i].w_signo = signo;
+	threads[i].w_signo = SIGALRM;
 	threads[i].w_ifreq.tv_sec = confp->freq;
 	threads[i].w_ifreq.tv_nsec = 0;
 	threads[i].w_init = ws23xx_init;
@@ -271,7 +230,7 @@ threads_start(void)
 	threads[i].w_destroy = ws23xx_destroy;
 
 	i++;
-#ifndef _USE_FORK
+#if 0
 	signo++;
 #endif
 
@@ -285,7 +244,7 @@ threads_start(void)
 		threads[i].w_destroy = csv_destroy;
 
 		i++;
-#ifndef _USE_FORK
+#if 0
 		signo++;
 #endif
 	}
@@ -300,13 +259,13 @@ threads_start(void)
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;
-#ifndef _USE_FORK
+#if 0
 		signo++;
 #endif
 	}
 
+#if 0
 	/* Manage signals */
-#ifndef _USE_FORK
 	(void) sigemptyset(&set);
 
 	for (i = 0; i < threads_nel; i++) {
@@ -423,11 +382,6 @@ worker_main(int *halt)
 				shutdown_pending = 1;
 				syslog(LOG_NOTICE, "Signal TERM");
 				break;
-#ifdef _USE_FORK
-			case SIGCHLD:
-				syslog(LOG_ERR, "Signal CHLD");
-				break;
-#endif
 			default:
 				syslog(LOG_ERR, "Signal %d", ret);
 				break;

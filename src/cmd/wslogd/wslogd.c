@@ -115,7 +115,7 @@ main(int argc, char *argv[])
 
 	/* Detach, create new session */
 	if (!one_process_mode) {
-		if (daemon() == -1) {
+		if (daemon_create() == -1) {
 			die(1, "daemon: %s\n", strerror(errno));
 		}
 	}

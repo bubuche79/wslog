@@ -16,7 +16,7 @@ extern "C" {
  *
  * See daemon(7) for more details.
  */
-int daemon(void);
+int daemon_create(void);
 
 #ifdef __cplusplus
 }
