@@ -13,9 +13,10 @@ ws23xx_init(void)
 int
 ws23xx_read(void)
 {
-	struct ws_ws23xx ws;
+	struct ws_log ws;
 
 	time(&ws.time);
+	ws.log_mask = -1;
 	ws.humidity = 10;
 
 	board_push(&ws);

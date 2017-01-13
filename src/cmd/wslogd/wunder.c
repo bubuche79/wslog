@@ -80,7 +80,7 @@ wunder_update(void)
 		int sz;
 		char url[512];					/* final url */
 		char ctime[22];					/* date utc */
-		struct ws_ws23xx w;
+		struct ws_log w;
 
 		board_get(&w);
 
@@ -89,14 +89,14 @@ wunder_update(void)
 
 		/* URL encode parameters */
 		char *dateutc = curl_easy_escape(curl, ctime, 0);
-		char *password = curl_easy_escape(curl, confp->wunder.user_pwd, 0);
+		char *password = curl_easy_escape(curl, confp->wunder.password, 0);
 
 		/* Compute GET request */
 		sz = snprintf(url, sizeof(url),
 				"%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%d&%s=%f&%s=%d&%s=%f&%s=%f&%s=%f&%s=%f&%s=%f&%s=%d",
 				WUNDER_URL,
 				"action", "updateraw",
-				"ID", confp->wunder.user_id,
+				"ID", confp->wunder.station,
 				"PASSWORD", password,
 				"dateutc", dateutc,
 				"winddir", w.wind_dir,
@@ -104,8 +104,8 @@ wunder_update(void)
 				"humidity", w.humidity,
 				"dewptf", ws_fahrenheit(w.dew_point),
 				"tempf", ws_fahrenheit(w.temp),
-				"rainin", ws_inch(w.rain),
-				"dailyrainin", ws_inch(w.daily_rain),
+				"rainin", ws_inch(w.rain_1h),
+				"dailyrainin", ws_inch(w.rain_24h),
 				"indoortempf", ws_fahrenheit(w.temp_in),
 				"indoorhumidity", w.humidity_in);
 		if (sz == -1) {

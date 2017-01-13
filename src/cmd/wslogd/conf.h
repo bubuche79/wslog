@@ -25,16 +25,14 @@ struct ws_conf
 	struct
 	{
 		int disabled;					/* disabled flag */
-		const char *file;				/* output file */
-		int freq;						/* write frequency, in seconds */
-	} csv;
+		const char *db;					/* database file */
+	} sqlite;
 
 	struct
 	{
 		int disabled;					/* disabled flag */
-		const char *url;				/* wunderground.com protocol upload url*/
-		const char *user_id;			/* wunderground id */
-		const char *user_pwd;			/* wunderground password */
+		const char *station;			/* station id */
+		const char *password;			/* account password */
 		int freq;						/* write frequency, in seconds */
 	} wunder;
 };

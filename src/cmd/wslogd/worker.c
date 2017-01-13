@@ -17,7 +17,7 @@
 
 #include "board.h"
 #include "conf.h"
-#include "csv.h"
+#include "sqlite.h"
 #include "wunder.h"
 #include "wslogd.h"
 #include "ws23xx.h"
@@ -39,7 +39,7 @@ static int startup = 1;
 static volatile sig_atomic_t shutdown_pending;
 static volatile sig_atomic_t hangup_pending;
 
-static struct worker threads[3];					/* daemon threads */
+static struct worker threads[4];					/* daemon threads */
 static size_t threads_nel;							/* number of elements */
 
 static void
@@ -70,7 +70,7 @@ sigthread_main(void *arg)
 	/* Initialize */
 	if (dt->w_init != NULL) {
 		if (dt->w_init() == -1) {
-			goto error;
+			return NULL;
 		}
 	}
 
@@ -195,7 +195,7 @@ threads_count(void)
 {
 	threads_nel = 1;
 
-	if (!confp->csv.disabled) {
+	if (!confp->sqlite.disabled) {
 		threads_nel++;
 	}
 	if (!confp->wunder.disabled) {
@@ -234,14 +234,14 @@ threads_start(void)
 	signo++;
 #endif
 
-	/* Configure CSV thread */
-	if (!confp->csv.disabled) {
+	/* Configure SQLite thread */
+	if (!confp->sqlite.disabled) {
 		threads[i].w_signo = signo;
-		threads[i].w_ifreq.tv_sec = confp->csv.freq;
+		threads[i].w_ifreq.tv_sec = 2;
 		threads[i].w_ifreq.tv_nsec = 0;
-		threads[i].w_init = csv_init;
-		threads[i].w_action = csv_write;
-		threads[i].w_destroy = csv_destroy;
+		threads[i].w_init = sqlite_init;
+		threads[i].w_action = sqlite_write;
+		threads[i].w_destroy = sqlite_destroy;
 
 		i++;
 #if 0

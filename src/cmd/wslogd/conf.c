@@ -119,25 +119,21 @@ conf_decode(void *p, const char *key, const char *value)
 		cfg->tty = strdup(value);
 	} else if (!strcmp(key, "freq")) {
 		strtoint(value, &cfg->freq);
-	} else if (!strncmp(key, "csv.", 4)) {
-		if (!strcmp(key, "csv.disabled")) {
-			strtoint(value, &cfg->csv.disabled);
-		} else if (!strcmp(key, "csv.file")) {
-			cfg->csv.file = strdup(value);
-		} else if (!strcmp(key, "csv.freq")) {
-			strtoint(value, &cfg->csv.freq);
+	} else if (!strncmp(key, "sqlite.", 4)) {
+		if (!strcmp(key, "sqlite.disabled")) {
+			strtoint(value, &cfg->sqlite.disabled);
+		} else if (!strcmp(key, "sqlite.db")) {
+			cfg->sqlite.db = strdup(value);
 		} else {
 			errno = EINVAL;
 		}
 	} else if (!strncmp(key, "wunder.", 7)) {
 		if (!strcmp(key, "wunder.disabled")) {
 			strtoint(value, &cfg->wunder.disabled);
-		} else if (!strcmp(key, "wunder.url")) {
-			cfg->wunder.url = strdup(value);
-		} else if (!strcmp(key, "wunder.user.id")) {
-			cfg->wunder.user_id = strdup(value);
-		} else if (!strcmp(key, "wunder.user.password")) {
-			cfg->wunder.user_pwd = strdup(value);
+		} else if (!strcmp(key, "wunder.station")) {
+			cfg->wunder.station = strdup(value);
+		} else if (!strcmp(key, "wunder.password")) {
+			cfg->wunder.password = strdup(value);
 		} else if (!strcmp(key, "wunder.freq")) {
 			strtoint(value, &cfg->wunder.freq);
 		} else {

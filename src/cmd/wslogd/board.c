@@ -13,7 +13,6 @@
 #include "board.h"
 
 #define SHM_NAME "/wslog"			/* shared memory object name */
-
 #define LOG_SZ 10					/* log size */
 
 static size_t shmlen = 0;			/* shared memory size */
@@ -131,7 +130,7 @@ board_unlink()
 }
 
 int
-board_get(struct ws_ws23xx *p)
+board_get(struct ws_log *p)
 {
 	int idx;
 	int ret;
@@ -158,7 +157,7 @@ board_get(struct ws_ws23xx *p)
 }
 
 int
-board_push(const struct ws_ws23xx *p)
+board_push(const struct ws_log *p)
 {
 	size_t idx;
 
@@ -181,4 +180,10 @@ board_push(const struct ws_ws23xx *p)
 	}
 
 	return 0;
+}
+
+int
+ws_isset(const struct ws_log *p, int mask)
+{
+	return p->log_mask & mask;
 }
