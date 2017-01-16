@@ -10,10 +10,7 @@
 #include <sys/file.h>
 #include <time.h>
 
-#include "libws/util.h"
-
-#include "serial.h"
-#include "ws2300.h"
+#include "libws/serial.h"
 
 #define BAUDRATE B2400
 

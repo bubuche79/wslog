@@ -7,7 +7,9 @@ OBJECTS = \
 	conf.o \
 	err.o \
 	nybble.o \
-	util.o
+	util.o \
+	ws23xx/decoder.o \
+	ws23xx/ws23xx.o
 
 include	../Makefile.lib
 

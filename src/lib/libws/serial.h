@@ -1,5 +1,5 @@
-#ifndef _SERIAL_H
-#define _SERIAL_H
+#ifndef _LIBWS_SERIAL_H
+#define _LIBWS_SERIAL_H
 
 #include <stdint.h>
 
@@ -13,4 +13,4 @@ int ws_write_byte(int fd, uint8_t byte);
 int ws_clear(int fd);
 int ws_flush(int fd);
 
-#endif	/* _SERIAL_H */
+#endif	/* _LIBWS_SERIAL_H */

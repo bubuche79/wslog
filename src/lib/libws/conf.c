@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <math.h>
 #include <sys/types.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -97,7 +98,7 @@ conftok(char *line, char **name, char **value)
 }
 
 DSO_EXPORT int
-strtoint(const char *str, int *val)
+ws_getint(const char *str, int *val)
 {
 	char *eptr;
 	long res;
@@ -120,7 +121,29 @@ strtoint(const char *str, int *val)
 }
 
 DSO_EXPORT int
-strtobool(const char *str, int *val)
+ws_getfloat(const char *str, float *val)
+{
+	char *eptr;
+	float res;
+
+	errno = 0;
+	res = strtof(str, &eptr);
+
+	if (res == 0 && errno) {
+		return -1;
+	} else if ((res == -HUGE_VALF || res == HUGE_VALF) && errno) {
+		return -1;
+	} else if (*eptr != 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*val = res;
+	return 0;
+}
+
+DSO_EXPORT int
+ws_getbool(const char *str, int *val)
 {
 	if (!strcmp(str, "yes")) {
 		*val = 1;
@@ -135,18 +158,7 @@ strtobool(const char *str, int *val)
 }
 
 DSO_EXPORT int
-strtostr(const char *str, char *buf, size_t buflen)
-{
-	if (memccpy(buf, str, 0, buflen) == NULL) {
-		errno = ENOBUFS;
-		return -1;
-	}
-
-	return 0;
-}
-
-DSO_EXPORT int
-conf_parse(const char *path, int *lineno,
+ws_parse_config(const char *path, int *lineno,
     int (*usrcfg)(void *, const char *, const char *), void *arg)
 {
 	int errsv;

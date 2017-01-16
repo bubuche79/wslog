@@ -79,7 +79,7 @@ main(int argc, char *argv[])
 	/* Default parameters */
 	const char *conf_file = "/etc/wslogd.conf";
 
-	(void) setlocale(LC_ALL, "");
+	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
 	while ((c = getopt(argc, argv, "Xc:")) != -1) {

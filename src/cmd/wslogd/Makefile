@@ -8,7 +8,7 @@ OBJECTS = \
 	sqlite.o \
 	worker.o \
 	wslogd.o \
-	ws23xx.o \
+	ws23xx\ws23xx.o \
 	wunder.o
 
 include ../Makefile.cmd

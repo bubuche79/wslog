@@ -11,6 +11,11 @@
 extern "C" {
 #endif
 
+enum ws_driver
+{
+	WS23XX								/* La Crosse Technology WS23XX */
+};
+
 struct ws_conf
 {
 	uid_t uid;							/* effective user id */
@@ -19,13 +24,27 @@ struct ws_conf
 	int log_facility;					/* syslog facility */
 	int log_mask;						/* syslog priority mask */
 
-	const char *tty;					/* tty device */
-	int freq;							/* read frequency, in seconds */
+	struct
+	{
+		float latitude;					/* latitude */
+		float longitude;				/* longitude */
+		int altitude;					/* altitude (m) */
+		enum ws_driver driver;			/* station type */
+	} station;
+
+	union {
+		struct
+		{
+			const char *tty;			/* tty device */
+			int freq;					/* read frequency, in seconds */
+		} ws23xx;
+	} driver;
 
 	struct
 	{
 		int disabled;					/* disabled flag */
 		const char *db;					/* database file */
+		int freq;						/* archive frequency, in seconds */
 	} sqlite;
 
 	struct
@@ -33,7 +52,7 @@ struct ws_conf
 		int disabled;					/* disabled flag */
 		const char *station;			/* station id */
 		const char *password;			/* account password */
-		int freq;						/* write frequency, in seconds */
+		int freq;						/* update frequency, in seconds */
 	} wunder;
 };
 

@@ -342,15 +342,15 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 {
 	switch (type) {
 	case WS_TEMP:
-		ws_temp(buf, (double *) v, offset);
+		ws23xx_temp(buf, (double *) v, offset);
 		break;
 
 	case WS_PRESSURE:
-		ws_pressure(buf, (double *) v, offset);
+		ws23xx_pressure(buf, (double *) v, offset);
 		break;
 
 	case WS_HUMIDITY:
-		ws_humidity(buf, (uint8_t *) v, offset);
+		ws23xx_humidity(buf, (uint8_t *) v, offset);
 		break;
 
 	case WS_SPEED:
@@ -362,7 +362,7 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 		break;
 
 	case WS_RAIN:
-		ws_rain(buf, (double *) v, offset);
+		ws23xx_rain(buf, (double *) v, offset);
 		break;
 
 	//		case WS_INT_SEC:

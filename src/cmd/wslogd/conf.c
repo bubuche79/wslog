@@ -16,8 +16,9 @@
 #include "conf.h"
 
 static int
-strtouid(const char *str, uid_t *uid)
+ws_getuid(const char *str, uid_t *uid)
 {
+	int ret;
 	struct passwd pwd;
 	struct passwd *result;
 	char *buf;
@@ -36,6 +37,7 @@ strtouid(const char *str, uid_t *uid)
 
 	s = getpwnam_r(str, &pwd, buf, bufsize, &result);
 	if (result == NULL) {
+		ret = -1;
 		if (s == 0) {
 			errno = EINVAL;
 		} else {
@@ -47,11 +49,11 @@ strtouid(const char *str, uid_t *uid)
 
 	free(buf);
 
-	return 0;
+	return ret;
 }
 
 static int
-strtogid(const char *str, gid_t *gid)
+ws_getgid(const char *str, gid_t *gid)
 {
 	struct group grp;
 	struct group *result;
@@ -86,6 +88,23 @@ strtogid(const char *str, gid_t *gid)
 }
 
 static int
+ws_getdriver(const char *str, enum ws_driver *driver)
+{
+	int ret;
+
+	ret = 0;
+
+	if (!strcmp(str, "WS23XX")) {
+		*driver = WS23XX;
+	} else {
+		ret = -1;
+		errno = EINVAL;
+	}
+
+	return ret;
+}
+
+static int
 conf_init(struct ws_conf *cfg)
 {
 	memset(cfg, 0, sizeof(*cfg));
@@ -110,18 +129,40 @@ conf_decode(void *p, const char *key, const char *value)
 	errno = 0;
 
 	if (!strcmp(key, "user")) {
-		strtouid(value, &cfg->uid);
+		ws_getuid(value, &cfg->uid);
 	} else if (!strcmp(key, "group")) {
-		strtogid(value, &cfg->gid);
+		ws_getgid(value, &cfg->gid);
 	} else if (!strcmp(key, "pid_file")) {
 		cfg->pid_file = strdup(value);
-	} else if (!strcmp(key, "tty")) {
-		cfg->tty = strdup(value);
-	} else if (!strcmp(key, "freq")) {
-		strtoint(value, &cfg->freq);
+	} else if (!strncmp(key, "station.", 8)) {
+		if (!strcmp(key, "station.latitude")) {
+			ws_getfloat(value, &cfg->station.latitude);
+		} else if (!strcmp(key, "station.longitude")) {
+			ws_getfloat(value, &cfg->station.longitude);
+		} else if (!strcmp(key, "station.altitude")) {
+			ws_getint(value, &cfg->station.altitude);
+		} else if (!strcmp(key, "station.driver")) {
+			ws_getdriver(value, &cfg->station.driver);
+		} else {
+			errno = EINVAL;
+		}
+	} else if (!strncmp(key, "driver.", 7)) {
+		switch (cfg->station.driver) {
+		case WS23XX:
+			if (!strcmp(key, "driver.ws23xx.tty")) {
+				cfg->driver.ws23xx.tty = strdup(value);
+			} else if (!strcmp(key, "driver.ws23xx.freq")) {
+				ws_getint(value, &cfg->driver.ws23xx.freq);
+			} else {
+				errno = EINVAL;
+			}
+			break;
+		default:
+			errno = EINVAL;
+		}
 	} else if (!strncmp(key, "sqlite.", 4)) {
 		if (!strcmp(key, "sqlite.disabled")) {
-			strtoint(value, &cfg->sqlite.disabled);
+			ws_getint(value, &cfg->sqlite.disabled);
 		} else if (!strcmp(key, "sqlite.db")) {
 			cfg->sqlite.db = strdup(value);
 		} else {
@@ -129,13 +170,13 @@ conf_decode(void *p, const char *key, const char *value)
 		}
 	} else if (!strncmp(key, "wunder.", 7)) {
 		if (!strcmp(key, "wunder.disabled")) {
-			strtoint(value, &cfg->wunder.disabled);
+			ws_getint(value, &cfg->wunder.disabled);
 		} else if (!strcmp(key, "wunder.station")) {
 			cfg->wunder.station = strdup(value);
 		} else if (!strcmp(key, "wunder.password")) {
 			cfg->wunder.password = strdup(value);
 		} else if (!strcmp(key, "wunder.freq")) {
-			strtoint(value, &cfg->wunder.freq);
+			ws_getint(value, &cfg->wunder.freq);
 		} else {
 			errno = EINVAL;
 		}
@@ -153,7 +194,7 @@ conf_load(struct ws_conf *cfg, const char *path)
 
 	conf_init(cfg);
 
-	if (conf_parse(path, &lineno, conf_decode, cfg) == -1) {
+	if (ws_parse_config(path, &lineno, conf_decode, cfg) == -1) {
 		char buf[128];
 		strerror_r(errno, buf, sizeof(buf));
 

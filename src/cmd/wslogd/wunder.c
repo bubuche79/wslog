@@ -155,8 +155,8 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_log *wl)
 	try_add_int(str, len, "humidity", ws_isset(wl, WF_HUMIDITY), wl->humidity);
 	try_add_float(str, len, "dewptf", ws_isset(wl, WF_DEW_POINT), ws_fahrenheit(wl->dew_point));
 	try_add_float(str, len, "tempf", ws_isset(wl, WF_TEMP), ws_fahrenheit(wl->temp));
-	try_add_float(str, len, "rainin", ws_isset(wl, WF_RAIN_1H), ws_inch(wl->rain_1h));
-	try_add_float(str, len, "dailyrainin", ws_isset(wl, WF_RAIN_24H), ws_inch(wl->rain_24h));
+	try_add_float(str, len, "rainin", ws_isset(wl, WF_RAIN_1H), ws_toinch(wl->rain_1h));
+	try_add_float(str, len, "dailyrainin", ws_isset(wl, WF_RAIN_24H), ws_toinch(wl->rain_24h));
 	try_add_float(str, len, "indoortempf", ws_isset(wl, WF_TEMP_IN), ws_fahrenheit(wl->temp_in));
 	try_add_int(str, len, "indoorhumidity", ws_isset(wl, WF_HUMIDITY_IN), wl->humidity_in);
 

@@ -1,12 +1,13 @@
+#include "ws23xx.h"
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
+#include "defs/dso.h"
 #include "libws/nybble.h"
-
-#include "serial.h"
-#include "ws2300.h"
+#include "libws/serial.h"
 
 #define MAX_RESETS 		100
 #define MAX_RETRIES		50
@@ -101,8 +102,8 @@ error:
 /**
  * Write a reset string and wait for a reply.
  */
-int
-ws_reset_06(int fd)
+DSO_EXPORT int
+ws23xx_reset_06(int fd)
 {
 	uint8_t answer;
 	int ret;
@@ -147,14 +148,14 @@ ws_reset_06(int fd)
 		}
 
 #if DEBUG >= 1
-		printf("ws_reset_06: %d\n", i);
+		printf("ws23xx_reset_06: %d\n", i);
 #endif	/* DEBUG */
 	}
 
 	errno = EAGAIN;
 
 error:
-	perror("ws_reset_06");
+	perror("ws23xx_reset_06");
 	return -1;
 }
 
@@ -163,8 +164,8 @@ error:
  *
  * @return 0 on success, -1 on error
  */
-int
-ws_write_addr(int fd, uint16_t addr)
+DSO_EXPORT int
+ws23xx_write_addr(int fd, uint16_t addr)
 {
 	uint8_t byte, ack;
 
@@ -180,7 +181,7 @@ ws_write_addr(int fd, uint16_t addr)
 	return 0;
 
 error:
-	perror("ws_write_addr");
+	perror("ws23xx_write_addr");
 	return -1;
 }
 
@@ -189,8 +190,8 @@ error:
  *
  * @return 0 on success, -1 on error
  */
-int
-ws_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
+DSO_EXPORT int
+ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
 	size_t max_len;
 	uint8_t ack_constant;
@@ -220,7 +221,7 @@ ws_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 		goto error;
 	}
 
-	if (ws_write_addr(fd, addr) == -1) {
+	if (ws23xx_write_addr(fd, addr) == -1) {
 		goto error;
 	}
 
@@ -237,22 +238,22 @@ ws_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 	return 0;
 
 error:
-	perror("ws_write_data");
+	perror("ws23xx_write_data");
 	return -1;
 }
 
 /**
  * Reset the device and write a command, verifying it was written correctly.
  */
-int
-ws_write_safe(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
+DSO_EXPORT int
+ws23xx_write_safe(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
 	for (int i = 0; i < MAX_RETRIES; i++) {
-		if (ws_reset_06(fd) == -1) {
+		if (ws23xx_reset_06(fd) == -1) {
 			goto error;
 		}
 
-		if (ws_write(fd, addr, nnyb, op, buf) == 0) {
+		if (ws23xx_write(fd, addr, nnyb, op, buf) == 0) {
 			return 0;
 		}
 	}
@@ -260,12 +261,12 @@ ws_write_safe(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf
 	return 0;
 
 error:
-	perror("ws_write_safe");
+	perror("ws23xx_write_safe");
 	return -1;
 }
 
-int
-ws_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
+DSO_EXPORT int
+ws23xx_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 {
 	uint8_t answer;
 
@@ -275,7 +276,7 @@ ws_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 	}
 
 	/* Write address to read from */
-	if (ws_write_addr(fd, addr) == -1) {
+	if (ws23xx_write_addr(fd, addr) == -1) {
 		goto error;
 	}
 
@@ -306,7 +307,7 @@ ws_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 	return 0;
 
 error:
-	perror("ws_read_data");
+	perror("ws23xx_read_data");
 	return -1;
 }
 
@@ -323,10 +324,10 @@ read_block(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 		for (k = 0; k < MAX_RETRIES; k++) {
 			int chunk = min(MAX_BLOCKS, nnyb - p);
 
-			if (ws_read(fd, addr + p, chunk, buf + (p + 1) / 2) == 0) {
+			if (ws23xx_read(fd, addr + p, chunk, buf + (p + 1) / 2) == 0) {
 				break;
 			}
-			if (ws_reset_06(fd) == -1) {
+			if (ws23xx_reset_06(fd) == -1) {
 				goto error;
 			}
 		}
@@ -340,16 +341,16 @@ read_block(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 	return 0;
 
 error:
-	perror("ws_read_safe");
+	perror("ws23xx_read_safe");
 	return -1;
 }
 
 static int
-read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
+read_block_all(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
 {
 	size_t i;
 
-	if (ws_reset_06(fd) == -1) {
+	if (ws23xx_reset_06(fd) == -1) {
 		goto error;
 	}
 
@@ -362,14 +363,14 @@ read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t
 	return 0;
 
 error:
-	perror("ws_read_batch");
+	perror("ws23xx_read_batch");
 	return -1;
 }
 
 static int
-cmp_addr(const uint16_t *a, const uint16_t *b)
+cmp_addr(const void *a, const void *b)
 {
-	return (*a) - (*b);
+	return (*(uint16_t *)a) - (*(uint16_t *)b);
 }
 
 static size_t
@@ -384,8 +385,8 @@ nybsz(const size_t *a, size_t nel)
 	return res;
 }
 
-int
-ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
+DSO_EXPORT int
+ws23xx_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
 {
 	uint16_t io_addr[nel];				/* address */
 	size_t io_nnyb[nel];				/* number of nybbles at address */
@@ -438,7 +439,7 @@ ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint
 	}
 
 	/* Read */
-	if (read_batch(fd, io_addr, io_nnyb, opt_nel, io_buf) == -1) {
+	if (read_block_all(fd, io_addr, io_nnyb, opt_nel, io_buf) == -1) {
 		return -1;
 	}
 
@@ -450,8 +451,8 @@ ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint
 	return 0;
 }
 
-int
-ws_read_safe(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
+DSO_EXPORT int
+ws23xx_read_safe(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
 {
-	return read_batch(fd, &addr, &nnybble, 1, &buf);
+	return read_block_all(fd, &addr, &nnybble, 1, &buf);
 }

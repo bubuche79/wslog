@@ -1,14 +1,8 @@
-#ifndef _WS2300_H
-#define _WS2300_H
+#ifndef _LIBWS_WS23XX_H
+#define _LIBWS_WS23XX_H
 
 #include <unistd.h>
 #include <stdint.h>
-
-#include "decoder.h"
-
-#ifndef DEBUG
-#define DEBUG 0
-#endif
 
 #define SETBIT			0x12
 #define UNSETBIT		0x32
@@ -80,13 +74,13 @@ struct ws_measure {
 	const char *reset;					/* id of measure to reset this one */
 };
 
-int ws_reset_06(int fd);
-int ws_write_addr(int fd, uint16_t addr);
+int ws23xx_reset_06(int fd);
+int ws23xx_write_addr(int fd, uint16_t addr);
 
-int ws_write(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf);
-int ws_write_safe(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf);
-int ws_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf);
-int ws_read_safe(int fd, uint16_t addr, size_t nnyb, uint8_t *buf);
-int ws_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[]);
+int ws23xx_write(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf);
+int ws23xx_write_safe(int fd, uint16_t addr, size_t len, uint8_t op, const uint8_t *buf);
+int ws23xx_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf);
+int ws23xx_read_safe(int fd, uint16_t addr, size_t nnyb, uint8_t *buf);
+int ws23xx_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[]);
 
-#endif	/* ws2300.h */
+#endif	/* _LIBWS_WS23XX_H */

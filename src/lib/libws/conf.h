@@ -11,12 +11,12 @@
 extern "C" {
 #endif
 
-int strtoint(const char *str, int *val);
-int strtobool(const char *str, int *val);
-int strtostr(const char *str, char *buf, size_t buflen);
+int ws_getint(const char *str, int *val);
+int ws_getbool(const char *str, int *val);
+int ws_getfloat(const char *str, float *val);
 
 /*
- * The cfg_parse() function parses a configuration file and calls a
+ * The ws_parse_config() function parses a configuration file and calls a
  * user defined function on definition lines. The file is composed of lines
  * of the following format:
  *
@@ -31,7 +31,7 @@ int strtostr(const char *str, char *buf, size_t buflen);
  * stops as soon as a line does not match one of the supported formats above,
  * or the usrcfg() function returns -1.
  */
-int conf_parse(const char *path, int *lineno,
+int ws_parse_config(const char *path, int *lineno,
     int (*usrcfg)(void *, const char *, const char *), void *arg);
 
 #ifdef __cplusplus
