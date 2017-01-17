@@ -44,6 +44,7 @@ $(DYNLIB):	DIR = pics
 # Compilation rules
 #
 objs/%.o pics/%.o: %.c
+	-$(MKDIR) -p $(dir $@)
 	$(COMPILE.c) -o $@ $<
 	$(POST_PROCESS.o)
 

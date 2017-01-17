@@ -12,22 +12,30 @@
 extern "C" {
 #endif
 
-#define WF_PRESSURE 	0x0001
-#define WF_WIND_DIR 	0x0001
-#define WF_WIND_SPEED	0x0002
-#define WF_HUMIDITY		0x0004
-#define WF_DEW_POINT	0x0008
-#define WF_TEMP			0x0010
-#define WF_RAIN_1H		0x0020
-#define WF_RAIN_24H		0x0040
-#define WF_TEMP_IN		0x0080
-#define WF_HUMIDITY_IN	0x0100
-#define WF_ALL			0xFFFF
+#define WF_BAROMETER 			0x0001
+#define WF_PRESSURE 			0x0002
+#define WF_TEMP					0x0004
+#define WF_HUMIDITY				0x0008
+#define WF_WIND_SPEED			0x0010
+#define WF_WIND_DIR 			0x0020
+#define WF_WIND_GUST			0x0040
+#define WF_WIND_GUST_DIR		0x0080
+#define WF_RAIN_RATE			0x0100
+#define WF_RAIN_1H				0x0200
+#define WF_RAIN_24H				0x0400
+#define WF_DEW_POINT			0x0800
+#define WF_WINDCHILL			0x1000
+#define WF_HEAD_INDEX			0x2000
+#define WF_TEMP_IN				0x4000
+#define WF_HUMIDITY_IN			0x8000
+#define WF_ALL					0xFFFF
+
+#define WF_WIND					0x38F0
 
 struct ws_loop
 {
 	struct timespec time;		/* loop packet time */
-	int wl_mask;				/* loop packet fields mask */
+	uint32_t wl_mask;			/* loop packet fields mask */
 
 	float barometer;			/* relative pressure (hPa) */
 	float abs_pressure;			/* absolute pressure (hPa) */
@@ -61,31 +69,17 @@ struct ws_archive
 	struct ws_loop data;		/* aggregated data */
 };
 
-struct ws_log
-{
-	time_t time;				/* timestamp */
-	int log_mask;				/* fields mask */
-
-	int wind_dir;				/* wind direction */
-	float wind_speed;			/* wind speed (m/s) */
-	int humidity;				/* relative humidity */
-	float dew_point;			/* dew point (°C) */
-	float temp;					/* temperature (°C) */
-	float rain_1h;				/* accumulated rainfall (mm) in the past hour */
-	float rain_24h;				/* accumulated rainfall (mm) today */
-
-	float temp_in;				/* indoor temperature (°C) */
-	int humidity_in;			/* indoor humidity (°C) */
-};
-
 struct ws_board
 {
 	pthread_mutex_t mutex;
 
 	struct ws_loop *loop;
-	struct ws_archive *archive;
-	size_t bufsz;				/* number of elements */
-	size_t idx;					/* next used index */
+	size_t loop_sz;
+	size_t loop_idx;			/* next index */
+
+	struct ws_archive *ar;
+	size_t ar_sz;
+	size_t ar_idx;				/* next used index */
 };
 
 struct ws_board *boardp;
@@ -93,10 +87,12 @@ struct ws_board *boardp;
 int board_open(int oflag);
 int board_unlink(void);
 
-int board_get(struct ws_log *p);
-int board_push(const struct ws_log *p);
+int board_get_ar(struct ws_archive *p);
+int board_push_ar(const struct ws_archive *p);
 
-int ws_isset(const struct ws_log *p, int mask);
+int board_push_loop(const struct ws_loop *p);
+
+int ws_isset(const struct ws_loop *p, int mask);
 
 #ifdef __cplusplus
 }

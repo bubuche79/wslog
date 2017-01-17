@@ -118,13 +118,13 @@ url_add_float(char *str, size_t len, const char *p, int isset, float value)
 }
 
 static int
-wunder_url(char *str, size_t len, CURL *h, const struct ws_log *wl)
+wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 {
 	int ret;
 	char ctime[22];					/* date utc */
 
 	/* Convert date */
-	gmftime(ctime, sizeof(ctime), &wl->time, "%F %T");
+	gmftime(ctime, sizeof(ctime), &p->time.tv_sec, "%F %T");
 
 	/* URL encode parameters */
 	char *dateutc = curl_easy_escape(h, ctime, 0);
@@ -132,11 +132,11 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_log *wl)
 
 	/* Compute GET request */
 	ret = snprintf(str, len,
-			URL "?%s=%s&%s=%s&%s=%s&%s=%s",
+			URL "?%s=%s&%s=%s&%s=%s&%s=%s.%ld",
 			"action", "updateraw",
 			"ID", confp->wunder.station,
 			"PASSWORD", password,
-			"dateutc", dateutc);
+			"dateutc", dateutc, p->time.tv_nsec);
 	if (ret == -1) {
 		syslog(LOG_ERR, "snprintf(): %m");
 		goto error;
@@ -150,15 +150,15 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_log *wl)
 	curl_free(dateutc);
 	curl_free(password);
 
-	try_add_int(str, len, "winddir", ws_isset(wl, WF_WIND_DIR), wl->wind_dir);
-	try_add_float(str, len, "windspeedmph", ws_isset(wl, WF_WIND_SPEED), ws_mph(wl->wind_speed));
-	try_add_int(str, len, "humidity", ws_isset(wl, WF_HUMIDITY), wl->humidity);
-	try_add_float(str, len, "dewptf", ws_isset(wl, WF_DEW_POINT), ws_fahrenheit(wl->dew_point));
-	try_add_float(str, len, "tempf", ws_isset(wl, WF_TEMP), ws_fahrenheit(wl->temp));
-	try_add_float(str, len, "rainin", ws_isset(wl, WF_RAIN_1H), ws_toinch(wl->rain_1h));
-	try_add_float(str, len, "dailyrainin", ws_isset(wl, WF_RAIN_24H), ws_toinch(wl->rain_24h));
-	try_add_float(str, len, "indoortempf", ws_isset(wl, WF_TEMP_IN), ws_fahrenheit(wl->temp_in));
-	try_add_int(str, len, "indoorhumidity", ws_isset(wl, WF_HUMIDITY_IN), wl->humidity_in);
+	try_add_int(str, len, "winddir", ws_isset(p, WF_WIND_DIR), p->wind_dir);
+	try_add_float(str, len, "windspeedmph", ws_isset(p, WF_WIND_SPEED), ws_mph(p->wind_speed));
+	try_add_int(str, len, "humidity", ws_isset(p, WF_HUMIDITY), p->humidity);
+	try_add_float(str, len, "dewptf", ws_isset(p, WF_DEW_POINT), ws_fahrenheit(p->dew_point));
+	try_add_float(str, len, "tempf", ws_isset(p, WF_TEMP), ws_fahrenheit(p->temp));
+	try_add_float(str, len, "rainin", ws_isset(p, WF_RAIN_1H), ws_inch(p->rain_1h));
+	try_add_float(str, len, "dailyrainin", ws_isset(p, WF_RAIN_24H), ws_inch(p->rain_24h));
+	try_add_float(str, len, "indoortempf", ws_isset(p, WF_TEMP_IN), ws_fahrenheit(p->temp_in));
+	try_add_int(str, len, "indoorhumidity", ws_isset(p, WF_HUMIDITY_IN), p->humidity_in);
 
 	return 0;
 
@@ -178,7 +178,7 @@ wunder_init(void)
  * See http://wiki.wunderground.com/index.php/PWS_-_Upload_Protocol
  */
 int
-wunder_update(void)
+wunder_write(const struct ws_archive *p)
 {
 	int ret;
 	CURL *curl = NULL;
@@ -189,12 +189,9 @@ wunder_update(void)
 	curl = curl_easy_init();
 	if (curl) {
 		CURLcode code;
-		struct ws_log wl;
 		char url[512];
 
-		board_get(&wl);
-
-		if (wunder_url(url, sizeof(url), curl, &wl) == -1) {
+		if (wunder_url(url, sizeof(url), curl, &p->data) == -1) {
 			goto error;
 		}
 

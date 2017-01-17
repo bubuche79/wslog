@@ -6,11 +6,11 @@
 #include <errno.h>
 
 #include "libws/nybble.h"
+#include "libws/ws23xx/ws23xx.h"
+#include "libws/ws23xx/decoder.h"
+#include "libws/serial.h"
 
-#include "decoder.h"
-#include "serial.h"
 #include "history.h"
-#include "ws2300.h"
 
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
 
@@ -21,8 +21,6 @@
 #ifndef VERSION
 #define VERSION		"0.1"
 #endif
-
-#define array_len(a)	(sizeof(a) / sizeof(a[0]))
 
 static const struct ws_type types[] =
 {
@@ -354,11 +352,11 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 		break;
 
 	case WS_SPEED:
-		ws_speed(buf, (double *) v, offset);
+		ws23xx_speed(buf, (double *) v, offset);
 		break;
 
 	case WS_WIND_DIR:
-		ws_wind_dir(buf, (uint16_t *) v, offset);
+		ws23xx_wind_dir(buf, (uint16_t *) v, offset);
 		break;
 
 	case WS_RAIN:
@@ -382,11 +380,11 @@ decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
 	//			break;
 
 	case WS_DATETIME:
-		ws_datetime(buf, (time_t *) v, offset);
+		ws23xx_datetime(buf, (time_t *) v, offset);
 		break;
 
 	case WS_CONNECTION:
-		ws_connection(buf, (uint8_t *) v, offset);
+		ws23xx_connection(buf, (uint8_t *) v, offset);
 		break;
 	//
 	//		case WS_ALARM_SET_0:
@@ -418,7 +416,7 @@ static char *
 decode_str_bit(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
 {
 	const struct ws_type *t = &types[type];
-	uint8_t v = ws_bit(buf, offset, t->bit.b);
+	uint8_t v = ws23xx_bit(buf, offset, t->bit.b);
 
 	strncpy(s, v ? t->bit.set : t->bit.unset, len);
 
@@ -451,47 +449,47 @@ decode_str(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t o
 {
 	switch (type) {
 	case WS_TEMP:
-		ws_temp_str(buf, s, len, offset);
+		ws23xx_temp_str(buf, s, len, offset);
 		break;
 
 	case WS_PRESSURE:
-		ws_pressure_str(buf, s, len, offset);
+		ws23xx_pressure_str(buf, s, len, offset);
 		break;
 
 	case WS_HUMIDITY:
-		ws_humidity_str(buf, s, len, offset);
+		ws23xx_humidity_str(buf, s, len, offset);
 		break;
 
 	case WS_SPEED:
-		ws_speed_str(buf, s, len, offset);
+		ws23xx_speed_str(buf, s, len, offset);
 		break;
 
 	case WS_WIND_DIR:
-		ws_wind_dir_str(buf, s, len, offset);
+		ws23xx_wind_dir_str(buf, s, len, offset);
 		break;
 
 	case WS_RAIN:
-		ws_rain_str(buf, s, len, offset);
+		ws23xx_rain_str(buf, s, len, offset);
 		break;
 
 	case WS_INT_SEC:
-		ws_interval_sec_str(buf, s, len, offset);
+		ws23xx_interval_sec_str(buf, s, len, offset);
 		break;
 
 	case WS_INT_MIN:
-		ws_interval_min_str(buf, s, len, offset);
+		ws23xx_interval_min_str(buf, s, len, offset);
 		break;
 
 	case WS_BIN_2NYB:
-		ws_bin_2nyb_str(buf, s, len, offset);
+		ws23xx_bin_2nyb_str(buf, s, len, offset);
 		break;
 
 	case WS_TIMESTAMP:
-		ws_timestamp_str(buf, s, len, offset);
+		ws23xx_timestamp_str(buf, s, len, offset);
 		break;
 
 	case WS_DATETIME:
-		ws_datetime_str(buf, s, len, offset);
+		ws23xx_datetime_str(buf, s, len, offset);
 		break;
 
 	case WS_ALARM_SET_0:
@@ -544,7 +542,7 @@ desc_text(const struct ws_type *t, char *desc, size_t len)
 }
 
 static void
-ws_desc(const struct ws_type *t, char *desc, size_t len)
+ws23xx_desc(const struct ws_type *t, char *desc, size_t len)
 {
 	switch (t->id) {
 	case WS_ALARM_SET_0:
@@ -605,7 +603,7 @@ main_help(int argc, char* const argv[])
 
 		char desc[128];
 
-		ws_desc(t, desc, sizeof(desc));
+		ws23xx_desc(t, desc, sizeof(desc));
 
 		if (t->units != NULL) {
 			printf("%-5s %-30s 0x%.3x:%-2d  %s, %s\n", m->id, m->desc, m->addr,
@@ -657,7 +655,7 @@ main_hex(int argc, char* const argv[]) {
 		exit(1);
 	}
 
-	if (ws_read_safe(fd, addr, nnybles, buf) == -1) {
+	if (ws23xx_read_safe(fd, addr, nnybles, buf) == -1) {
 		goto error;
 	}
 
@@ -772,7 +770,7 @@ main_fetch(int argc, char* const argv[]) {
 		exit(1);
 	}
 
-	if (ws_read_batch(fd, addr, nnyb, nel, buf) == -1) {
+	if (ws23xx_read_batch(fd, addr, nnyb, nel, buf) == -1) {
 		goto error;
 	}
 
@@ -862,7 +860,7 @@ main_history(int argc, char* const argv[]) {
 		}
 	}
 
-	ssize_t nel = ws_fetch_history(fd, hbuf, hist_count);
+	ssize_t nel = ws23xx_fetch_history(fd, hbuf, hist_count);
 
 	/* Display output */
 	char cbuf[32];
@@ -956,7 +954,7 @@ main_cron(int argc, char* const argv[]) {
 		exit(1);
 	}
 
-	ws_read_batch(fd, addr, nnyb, nel, buf);
+	ws23xx_read_batch(fd, addr, nnyb, nel, buf);
 
 	ws_close(fd);
 
@@ -1017,7 +1015,7 @@ main(int argc, char * const argv[])
 			break;
 
 		case 'd':
-			ws_io_delay = strtol(optarg, NULL, 10);
+//			ws_io_delay = strtol(optarg, NULL, 10);
 			break;
 
 		default:

@@ -3,8 +3,8 @@
 #include <math.h>
 
 #include "libws/util.h"
+#include "libws/ws23xx/ws23xx.h"
 
-#include "ws2300.h"
 #include "history.h"
 
 static void
@@ -30,11 +30,11 @@ conv_history(const uint8_t *buf, struct ws_history *h)
 }
 
 ssize_t
-ws_fetch_history(int fd, struct ws_history *h, size_t nel) {
+ws23xx_fetch_history(int fd, struct ws_history *h, size_t nel) {
 	uint8_t buf[20];
 
 	/* Read history settings */
-	if (ws_read_safe(fd, 0x6B2, 20, buf) == -1) {
+	if (ws23xx_read_safe(fd, 0x6B2, 20, buf) == -1) {
 		goto error;
 	}
 
@@ -44,11 +44,11 @@ ws_fetch_history(int fd, struct ws_history *h, size_t nel) {
 	uint8_t last_record;
 	uint8_t record_count;
 
-	ws_interval_min(buf, &save_int, 0);
-	ws_interval_min(buf, &count_down, 3);
-	ws_timestamp(buf, &last_sample, 6);
-	ws_bin_2nyb(buf, &last_record, 16);
-	ws_bin_2nyb(buf, &record_count, 18);
+	ws23xx_interval_min(buf, &save_int, 0);
+	ws23xx_interval_min(buf, &count_down, 3);
+	ws23xx_timestamp(buf, &last_sample, 6);
+	ws23xx_bin_2nyb(buf, &last_record, 16);
+	ws23xx_bin_2nyb(buf, &record_count, 18);
 
 	/* Minimize number of reads */
 	if (nel == 0) {
@@ -61,7 +61,7 @@ ws_fetch_history(int fd, struct ws_history *h, size_t nel) {
 		uint8_t nyb_data[19];
 		struct ws_history *p = &h[nel - i - 1];
 
-		if (ws_read_safe(fd, 0x6c6 + (last_record - i) * 19, 19, nyb_data) == -1) {
+		if (ws23xx_read_safe(fd, 0x6c6 + (last_record - i) * 19, 19, nyb_data) == -1) {
 			goto error;
 		}
 

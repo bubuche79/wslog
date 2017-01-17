@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 int wunder_init(void);
-int wunder_update(void);
+int wunder_write(const struct ws_archive *p);
 int wunder_destroy(void);
 
 #ifdef __cplusplus

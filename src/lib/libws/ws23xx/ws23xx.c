@@ -6,6 +6,8 @@
 #include <stdlib.h>
 
 #include "defs/dso.h"
+#include "defs/std.h"
+
 #include "libws/nybble.h"
 #include "libws/serial.h"
 
@@ -17,8 +19,6 @@
 #define SETACK			0x04
 #define UNSETACK		0x0C
 #define WRITEACK		0x10
-
-#define min(a,b)		((a) < (b) ? (a) : (b))
 
 static void
 encode(uint8_t op, const uint8_t *src, uint8_t *dest, size_t len)

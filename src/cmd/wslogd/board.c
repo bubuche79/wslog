@@ -13,7 +13,7 @@
 #include "board.h"
 
 #define SHM_NAME "/wslog"			/* shared memory object name */
-#define LOG_SZ 10					/* log size */
+#define SHM_SIZE (16*1024)			/* shared memory size */
 
 static size_t shmlen = 0;			/* shared memory size */
 static void *shmbufp = MAP_FAILED;	/* shared memory */
@@ -21,10 +21,12 @@ static void *shmbufp = MAP_FAILED;	/* shared memory */
 struct ws_board *boardp = NULL;
 
 static int
-board_init(struct ws_board *p)
+board_init(struct ws_board *p, size_t len)
 {
 	int errsv;
 	pthread_mutexattr_t attr;
+
+	printf("%d %d %d\n", sizeof(*p), sizeof(*p->ar), sizeof(*p->loop));
 
 	/* Shared lock */
 	if (pthread_mutexattr_init(&attr) == -1) {
@@ -41,8 +43,13 @@ board_init(struct ws_board *p)
 	(void) pthread_mutexattr_destroy(&attr);
 
 	/* Pointers */
-	boardp->bufsz = LOG_SZ;
-	boardp->idx = 0;
+	boardp->loop_sz = 100;
+	boardp->loop_idx = boardp->loop_sz;
+	boardp->loop = (void *) p + sizeof(*p);
+
+	boardp->ar_sz = 100;
+	boardp->ar_idx = boardp->ar_sz;
+	boardp->ar = (void *) p + sizeof(*p) + boardp->loop_sz * sizeof(p->loop);
 
 	return 0;
 
@@ -62,7 +69,7 @@ board_open(int rdonly)
 	int oflag, mflag;
 
 	shmfd = -1;
-	shmlen = sizeof(*boardp) + LOG_SZ * sizeof(*boardp->buf);
+	shmlen = SHM_SIZE;
 
 	oflag = rdonly ? O_RDONLY : O_RDWR|O_CREAT;
 	mflag = PROT_READ | (rdonly ? 0 : PROT_WRITE);
@@ -88,10 +95,9 @@ board_open(int rdonly)
 	shmfd = -1;
 
 	boardp = shmbufp;
-	boardp->buf = shmbufp + sizeof(*boardp);
 
 	/* Initialize shared_memory content */
-	if (board_init(boardp) == -1) {
+	if (board_init(boardp, SHM_SIZE) == -1) {
 		goto error;
 	}
 
@@ -126,11 +132,10 @@ board_unlink()
 	}
 
 	return ret;
-
 }
 
 int
-board_get(struct ws_log *p)
+board_get_ar(struct ws_archive *p)
 {
 	int idx;
 	int ret;
@@ -141,12 +146,12 @@ board_get(struct ws_log *p)
 		return -1;
 	}
 
-	idx = boardp->idx;
+	idx = boardp->loop_idx;
 
-	if (idx == -1) {
+	if (idx == boardp->loop_sz) {
 		ret = -1;
 	} else {
-		memcpy(p, &boardp->buf[idx-1], sizeof(*p));
+		memcpy(p, &boardp->loop[idx-1], sizeof(*p));
 	}
 
 	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
@@ -157,7 +162,7 @@ board_get(struct ws_log *p)
 }
 
 int
-board_push(const struct ws_log *p)
+board_push_loop(const struct ws_loop *p)
 {
 	size_t idx;
 
@@ -165,15 +170,15 @@ board_push(const struct ws_log *p)
 		return -1;
 	}
 
-	idx = boardp->idx;
+	idx = boardp->loop_idx;
 
-	if (idx == -1) {
+	if (idx == boardp->loop_sz) {
 		idx = 0;
 	}
 
-	memcpy(&boardp->buf[idx], p, sizeof(*p));
+	memcpy(&boardp->loop[idx], p, sizeof(*p));
 
-	boardp->idx = (idx + 1) % boardp->bufsz;
+	boardp->loop_idx = (idx + 1) % boardp->loop_sz;
 
 	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
 		return -1;
@@ -183,7 +188,7 @@ board_push(const struct ws_log *p)
 }
 
 int
-ws_isset(const struct ws_log *p, int mask)
+ws_isset(const struct ws_loop *p, int mask)
 {
-	return p->log_mask & mask;
+	return p->wl_mask & mask;
 }

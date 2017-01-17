@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #ifdef HAVE_SELECT
 #include <sys/select.h>
 #include <sys/ioctl.h>
@@ -10,6 +11,7 @@
 #include <sys/file.h>
 #include <time.h>
 
+#include "defs/dso.h"
 #include "libws/serial.h"
 
 #define BAUDRATE B2400
@@ -28,7 +30,7 @@ msleep(long ms) {
 	nanosleep(&ts, NULL);
 }
 
-int
+DSO_EXPORT int
 ws_open(const char *device)
 {
 	int fd = -1;
@@ -104,7 +106,7 @@ error:
 	return -1;
 }
 
-int
+DSO_EXPORT int
 ws_close(int fd)
 {
 	if (tcsetattr(fd, TCSANOW, &oldio) == -1) {
@@ -121,7 +123,7 @@ error:
 	return -1;
 }
 
-int
+DSO_EXPORT int
 ws_read_byte(int fd, uint8_t *byte, long timeout)
 {
 	int ret;
@@ -172,7 +174,7 @@ error:
 	return -1;
 }
 
-int
+DSO_EXPORT int
 ws_write_byte(int fd, uint8_t byte)
 {
 	int ret;
@@ -199,7 +201,7 @@ error:
 	return -1;
 }
 
-int
+DSO_EXPORT int
 ws_clear(int fd)
 {
 	if (tcflush(fd, TCIFLUSH) == -1) {
@@ -213,7 +215,7 @@ error:
 	return -1;
 }
 
-int
+DSO_EXPORT int
 ws_flush(int fd)
 {
 	if (tcdrain(fd) == -1) {

@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 int sqlite_init(void);
-int sqlite_write(void);
+int sqlite_write(const struct ws_archive *p);
 int sqlite_destroy(void);
 
 #ifdef __cplusplus

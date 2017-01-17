@@ -8,6 +8,7 @@ OBJECTS = \
 	err.o \
 	nybble.o \
 	util.o \
+	serial.o \
 	ws23xx/decoder.o \
 	ws23xx/ws23xx.o
 

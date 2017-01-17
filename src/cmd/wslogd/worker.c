@@ -223,10 +223,10 @@ threads_start(void)
 
 	/* Configure reader thread */
 	threads[i].w_signo = SIGALRM;
-	threads[i].w_ifreq.tv_sec = confp->freq;
+//	threads[i].w_ifreq.tv_sec = confp->freq;
 	threads[i].w_ifreq.tv_nsec = 0;
 	threads[i].w_init = ws23xx_init;
-	threads[i].w_action = ws23xx_read;
+	threads[i].w_action = ws23xx_fetch;
 	threads[i].w_destroy = ws23xx_destroy;
 
 	i++;
@@ -255,7 +255,7 @@ threads_start(void)
 		threads[i].w_ifreq.tv_sec = confp->wunder.freq;
 		threads[i].w_ifreq.tv_nsec = 0;
 		threads[i].w_init = wunder_init;
-		threads[i].w_action = wunder_update;
+		threads[i].w_action = wunder_write;
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;
