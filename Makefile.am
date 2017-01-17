@@ -1,0 +1,4 @@
+SUBDIRS = src tests
+
+CFLAGS = -D_GNU_SOURCE
+
