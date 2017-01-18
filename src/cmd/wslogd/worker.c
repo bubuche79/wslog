@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <time.h>
-#if ! 0
+#ifdef HAVE_SIGTHREADID
 #include <linux/version.h>
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -48,7 +48,7 @@ sig_set(sigset_t *set)
 	(void) sigemptyset(set);
 	(void) sigaddset(set, SIGHUP);
 	(void) sigaddset(set, SIGTERM);
-#if ! 0
+#ifdef HAVE_SIGTHREADID
 	(void) sigaddset(set, SIGALRM);
 #endif
 }
@@ -79,7 +79,7 @@ sigthread_main(void *arg)
 	(void) sigaddset(&set, dt->w_signo);
 
 	/* Create timer */
-#if 0
+#ifndef HAVE_SIGTHREADID
 	se.sigev_notify = SIGEV_SIGNAL;
 #else
 	se.sigev_notify = SIGEV_THREAD_ID;
@@ -90,8 +90,8 @@ sigthread_main(void *arg)
 
 	itimer.it_interval.tv_sec = dt->w_ifreq.tv_sec;
 	itimer.it_interval.tv_nsec = dt->w_ifreq.tv_nsec;
-	itimer.it_value.tv_sec = 1;
-	itimer.it_value.tv_nsec = 0;
+	itimer.it_value.tv_sec = 0;
+	itimer.it_value.tv_nsec = 100;
 
 	if (timer_create(CLOCK_REALTIME, &se, &timer) == -1) {
 		syslog(LOG_ERR, "timer_create(): %m");
@@ -160,7 +160,7 @@ static int
 sigthread_kill(struct worker *dt)
 {
 	int ret;
-#if 0
+#ifndef HAVE_SIGTHREADID
 	sigset_t set;
 #endif
 
@@ -177,7 +177,7 @@ sigthread_kill(struct worker *dt)
 		}
 	}
 
-#if 0
+#ifndef HAVE_SIGTHREADID
 	/* Signal management */
 	(void) sigemptyset(&set);
 	(void) sigaddset(&set, dt->w_signo);
@@ -208,14 +208,14 @@ threads_start(void)
 {
 	int signo;
 	size_t i = 0;
-#if 0
+#ifndef HAVE_SIGTHREADID
 	sigset_t set;
 #endif
 
 	threads_count();
 
 	/* Signal */
-#if 0
+#ifndef HAVE_SIGTHREADID
 	signo = SIGRTMIN;
 #else
 	signo = SIGALRM;
@@ -230,7 +230,7 @@ threads_start(void)
 	threads[i].w_destroy = ws23xx_destroy;
 
 	i++;
-#if 0
+#ifndef HAVE_SIGTHREADID
 	signo++;
 #endif
 
@@ -244,7 +244,7 @@ threads_start(void)
 		threads[i].w_destroy = sqlite_destroy;
 
 		i++;
-#if 0
+#ifndef HAVE_SIGTHREADID
 		signo++;
 #endif
 	}
@@ -259,12 +259,12 @@ threads_start(void)
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;
-#if 0
+#ifndef HAVE_SIGTHREADID
 		signo++;
 #endif
 	}
 
-#if 0
+#ifndef HAVE_SIGTHREADID
 	/* Manage signals */
 	(void) sigemptyset(&set);
 

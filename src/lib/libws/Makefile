@@ -17,7 +17,7 @@ include	../Makefile.lib
 
 LIBS = $(DYNLIB)
 
-CPPFLAGS += -I$(SRC)/common -I..
+CPPFLAGS += -I$(SRC)/common -I.. -fPIC
 LDLIBS += -lm
 
 all: $(LIBS) $(LIBLINK)
