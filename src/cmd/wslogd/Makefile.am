@@ -15,4 +15,4 @@ wslogd_CFLAGS = \
 	-I../../common -I../../lib
 
 wslogd_LDADD = \
-	$(INTLLIBS)
+	-L../../lib/libws -lws -lsqlite3 -lcurl -lrt -lpthread
