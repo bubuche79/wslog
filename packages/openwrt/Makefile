@@ -14,9 +14,8 @@ PKG_RELEASE:=1
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/ws2300/.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=d11cb58275c9a193f350d0b5c00872510bd7c9a6
+PKG_SOURCE_VERSION:=3729fe1
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-#PKG_MD5SUM:=df3d201aecb3155a80633990cc467831
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
@@ -27,7 +26,7 @@ define Package/wslog
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Weather station utility
-  DEPENDS:=+libcurl +libsqlite3 +librt +libpthread
+  DEPENDS:=+libcurl +libsqlite3
 endef
 
 define Package/wslog/description
@@ -36,11 +35,11 @@ define Package/wslog/description
 endef
 
 define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR)
+	$(MAKE) LD=mips-openwrt-linux-musl-ld CC=mips-openwrt-linux-musl-gcc $(MAKE_VARS) -C $(PKG_BUILD_DIR)
 endef
 
 define Build/Install
-	$(MAKE) -C $(PKG_BUILD_DIR) ROOT=$(PKG_INSTALL_DIR)/usr install
+	$(MAKE) CC=mips-openwrt-linux-musl-gcc $(MAKE_VARS) -C $(PKG_BUILD_DIR) ROOT=$(PKG_INSTALL_DIR)/usr install
 endef
 
 define Package/wslog/install
