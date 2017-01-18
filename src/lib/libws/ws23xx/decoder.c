@@ -103,6 +103,18 @@ ws23xx_wind_dir(const uint8_t *buf, uint16_t *v, size_t offset)
 	return res;
 }
 
+DSO_EXPORT uint8_t
+ws23xx_wind_valid(const uint8_t *buf, uint8_t *v, size_t offset)
+{
+	uint8_t res = nybget(buf, offset);
+
+	if (v) {
+		*v = res;
+	}
+
+	return res;
+}
+
 DSO_EXPORT float
 ws23xx_interval_sec(const uint8_t *buf, float *v, size_t offset)
 {

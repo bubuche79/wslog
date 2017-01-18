@@ -49,6 +49,15 @@ ws_dewpoint(double temp, double humidity)
 }
 
 /**
+ * Converts pressure from hPa to inHg.
+ */
+DSO_EXPORT double
+ws_inhg(double p)
+{
+	return p / (1013.25 / 29.92);
+}
+
+/**
  * Converts temperature from Celsius to Fahrenheit.
  *
  * @param temp temperature, celsius

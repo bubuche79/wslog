@@ -12,25 +12,23 @@
 extern "C" {
 #endif
 
-#define WF_BAROMETER 			0x0001
-#define WF_PRESSURE 			0x0002
-#define WF_TEMP					0x0004
-#define WF_HUMIDITY				0x0008
-#define WF_WIND_SPEED			0x0010
-#define WF_WIND_DIR 			0x0020
-#define WF_WIND_GUST			0x0040
-#define WF_WIND_GUST_DIR		0x0080
-#define WF_RAIN_RATE			0x0100
-#define WF_RAIN_1H				0x0200
-#define WF_RAIN_24H				0x0400
-#define WF_DEW_POINT			0x0800
-#define WF_WINDCHILL			0x1000
-#define WF_HEAD_INDEX			0x2000
-#define WF_TEMP_IN				0x4000
-#define WF_HUMIDITY_IN			0x8000
-#define WF_ALL					0xFFFF
-
-#define WF_WIND					0x38F0
+#define WF_BAROMETER 		0x0001
+#define WF_PRESSURE 		0x0002
+#define WF_TEMP				0x0004
+#define WF_HUMIDITY			0x0008
+#define WF_WIND				0x0010
+#define WF_WIND_GUST		0x0040
+#define WF_RAIN				0x0100
+#define WF_RAIN_RATE		0x0100
+#define WF_RAIN_1H			0x0100
+#define WF_RAIN_24H			0x0100
+#define WF_SAMPLE_RAIN		0x0200
+#define WF_DEW_POINT		0x0800
+#define WF_WINDCHILL		0x1000
+#define WF_HEAD_INDEX		0x2000
+#define WF_TEMP_IN			0x4000
+#define WF_HUMIDITY_IN		0x8000
+#define WF_ALL				0xFFFF
 
 struct ws_loop
 {
@@ -45,12 +43,12 @@ struct ws_loop
 	uint16_t wind_dir;			/* wind direction (°) */
 	float wind_gust;			/* wind gust (m/s) */
 	uint16_t wind_gust_dir;		/* wind gust direction (°) */
+	float rain;					/* sample rain (mm) */
 	float rain_rate;			/* rain rate (mm/hr) */
 	float rain_1h;				/* accumulated rain in the past hour (mm) */
 	float rain_24h;				/* accumulated rain in the past 24 hours (mm) */
 #if 0
-	float sampleRain;			/* ! inches               */
-	float sampleET;				/* ! ET */
+	float sample_et;			/* evapotranspiration (mm) */
 	uint16_t radiation;			/* solar radiation (W/m³) */
 	float uv;					/* UV index */
 #endif
@@ -79,7 +77,7 @@ struct ws_board
 
 	struct ws_archive *ar;
 	size_t ar_sz;
-	size_t ar_idx;				/* next used index */
+	size_t ar_idx;				/* next index */
 };
 
 struct ws_board *boardp;
@@ -90,9 +88,10 @@ int board_unlink(void);
 int board_get_ar(struct ws_archive *p);
 int board_push_ar(const struct ws_archive *p);
 
-int board_push_loop(const struct ws_loop *p);
+int board_push(const struct ws_loop *p);
 
 int ws_isset(const struct ws_loop *p, int mask);
+int ws_isset_ar(const struct ws_archive *p, int mask);
 
 #ifdef __cplusplus
 }

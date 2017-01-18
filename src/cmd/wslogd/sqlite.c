@@ -54,18 +54,26 @@
 	"  abs_pressure REAL, " \
 	"  temp REAL, " \
 	"  humidity INTEGER, " \
-	"  rain_1 REAL, " \
-	"  rain_24 REAL, " \
+	"  wind_speed REAL, " \
+	"  wind_dir INTEGER, " \
+	"  wind_gust REAL, " \
+	"  wind_gust_dir INTEGER, " \
+	"  rain REAL, " \
+	"  rain_rate REAL, " \
+	"  rain_1h REAL, " \
+	"  rain_24h REAL, " \
+	"  dew_point REAL, " \
+	"  windchill REAL, " \
+	"  heat_index REAL, " \
 	"  temp_in REAL, " \
 	"  humidity_in INTEGER, " \
-	"  PRIMARY KEY (tstamp)" \
+	"  PRIMARY KEY (time)" \
 	") "
 
 #define INSERT_INTO \
-	"INSERT INTO ws_log " \
-	"(tstaml, wind_dir, wind_speed, humidity, dew_point, teml, rain_1, rain_24, temp_in, humidity_in) " \
+	"INSERT INTO ws_archive " \
 	"VALUES " \
-	"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+	"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
 
 static sqlite3 *db;
 static sqlite3_stmt *stmt;
@@ -133,15 +141,25 @@ sqlite_write(const struct ws_archive *p)
 	/* Bind variables */
 	bind_index = 1;
 	try_sqlite_bind_int64(stmt, bind_index++, 0, p->time);
-	try_sqlite_bind_int(stmt, bind_index++, ws_isset(l, WF_WIND_DIR), l->wind_dir);
-	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_WIND_SPEED), l->wind_speed);
-	try_sqlite_bind_int(stmt, bind_index++, ws_isset(l, WF_HUMIDITY), l->humidity);
-	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_DEW_POINT), l->dew_point);
+	try_sqlite_bind_int(stmt, bind_index++, 0, p->interval);
+
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_BAROMETER), l->barometer);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_PRESSURE), l->abs_pressure);
 	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_TEMP), l->temp);
+	try_sqlite_bind_int(stmt, bind_index++, ws_isset(l, WF_HUMIDITY), l->humidity);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_WIND), l->wind_speed);
+	try_sqlite_bind_int(stmt, bind_index++, ws_isset(l, WF_WIND), l->wind_dir);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_WIND_GUST), l->wind_gust);
+	try_sqlite_bind_int(stmt, bind_index++, ws_isset(l, WF_WIND_GUST), l->wind_gust_dir);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_RAIN), l->rain);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_RAIN_RATE), l->rain_rate);
 	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_RAIN_1H), l->rain_1h);
 	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_RAIN_24H), l->rain_24h);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_DEW_POINT), l->dew_point);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_WINDCHILL), l->windchill);
+	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_HEAD_INDEX), l->heat_idx);
 	try_sqlite_bind_double(stmt, bind_index++, ws_isset(l, WF_TEMP_IN), l->temp_in);
-	try_sqlite_bind_int(stmt, bind_index++, ws_isset(l, WF_HUMIDITY_IN), l->humidity_in);
+	try_sqlite_bind_int(stmt, bind_index++, ws_isset(l, WF_HUMIDITY), l->humidity_in);
 
 	/* Execute */
 	ret = sqlite3_step(stmt);

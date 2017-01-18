@@ -5,17 +5,18 @@
 #include <string.h>
 #include <errno.h>
 
+#include "defs/std.h"
+
 #include "libws/nybble.h"
+#include "libws/serial.h"
 #include "libws/ws23xx/ws23xx.h"
 #include "libws/ws23xx/decoder.h"
-#include "libws/serial.h"
-
-#include "history.h"
+#include "libws/ws23xx/archive.h"
 
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
 
 #ifndef PROGNAME
-#define PROGNAME	"ws2300"
+#define PROGNAME	"ws23xx"
 #endif
 
 #ifndef VERSION
@@ -238,7 +239,7 @@ struct ws_io
 };
 
 /* ws23xx memory, ordered by id */
-static const struct ws_measure *mem_id[array_len(mem_addr)];
+static const struct ws_measure *mem_id[array_size(mem_addr)];
 
 static void
 usage(FILE *out, int code)
@@ -248,7 +249,7 @@ usage(FILE *out, int code)
 	fprintf(out, "Available %s commands:\n", PROGNAME);
 	fprintf(out, "    help [-A]\n");
 	fprintf(out, "    fetch [-s sep] device measure...\n");
-	fprintf(out, "    history [-l cnt] [-s sep] device [file]\n");
+	fprintf(out, "    history [-l cnt] [-s sep] device\n");
 	fprintf(out, "    hex [-x] device offset len\n");
 
 	exit(code);
@@ -304,13 +305,13 @@ wsmkeycmp(const void *a, const void *b)
 static const struct ws_measure *
 search_addr(uint16_t addr)
 {
-	return (const struct ws_measure *) bsearch(&addr, mem_addr, array_len(mem_addr), sizeof(*mem_addr), wsmaddrcmp);
+	return (const struct ws_measure *) bsearch(&addr, mem_addr, array_size(mem_addr), sizeof(*mem_addr), wsmaddrcmp);
 }
 
 static const struct ws_measure *
 search_id(const char *id)
 {
-	return * (const struct ws_measure **) bsearch(id, mem_id, array_len(mem_id), sizeof(*mem_id), wsmkeycmp);
+	return * (const struct ws_measure **) bsearch(id, mem_id, array_size(mem_id), sizeof(*mem_id), wsmkeycmp);
 }
 
 /**
@@ -322,7 +323,7 @@ search_id(const char *id)
 static void
 init(void)
 {
-	size_t nel = array_len(mem_id);
+	size_t nel = array_size(mem_id);
 
 	/* Sort mem_addr by id */
 	for (size_t i = 0; i < nel; i++) {
@@ -333,83 +334,6 @@ init(void)
 
 	/* Set POSIX.2 behaviour for getopt() */
 	setenv("POSIXLY_CORRECT", "1", 1);
-}
-
-static void *
-decode(const uint8_t *buf, enum ws_etype type, uint8_t *v, size_t offset)
-{
-	switch (type) {
-	case WS_TEMP:
-		ws23xx_temp(buf, (double *) v, offset);
-		break;
-
-	case WS_PRESSURE:
-		ws23xx_pressure(buf, (double *) v, offset);
-		break;
-
-	case WS_HUMIDITY:
-		ws23xx_humidity(buf, (uint8_t *) v, offset);
-		break;
-
-	case WS_SPEED:
-		ws23xx_speed(buf, (double *) v, offset);
-		break;
-
-	case WS_WIND_DIR:
-		ws23xx_wind_dir(buf, (uint16_t *) v, offset);
-		break;
-
-	case WS_RAIN:
-		ws23xx_rain(buf, (double *) v, offset);
-		break;
-
-	//		case WS_INT_SEC:
-	//			ws_interval_sec_str(data, str, len, offset);
-	//			break;
-	//
-	//		case WS_INT_MIN:
-	//			ws_interval_min_str(data, str, len, offset);
-	//			break;
-	//
-	//		case WS_BIN_2NYB:
-	//			ws_bin_2nyb_str(data, str, len, offset);
-	//			break;
-	//
-	//		case WS_TIMESTAMP:
-	//			ws_timestamp_str(data, str, len, offset);
-	//			break;
-
-	case WS_DATETIME:
-		ws23xx_datetime(buf, (time_t *) v, offset);
-		break;
-
-	case WS_CONNECTION:
-		ws23xx_connection(buf, (uint8_t *) v, offset);
-		break;
-	//
-	//		case WS_ALARM_SET_0:
-	//		case WS_ALARM_SET_1:
-	//		case WS_ALARM_SET_2:
-	//		case WS_ALARM_SET_3:
-	//			ws_alarm_set_str(data, str, len, offset, t->id - WS_ALARM_SET_0);
-	//			break;
-	//
-	//		case WS_ALARM_ACTIVE_0:
-	//		case WS_ALARM_ACTIVE_1:
-	//		case WS_ALARM_ACTIVE_2:
-	//		case WS_ALARM_ACTIVE_3:
-	//			ws_alarm_active_str(data, str, len, offset, t->id - WS_ALARM_ACTIVE_0);
-	//			break;
-	//
-	default:
-	//			fprintf(stderr, "not yet supported\n");
-		v = NULL;
-		errno = ENOTSUP;
-
-		break;
-	}
-
-	return v;
 }
 
 static char *
@@ -595,7 +519,7 @@ main_help(int argc, char* const argv[])
 	}
 
 	/* Process sub-command */
-	size_t nel = array_len(mem_id);
+	size_t nel = array_size(mem_id);
 
 	for (size_t i = 0; i < nel; i++) {
 		const struct ws_measure *m = addr_ordered ? &mem_addr[i] : mem_id[i];
@@ -731,7 +655,7 @@ main_fetch(int argc, char* const argv[]) {
 	device = argv[optind++];
 
 	/* Parse measure arguments */
-	size_t nel = (optind < argc) ? (size_t) argc - optind : array_len(mem_id);
+	size_t nel = (optind < argc) ? (size_t) argc - optind : array_size(mem_id);
 
 	uint16_t addr[nel];
 	size_t nnyb[nel];
@@ -787,12 +711,12 @@ error:
 static void
 main_history(int argc, char* const argv[]) {
 	int c;
+	struct ws23xx_ar arbuf[WS32XX_AR_SIZE];
 
 	/* Default values */
 	char sep = ',';
 	size_t hist_count = 0;
 	const char *device = NULL;
-	const char *file = NULL;
 
 	/* Parse sub-command arguments */
 	while ((c = getopt(argc, argv, "l:s:")) != -1) {
@@ -814,10 +738,6 @@ main_history(int argc, char* const argv[]) {
 		device = argv[optind++];
 
 		if (optind < argc) {
-			file = argv[optind++];
-		}
-
-		if (optind < argc) {
 			usage(stderr, 1);
 		}
 	} else {
@@ -832,166 +752,27 @@ main_history(int argc, char* const argv[]) {
 	}
 
 	/* Parse output file */
-	FILE *out = stdout;
-
-	time_t last_record = 0;
-	struct ws_history hbuf[WS_HISTORY_SIZE];
-
-	if (file != NULL) {
-		if ((out = fopen(file, "a+")) == NULL) {
-			goto error;
-		}
-
-		/* Find last entry */
-		char line[1024];
-
-		while (fgets(line, sizeof(line), out) != NULL) {
-			struct tm tm;
-			char *p;
-
-			p = strptime(line, CSV_DATE, &tm);
-
-			if (p == NULL || *p != sep) {
-				fprintf(stderr, "Fail to parse: %s\n", file);
-				goto error;
-			}
-
-			last_record = mktime(&tm);
-		}
-	}
-
-	ssize_t nel = ws23xx_fetch_history(fd, hbuf, hist_count);
+	ssize_t nel = ws23xx_fetch_ar(fd, arbuf, hist_count);
 
 	/* Display output */
 	char cbuf[32];
 
 	for (int i = 0; i < nel; i++) {
-		struct ws_history *h = &hbuf[i];
+		struct ws23xx_ar *h = &arbuf[i];
 
 		struct tm tm;
 		localtime_r(&h->tstamp, &tm);
 		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
 
-		fprintf(out, "%s%c%.2f%c%.2f%c%.1f%c%d%c%d%c%.2f%c%.1f%c%.1f%c%.2f%c%.2f\n",
+		printf("%s%c%.2f%c%.2f%c%.1f%c%d%c%d%c%.2f%c%.1f%c%.1f\n",
 				cbuf, sep, h->temp_in, sep, h->temp_out, sep,
 				h->abs_pressure, sep, h->humidity_in, sep, h->humidity_out, sep,
-				h->rain, sep, h->wind_speed, sep, h->wind_dir, sep,
-				h->windchill, sep, h->dewpoint);
+				h->rain, sep, h->wind_speed, sep, h->wind_dir);
 	}
 
 	ws_close(fd);
 
 	return;
-
-error:
-	ws_close(fd);
-	exit(1);
-}
-
-static void
-main_cron(int argc, char* const argv[]) {
-	int c;
-
-	/* Default values */
-	int wunder = 1;
-	const char *device = NULL;
-
-	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "W")) != -1) {
-		switch (c) {
-		case 'W':
-			wunder = 0;
-			break;
-
-		default:
-			usage_opt(stderr, c, 1);
-			break;
-		}
-	}
-
-	if (argc - 1 < optind) {
-		usage(stderr, 1);
-	}
-
-	device = argv[optind++];
-
-	/* Process sub-command */
-	uint8_t cnx;
-//	struct ws_wunder w;
-
-	const struct ws_io a[] =
-	{
-//			{ "cn", &cnx },
-//			{ "sw", &w.time },
-//			{ "dp", &w.dew_point },
-//			{ "ot", &w.temp },
-//			{ "oh", &w.humidity },
-//			{ "rh", &w.rain },
-//			{ "rd", &w.daily_rain },
-//			{ "w0", &w.wind_dir },
-//			{ "ws", &w.wind_speed },
-//			{ "it", &w.temp_in },
-//			{ "ih", &w.humidity_in }
-	};
-
-	size_t nel = array_len(a);
-
-	uint16_t addr[nel];
-	size_t nnyb[nel];
-	uint8_t *buf[nel];
-
-	for (size_t i = 0; i < nel; i++) {
-		const struct ws_io *io = &a[i];
-		const struct ws_measure *m = search_id(io->id);
-
-		addr[i] = m->addr;
-		nnyb[i] = m->type->nybble;
-		buf[i] = malloc(32);
-	}
-
-	int fd = ws_open(device);
-	if (fd == -1) {
-		exit(1);
-	}
-
-	ws23xx_read_batch(fd, addr, nnyb, nel, buf);
-
-	ws_close(fd);
-
-	for (size_t i = 0; i < nel; i++) {
-		const struct ws_io *io = &a[i];
-		const struct ws_measure *m = search_id(io->id);
-
-		decode(buf[i], m->type->id, io->buf, 0);
-	}
-
-	char cbuf[18];
-	char sep = ',';
-	struct tm tm;
-
-	switch (cnx) {
-	case 0:				/* cable */
-	case 15:			/* wireless */
-//		localtime_r(&w.time, &tm);
-//		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
-//
-//		fprintf(stdout, "%s%c%.2f%c%hhu%c%.2f%c%hu%c%.2f%c%.2f%c%.2f%c%.2f%c%d\n",
-//				cbuf, sep,
-//				w.temp, sep, w.humidity, sep, w.dew_point, sep,
-//				w.wind_dir, sep, w.wind_speed, sep,
-//				w.rain, sep, w.daily_rain, sep,
-//				w.temp_in, sep, w.humidity_in);
-//
-//		if (wunder) {
-//			ws_wunder_upload(&w);
-//		}
-		break;
-
-	default:
-		fprintf(stderr, "Connection: %x lost\n", cnx);
-		exit(1);
-		break;
-	}
 }
 
 int
@@ -1036,8 +817,6 @@ main(int argc, char * const argv[])
 		main_fetch(argc, argv);
 	} else if (strcmp("history", cmd) == 0) {
 		main_history(argc, argv);
-	} else if (strcmp("cron", cmd) == 0) {
-		main_cron(argc, argv);
 	} else if (strcmp("hex", cmd) == 0) {
 		main_hex(argc, argv);
 	}

@@ -94,7 +94,7 @@ ws_getdriver(const char *str, enum ws_driver *driver)
 
 	ret = 0;
 
-	if (!strcmp(str, "WS23XX")) {
+	if (!strcmp(str, "ws23xx")) {
 		*driver = WS23XX;
 	} else {
 		ret = -1;
@@ -150,9 +150,9 @@ conf_decode(void *p, const char *key, const char *value)
 		switch (cfg->station.driver) {
 		case WS23XX:
 			if (!strcmp(key, "driver.ws23xx.tty")) {
-				cfg->driver.ws23xx.tty = strdup(value);
+				cfg->ws23xx.tty = strdup(value);
 			} else if (!strcmp(key, "driver.ws23xx.freq")) {
-				ws_getint(value, &cfg->driver.ws23xx.freq);
+				ws_getint(value, &cfg->ws23xx.freq);
 			} else {
 				errno = EINVAL;
 			}

@@ -26,8 +26,6 @@ board_init(struct ws_board *p, size_t len)
 	int errsv;
 	pthread_mutexattr_t attr;
 
-	printf("%d %d %d\n", sizeof(*p), sizeof(*p->ar), sizeof(*p->loop));
-
 	/* Shared lock */
 	if (pthread_mutexattr_init(&attr) == -1) {
 		goto error;
@@ -47,7 +45,7 @@ board_init(struct ws_board *p, size_t len)
 	boardp->loop_idx = boardp->loop_sz;
 	boardp->loop = (void *) p + sizeof(*p);
 
-	boardp->ar_sz = 100;
+	boardp->ar_sz = 10;
 	boardp->ar_idx = boardp->ar_sz;
 	boardp->ar = (void *) p + sizeof(*p) + boardp->loop_sz * sizeof(p->loop);
 
@@ -137,7 +135,7 @@ board_unlink()
 int
 board_get_ar(struct ws_archive *p)
 {
-	int idx;
+	size_t idx;
 	int ret;
 
 	ret = 0;
@@ -162,7 +160,7 @@ board_get_ar(struct ws_archive *p)
 }
 
 int
-board_push_loop(const struct ws_loop *p)
+board_push(const struct ws_loop *p)
 {
 	size_t idx;
 
@@ -191,4 +189,10 @@ int
 ws_isset(const struct ws_loop *p, int mask)
 {
 	return p->wl_mask & mask;
+}
+
+int
+ws_isset_ar(const struct ws_archive *p, int mask)
+{
+	return p->data.wl_mask & mask;
 }

@@ -38,7 +38,7 @@ struct ws_conf
 			const char *tty;			/* tty device */
 			int freq;					/* read frequency, in seconds */
 		} ws23xx;
-	} driver;
+	};
 
 	struct
 	{

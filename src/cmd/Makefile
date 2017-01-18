@@ -3,7 +3,7 @@ include		../Makefile.master
 #
 # List of all SUBDIRS (binaries) to build
 #
-SUBDIRS =	wslogd
+SUBDIRS =	ws23xx wslogd
 
 #
 # Targets and sub-directories to enter and build

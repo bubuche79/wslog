@@ -9,6 +9,7 @@ OBJECTS = \
 	nybble.o \
 	util.o \
 	serial.o \
+	ws23xx/archive.o \
 	ws23xx/decoder.o \
 	ws23xx/ws23xx.o
 
