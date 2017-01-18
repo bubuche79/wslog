@@ -116,7 +116,20 @@ conf_init(struct ws_conf *cfg)
 	cfg->log_facility = LOG_LOCAL0;
 	cfg->log_mask = LOG_UPTO(LOG_NOTICE);
 
+	cfg->station.driver = WS23XX;
+
+	/* Default driver */
+	cfg->ws23xx.freq = 128;
+	cfg->ws23xx.tty = "/dev/ttyUSB0";
+
+	/* SQLite */
+	cfg->sqlite.disabled = 0;
+	cfg->sqlite.db = "/var/lib/wslogd/wslogd.db";
+	cfg->sqlite.freq = 300;
+
 	/* Wunderstation */
+	cfg->wunder.disabled = 1;
+	cfg->wunder.freq = 300;
 
 	return 0;
 }

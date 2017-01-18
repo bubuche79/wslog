@@ -223,7 +223,7 @@ threads_start(void)
 
 	/* Configure reader thread */
 	threads[i].w_signo = SIGALRM;
-//	threads[i].w_ifreq.tv_sec = confp->freq;
+	threads[i].w_ifreq.tv_sec = confp->ws23xx.freq;
 	threads[i].w_ifreq.tv_nsec = 0;
 	threads[i].w_init = ws23xx_init;
 	threads[i].w_action = ws23xx_fetch;

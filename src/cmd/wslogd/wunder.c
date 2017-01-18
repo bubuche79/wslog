@@ -172,9 +172,18 @@ error:
 int
 wunder_init(void)
 {
-	curl_global_init(CURL_GLOBAL_DEFAULT);
+	CURLcode code;
+
+	code = curl_global_init(CURL_GLOBAL_DEFAULT);
+	if (code != CURLE_OK) {
+		syslog(LOG_ERR, "curl_global_init(): %s", curl_easy_strerror(code));
+		goto error;
+	}
 
 	return 0;
+
+error:
+	return -1;
 }
 
 /**
