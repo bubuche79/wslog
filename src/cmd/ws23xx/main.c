@@ -232,12 +232,6 @@ static const struct ws_measure mem_addr[] =
 	{ 0x6c4, "hn", &types[WS_BIN_2NYB], "history number of records", "0"}
 };
 
-struct ws_io
-{
-	const char *id;
-	void *buf;
-};
-
 /* ws23xx memory, ordered by id */
 static const struct ws_measure *mem_id[array_size(mem_addr)];
 
@@ -595,6 +589,56 @@ error:
 }
 
 static void
+main_set(int argc, char* const argv[])
+{
+	int c;
+
+	/* Default values */
+	const char *device;
+	uint16_t addr;
+	size_t nnyb;
+	long value;
+
+	/* Parse sub-command arguments */
+	while ((c = getopt(argc, argv, "")) != -1) {
+		switch (c) {
+		default:
+			usage_opt(stderr, c, 1);
+			break;
+		}
+	}
+
+	if (argc - 3 < optind) {
+		usage(stderr, 1);
+	}
+
+	device = argv[optind++];
+	addr = strtol(argv[optind++], NULL, 16);
+	nnyb = strtol(argv[optind++], NULL, 10);
+	value = strtol(argv[optind++], NULL, 10);
+
+	/* Process sub-command */
+	int fd = ws_open(device);
+	if (fd == -1) {
+		exit(1);
+	}
+
+	uint8_t buf[32];
+	ultonyb(buf, nnyb, 0, value, 16);
+
+	if (ws23xx_write_safe(fd, addr, nnyb, WRITENIB, buf) == -1) {
+		goto error;
+	}
+
+	ws_close(fd);
+	return;
+
+error:
+	ws_close(fd);
+	exit(1);
+}
+
+static void
 print_measures(const uint16_t *addr, const uint8_t *buf[], size_t nel, const char *sep)
 {
 	/* Print result */
@@ -819,6 +863,8 @@ main(int argc, char * const argv[])
 		main_history(argc, argv);
 	} else if (strcmp("hex", cmd) == 0) {
 		main_hex(argc, argv);
+	} else if (strcmp("set", cmd) == 0) {
+		main_set(argc, argv);
 	}
 
 	exit(0);

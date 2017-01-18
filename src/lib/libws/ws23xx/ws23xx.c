@@ -20,16 +20,6 @@
 #define UNSETACK		0x0C
 #define WRITEACK		0x10
 
-static void
-encode(uint8_t op, const uint8_t *src, uint8_t *dest, size_t len)
-{
-	size_t i;
-
-	for (i = 0; i < len; i++) {
-		dest[i] = op + (src[i] * 4);
-	}
-}
-
 static uint8_t
 checksum(const uint8_t *buf, size_t len)
 {
@@ -195,7 +185,6 @@ ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
 	size_t max_len;
 	uint8_t ack_constant;
-	uint8_t encoded_data[MAX_BLOCKS];
 
 	switch (op) {
 	case SETBIT:
@@ -207,7 +196,7 @@ ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 		ack_constant = UNSETACK;
 		break;
 	case WRITENIB:
-		max_len = sizeof(encoded_data);
+		max_len = MAX_BLOCKS;
 		ack_constant = WRITEACK;
 		break;
 	default:
@@ -225,12 +214,12 @@ ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 		goto error;
 	}
 
-	encode(op, buf, encoded_data, nnyb);
-
 	for (size_t i = 0; i < nnyb; i++) {
-		uint8_t ack = buf[i] + ack_constant;
+		uint8_t nyb = nybget(buf, i);
+		uint8_t nyb_enc = op + (nyb << 2);
+		uint8_t ack = nyb + ack_constant;
 
-		if (write_byte(fd, encoded_data[i], ack) == -1) {
+		if (write_byte(fd, nyb_enc, ack) == -1) {
 			goto error;
 		}
 	}

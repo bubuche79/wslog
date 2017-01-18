@@ -4,10 +4,8 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#ifdef HAVE_SELECT
 #include <sys/select.h>
 #include <sys/ioctl.h>
-#endif	/* HAVE_SELECT */
 #include <sys/file.h>
 #include <time.h>
 
@@ -128,7 +126,6 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 {
 	int ret;
 
-#ifdef HAVE_SELECT
 	/* Wait for input */
 	fd_set readset;
 	struct timeval tv;
@@ -156,12 +153,6 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 	} else {
 		ret = 0;
 	}
-#else
-	ret = read(fd, byte, 1);
-	if (ret == -1) {
-		goto error;
-	}
-#endif	/* HAVE_SELECT */
 
 #if DEBUG >= 2
 	printf("ws_read_byte: %d\n", ret);
