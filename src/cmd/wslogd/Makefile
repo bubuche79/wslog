@@ -5,9 +5,9 @@ OBJECTS = \
 	board.o \
 	conf.o \
 	daemon.o \
+	main.o \
 	sqlite.o \
 	worker.o \
-	wslogd.o \
 	ws23xx.o \
 	wunder.o
 
@@ -17,7 +17,7 @@ CPPFLAGS +=	-DHAVE_SELECT \
 		-D_GNU_SOURCE \
 		-I$(SRC)/common -I$(SRC)/lib
 
-LDLIBS +=	-L$(SRC)/lib/libws -lws -lcurl -lsqlite3 -lpthread -lrt
+LDLIBS +=	-L$(SRC)/lib/libws -lws -lcurl -lsqlite3 -lrt -lpthread
 
 all:		$(PROG)
 

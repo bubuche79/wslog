@@ -7,12 +7,15 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=ws23xx
-PKG_VERSION:=0.5
+PKG_NAME:=wslog
+PKG_VERSION:=0.6
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/ws2300
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/ws2300/.git
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_VERSION:=d11cb58275c9a193f350d0b5c00872510bd7c9a6
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 #PKG_MD5SUM:=df3d201aecb3155a80633990cc467831
 
 PKG_INSTALL:=1
@@ -20,29 +23,32 @@ PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/ws23xx
+define Package/wslog
   SECTION:=utils
   CATEGORY:=Utilities
-  TITLE:=WS23XX weather station utility
-  DEPENDS:=+libcurl
+  TITLE:=Weather station utility
+  DEPENDS:=+libcurl +libsqlite3 +librt +libpthread
 endef
 
-define Package/ws23xx/description
-  This is an utility suite used to communicate with and collect data from a
-  WS23XX wheather station.
+define Package/wslog/description
+  This is an utility suite used to communicate with and collect data from
+  weather stations.
 endef
 
 define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR)/src
+	$(MAKE) -C $(PKG_BUILD_DIR)
 endef
 
 define Build/Install
-	$(MAKE) -C $(PKG_BUILD_DIR)/src install
+	$(MAKE) -C $(PKG_BUILD_DIR) ROOT=$(PKG_INSTALL_DIR)/usr install
 endef
 
-define Package/ws23xx/install
+define Package/wslog/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/lib/libws/libws.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ws2300 $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/cmd/ws23xx/ws23xx $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/cmd/wslogd/wslogd $(1)/usr/bin/
 endef
 
-$(eval $(call BuildPackage,ws23xx))
+$(eval $(call BuildPackage,wslog))

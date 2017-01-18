@@ -1,5 +1,5 @@
 PKG_NAME := ws23xx
-PKG_VERSION := 0.5
+PKG_VERSION := 0.6
 
 #
 # List of all SUBDIRS to build
