@@ -19,8 +19,10 @@ wslogd_SOURCES = \
 	wunder.h
 
 wslogd_CFLAGS = \
-	-D_GNU_SOURCE -std=c99 \
 	-I../../common -I../../lib
 
 wslogd_LDADD = \
 	-L../../lib/libws -lws -lsqlite3 -lcurl -lrt -lpthread
+
+dist_sysconf_DATA = \
+	wslogd.conf

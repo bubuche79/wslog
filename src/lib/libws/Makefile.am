@@ -21,7 +21,7 @@ libws_la_SOURCES = \
 	ws23xx/ws23xx.h
 
 libws_la_CFLAGS = \
-	-D_GNU_SOURCE -std=c99 -I../../common -I..
+	-I../../common -I..
 
 libws_la_LIBADD = \
 	-lm
