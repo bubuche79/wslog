@@ -19,7 +19,7 @@ wslogd_SOURCES = \
 	wunder.h
 
 wslogd_CFLAGS = \
-	-D_GNU_SOURCE \
+	-D_GNU_SOURCE -std=c99 \
 	-I../../common -I../../lib
 
 wslogd_LDADD = \

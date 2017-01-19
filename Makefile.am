@@ -1,4 +1,1 @@
 SUBDIRS = src
-
-CFLAGS = -D_GNU_SOURCE
-

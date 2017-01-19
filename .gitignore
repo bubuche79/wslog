@@ -1,4 +1,8 @@
 *.o
+*.lo
+*.la
+*.so*
 .deps/
-ws2300
+ws23xx
+wslogd
 tests/check_nybble
