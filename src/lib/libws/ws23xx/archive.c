@@ -32,7 +32,9 @@ conv_history(const uint8_t *buf, struct ws23xx_ar *h)
 }
 
 DSO_EXPORT ssize_t
-ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel) {
+ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
+{
+	size_t i;
 	uint8_t buf[20];
 
 	/* Read history settings */
@@ -59,7 +61,7 @@ ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel) {
 		nel = record_count;
 	}
 
-	for (size_t i = 0; i < nel; i++) {
+	for (i = 0; i < nel; i++) {
 		uint8_t nyb_data[19];
 		struct ws23xx_ar *p = &h[nel-i-1];
 

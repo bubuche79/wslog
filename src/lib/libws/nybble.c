@@ -93,7 +93,9 @@ nybcpy(uint8_t *dest, const uint8_t *src, size_t nnyb, size_t off)
 	src += off / 2;
 
 	if (off & 0x1) {
-		for (uint16_t i = 0; i < nnyb; i++) {
+		uint16_t i;
+
+		for (i = 0; i < nnyb; i++) {
 			int j = 1 + i;
 
 			if (j & 0x1) {
@@ -111,6 +113,7 @@ DSO_EXPORT void
 nybprint(uint16_t addr, const uint8_t *buf, size_t nnyb, int hex)
 {
 	int disp_sz;
+	uint16_t i, j;
 
 	if (hex) {
 		disp_sz = 2;
@@ -118,10 +121,10 @@ nybprint(uint16_t addr, const uint8_t *buf, size_t nnyb, int hex)
 		disp_sz = 1;
 	}
 
-	for (uint16_t i = 0; i < nnyb;) {
+	for (i = 0; i < nnyb;) {
 		printf("%.4x", addr + i);
 
-		for (uint16_t j = 0; j < 16 && i < nnyb; j++) {
+		for (j = 0; j < 16 && i < nnyb; j++) {
 			uint8_t v;
 
 			if (hex) {

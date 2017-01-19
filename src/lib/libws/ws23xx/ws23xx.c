@@ -96,10 +96,11 @@ DSO_EXPORT int
 ws23xx_reset_06(int fd)
 {
 	uint8_t answer;
+	int i;
 	int ret;
 	int success;
 
-	for (int i = 0; i < MAX_RESETS; i++) {
+	for (i = 0; i < MAX_RESETS; i++) {
 		if (ws_clear(fd) == -1) {
 			goto error;
 		}
@@ -157,9 +158,10 @@ error:
 DSO_EXPORT int
 ws23xx_write_addr(int fd, uint16_t addr)
 {
+	int i;
 	uint8_t byte, ack;
 
-	for (int i = 0; i < 4; i++) {
+	for (i = 0; i < 4; i++) {
 		byte = (addr >> (4 * (3 - i)) & 0xF) * 4 + 0x82;
 		ack = i * 16 + (byte - 0x82) / 4;
 
@@ -183,6 +185,7 @@ error:
 DSO_EXPORT int
 ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
+	size_t i;
 	size_t max_len;
 	uint8_t ack_constant;
 
@@ -214,7 +217,7 @@ ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 		goto error;
 	}
 
-	for (size_t i = 0; i < nnyb; i++) {
+	for (i = 0; i < nnyb; i++) {
 		uint8_t nyb = nybget(buf, i);
 		uint8_t nyb_enc = op + (nyb << 2);
 		uint8_t ack = nyb + ack_constant;
@@ -237,7 +240,9 @@ error:
 DSO_EXPORT int
 ws23xx_write_safe(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
-	for (int i = 0; i < MAX_RETRIES; i++) {
+	int i;
+
+	for (i = 0; i < MAX_RETRIES; i++) {
 		if (ws23xx_reset_06(fd) == -1) {
 			goto error;
 		}
@@ -257,6 +262,7 @@ error:
 DSO_EXPORT int
 ws23xx_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 {
+	size_t i;
 	uint8_t answer;
 
 	if (nnyb == 0 || nnyb > MAX_BLOCKS) {
@@ -279,7 +285,7 @@ ws23xx_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 	}
 
 	/* Read the response */
-	for (size_t i = 0; i < nbyte; i++) {
+	for (i = 0; i < nbyte; i++) {
 		if (read_byte(fd, buf + i, READ_TIMEOUT) == -1) {
 			goto error;
 		}
@@ -365,9 +371,10 @@ cmp_addr(const void *a, const void *b)
 static size_t
 nybsz(const size_t *a, size_t nel)
 {
+	size_t i;
 	size_t res = 0;
 
-	for (size_t i = 0; i < nel; i++) {
+	for (i = 0; i < nel; i++) {
 		res += (a[i] + 1) / 2;
 	}
 
@@ -377,6 +384,8 @@ nybsz(const size_t *a, size_t nel)
 DSO_EXPORT int
 ws23xx_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
 {
+	size_t i, j;
+
 	uint16_t io_addr[nel];				/* address */
 	size_t io_nnyb[nel];				/* number of nybbles at address */
 	uint8_t *io_buf[nel];				/* data */
@@ -393,8 +402,8 @@ ws23xx_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, 
 	uint8_t data[len];					/* I/O buffer */
 	size_t off[nel];					/* nybble offset in data buffer */
 
-	for (size_t i = 0; i < nel; i++) {
-		for (size_t j = 0; j < nel; j++) {
+	for (i = 0; i < nel; i++) {
+		for (j = 0; j < nel; j++) {
 			if (io_addr[i] == addr[j]) {
 				int same_area = 0;
 
@@ -433,7 +442,7 @@ ws23xx_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, 
 	}
 
 	/* Re-order data */
-	for (size_t i = 0; i < nel; i++) {
+	for (i = 0; i < nel; i++) {
 		nybcpy(buf[i], data, nnyb[i], off[i]);
 	}
 
