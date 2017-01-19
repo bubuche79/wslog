@@ -1,1 +1,1 @@
-SUBDIRS = wslogd
+SUBDIRS = ws23xx wslogd

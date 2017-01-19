@@ -5,10 +5,18 @@ wslogd_SOURCES = \
 	conf.c \
 	daemon.c \
 	sqlite.c \
+	main.c \
 	worker.c \
-	wslogd.c \
 	ws23xx.c \
-	wunder.c
+	wunder.c \
+	board.h \
+	conf.h \
+	daemon.h \
+	sqlite.h \
+	worker.h \
+	wslogd.h \
+	ws23xx.h \
+	wunder.h
 
 wslogd_CFLAGS = \
 	-D_GNU_SOURCE \

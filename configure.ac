@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([ws23xx], [0.5], [bubuche.pub@free.fr])
+AC_INIT([wslog], [0.6], [bubuche.pub@free.fr])
 AC_CONFIG_HEADERS([config.h])
 
 AM_PROG_AR
@@ -51,6 +51,7 @@ AC_CONFIG_FILES([Makefile
                  src/lib/Makefile
                  src/lib/libws/Makefile
                  src/cmd/Makefile
+                 src/cmd/ws23xx/Makefile
                  src/cmd/wslogd/Makefile
                  ])
 AC_OUTPUT
