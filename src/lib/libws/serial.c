@@ -1,6 +1,8 @@
 #include <termios.h>
 #include <fcntl.h>
+#ifdef DEBUG
 #include <stdio.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -96,7 +98,9 @@ ws_open(const char *device)
 	return fd;
 
 error:
+#ifdef DEBUG
 	perror("ws_open");
+#endif
 
 	if (fd != -1) {
 		close(fd);
@@ -117,7 +121,9 @@ ws_close(int fd)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws_close");
+#endif
 	return -1;
 }
 
@@ -154,14 +160,12 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 		ret = 0;
 	}
 
-#if DEBUG >= 2
-	printf("ws_read_byte: %d\n", ret);
-#endif	/* DEBUG */
-
 	return ret;
 
 error:
+#ifdef DEBUG
 	perror("ws_read_byte");
+#endif
 	return -1;
 }
 
@@ -181,14 +185,12 @@ ws_write_byte(int fd, uint8_t byte)
 		msleep(ws_io_delay);
 	}
 
-#if DEBUG >= 2
-	printf("ws_write_byte: %d\n", ret);
-#endif	/* DEBUG */
-
 	return ret;
 
 error:
+#ifdef DEBUG
 	perror("ws_write");
+#endif
 	return -1;
 }
 
@@ -202,7 +204,9 @@ ws_clear(int fd)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws_clear");
+#endif
 	return -1;
 }
 
@@ -216,7 +220,9 @@ ws_flush(int fd)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws_flush");
+#endif
 	return -1;
 }
 

@@ -8,10 +8,6 @@
  * Shared board.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define WF_BAROMETER 		0x0001
 #define WF_PRESSURE 		0x0002
 #define WF_TEMP				0x0004
@@ -81,6 +77,10 @@ struct ws_board
 };
 
 struct ws_board *boardp;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int board_open(int oflag);
 int board_unlink(void);

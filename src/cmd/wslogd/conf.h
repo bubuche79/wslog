@@ -1,17 +1,11 @@
 #ifndef _CONF_H
 #define _CONF_H
 
-#include "config.h"
-
 #include <sys/types.h>
 
 /*
  * Weather station configuration.
  */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum ws_driver
 {
@@ -60,6 +54,10 @@ struct ws_conf
 		int freq;						/* update frequency, in seconds */
 	} wunder;
 };
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int conf_load(struct ws_conf *cfg, const char *path);
 void conf_free(struct ws_conf *cfg);

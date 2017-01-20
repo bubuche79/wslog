@@ -1,6 +1,8 @@
 #include "ws23xx.h"
 
+#ifdef DEBUG
 #include <stdio.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,7 +53,9 @@ read_byte(int fd, uint8_t *buf, long timeout)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("read_byte");
+#endif
 	return -1;
 }
 
@@ -77,7 +81,9 @@ write_byte(int fd, uint8_t byte, uint8_t ack)
 		errno = ENODATA;
 		goto error;
 	} else if (ack != answer) {
+#ifdef DEBUG
 		fprintf(stderr, "Expected ack %x, got %x\n", ack, answer);
+#endif
 		errno = EIO;
 		return -1;
 	}
@@ -85,7 +91,9 @@ write_byte(int fd, uint8_t byte, uint8_t ack)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("write_byte");
+#endif
 	return -1;
 }
 
@@ -137,16 +145,14 @@ ws23xx_reset_06(int fd)
 		if (success) {
 			return 0;
 		}
-
-#if DEBUG >= 1
-		printf("ws23xx_reset_06: %d\n", i);
-#endif	/* DEBUG */
 	}
 
 	errno = EAGAIN;
 
 error:
+#ifdef DEBUG
 	perror("ws23xx_reset_06");
+#endif
 	return -1;
 }
 
@@ -173,7 +179,9 @@ ws23xx_write_addr(int fd, uint16_t addr)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws23xx_write_addr");
+#endif
 	return -1;
 }
 
@@ -230,7 +238,9 @@ ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws23xx_write_data");
+#endif
 	return -1;
 }
 
@@ -255,7 +265,9 @@ ws23xx_write_safe(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t 
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws23xx_write_safe");
+#endif
 	return -1;
 }
 
@@ -302,7 +314,9 @@ ws23xx_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws23xx_read_data");
+#endif
 	return -1;
 }
 
@@ -310,10 +324,6 @@ static int
 read_block(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 {
 	size_t p, k;
-
-#if DEBUG >= 1
-	printf("read_block %x (%lu)\n", addr, nnyb);
-#endif	/* DEBUG */
 
 	for (p = 0; p < nnyb; p += MAX_BLOCKS) {
 		for (k = 0; k < MAX_RETRIES; k++) {
@@ -336,7 +346,9 @@ read_block(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws23xx_read_safe");
+#endif
 	return -1;
 }
 
@@ -358,7 +370,9 @@ read_block_all(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uin
 	return 0;
 
 error:
+#ifdef DEBUG
 	perror("ws23xx_read_batch");
+#endif
 	return -1;
 }
 

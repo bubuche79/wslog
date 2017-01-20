@@ -4,6 +4,7 @@ wslogd_SOURCES = \
 	board.c \
 	conf.c \
 	daemon.c \
+	service/sensor.c \
 	sqlite.c \
 	main.c \
 	worker.c \
@@ -11,6 +12,7 @@ wslogd_SOURCES = \
 	board.h \
 	conf.h \
 	daemon.h \
+	service/sensor.h \
 	sqlite.h \
 	worker.h \
 	wslogd.h \
@@ -18,12 +20,12 @@ wslogd_SOURCES = \
 
 if HAVE_WS23XX
 wslogd_SOURCES += \
-	ws23xx.c \
-	ws23xx.h
+	driver/ws23xx.c \
+	driver/ws23xx.h
 endif
 
 wslogd_CFLAGS = \
-	-I../../common -I../../lib
+	-DDEBUG -Wall -Werror -I../../common -I../../lib
 
 wslogd_LDADD = \
 	-L../../lib/libws -lws -lsqlite3 -lcurl -lrt -lpthread

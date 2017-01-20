@@ -20,14 +20,14 @@
 #include "sqlite.h"
 #include "wunder.h"
 #include "wslogd.h"
-#include "ws23xx.h"
+#include "service/service.h"
 #include "worker.h"
 
 struct worker {
 	int w_signo;									/* signal number */
 	struct timespec w_ifreq;						/* timer interval */
 	int (*w_init) (void);
-	int (*w_action) (void);							/* action on signal */
+	int (*w_action) (struct timespec *);			/* action on signal */
 	int (*w_destroy) (void);
 
 	timer_t w_timer;
@@ -116,7 +116,7 @@ sigthread_main(void *arg)
 				/* Stop requested */
 			} else {
 				if (dt->w_action != NULL) {
-					ret = dt->w_action();
+					ret = dt->w_action(NULL);
 				} else {
 					syslog(LOG_ERR, "Real-time signal %d", ret - SIGRTMIN);
 					goto error;
@@ -225,9 +225,9 @@ threads_start(void)
 	threads[i].w_signo = SIGALRM;
 	threads[i].w_ifreq.tv_sec = confp->ws23xx.freq;
 	threads[i].w_ifreq.tv_nsec = 0;
-	threads[i].w_init = ws23xx_init;
-	threads[i].w_action = ws23xx_fetch;
-	threads[i].w_destroy = ws23xx_destroy;
+	threads[i].w_init = sensor_init;
+	threads[i].w_action = sensor_main;
+	threads[i].w_destroy = sensor_destroy;
 
 	i++;
 #ifndef HAVE_SIGTHREADID
@@ -240,7 +240,7 @@ threads_start(void)
 		threads[i].w_ifreq.tv_sec = 2;
 		threads[i].w_ifreq.tv_nsec = 0;
 		threads[i].w_init = sqlite_init;
-		threads[i].w_action = sqlite_write;
+		threads[i].w_action = (void *)sqlite_write;
 		threads[i].w_destroy = sqlite_destroy;
 
 		i++;
@@ -255,7 +255,7 @@ threads_start(void)
 		threads[i].w_ifreq.tv_sec = confp->wunder.freq;
 		threads[i].w_ifreq.tv_nsec = 0;
 		threads[i].w_init = wunder_init;
-		threads[i].w_action = wunder_write;
+		threads[i].w_action = (void *)wunder_write;
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;

@@ -122,7 +122,7 @@ ws23xx_fetch(struct ws_loop *p, struct timespec *ts)
 	}
 
 	/* Read from device */
-	if (ws23xx_read_batch(0, addr, nnyb, nel, buf) == -1) {
+	if (ws23xx_read_batch(fd, addr, nnyb, nel, buf) == -1) {
 		return -1;
 	}
 

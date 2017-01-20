@@ -639,7 +639,7 @@ error:
 }
 
 static void
-print_measures(const uint16_t *addr, const uint8_t *buf[], size_t nel, const char *sep)
+print_measures(const uint16_t *addr, uint8_t *buf[], size_t nel, const char *sep)
 {
 	/* Print result */
 	for (size_t i = 0; i < nel; i++) {

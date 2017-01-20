@@ -25,7 +25,7 @@ libws_la_SOURCES += \
 endif
 
 libws_la_CFLAGS = \
-	-I../../common -I..
+	-Wall -Werror -I../../common -I..
 
 libws_la_LIBADD = \
 	-lm
