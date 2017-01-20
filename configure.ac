@@ -17,6 +17,16 @@ AC_CHECK_LIB([check], [srunner_create], [ ])
 AC_CHECK_LIB([curl], [curl_global_init], [ ])
 AC_CHECK_LIB([sqlite3], [sqlite3_initialize], [ ])
 
+# Add options
+AC_ARG_ENABLE([ws23xx],
+	[AS_HELP_STRING([--disable-ws23xx], [Disable La Crosse Technology WS23XX support])],
+	[], [enable_ws23xx=yes])
+
+AS_IF([test "x$enable_ws23xx" != "xno"],
+	[AC_DEFINE(HAVE_WS23XX, 1, [La Crosse Technology WS23XX support])])
+
+AM_CONDITIONAL([HAVE_WS23XX], [test "x$enable_ws23xx" = "xyes"])
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/lib/Makefile

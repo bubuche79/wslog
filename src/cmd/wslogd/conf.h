@@ -1,6 +1,8 @@
 #ifndef _CONF_H
 #define _CONF_H
 
+#include "config.h"
+
 #include <sys/types.h>
 
 /*
@@ -13,7 +15,10 @@ extern "C" {
 
 enum ws_driver
 {
-	WS23XX								/* La Crosse Technology WS23XX */
+#if HAVE_WS23XX
+	WS23XX,								/* La Crosse Technology WS23XX */
+#endif
+	NONE
 };
 
 struct ws_conf

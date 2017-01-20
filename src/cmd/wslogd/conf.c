@@ -93,10 +93,15 @@ ws_getdriver(const char *str, enum ws_driver *driver)
 	int ret;
 
 	ret = 0;
+	*driver = NONE;
 
+#if HAVE_WS23XX
 	if (!strcmp(str, "ws23xx")) {
 		*driver = WS23XX;
-	} else {
+	}
+#endif
+
+	if (*driver == NONE) {
 		ret = -1;
 		errno = EINVAL;
 	}
@@ -116,11 +121,13 @@ conf_init(struct ws_conf *cfg)
 	cfg->log_facility = LOG_LOCAL0;
 	cfg->log_mask = LOG_UPTO(LOG_NOTICE);
 
-	cfg->station.driver = WS23XX;
+	cfg->station.driver = NONE;
 
 	/* Default driver */
+#if HAVE_WS23XX
 	cfg->ws23xx.freq = 128;
 	cfg->ws23xx.tty = "/dev/ttyUSB0";
+#endif
 
 	/* SQLite */
 	cfg->sqlite.disabled = 0;
@@ -161,6 +168,7 @@ conf_decode(void *p, const char *key, const char *value)
 		}
 	} else if (!strncmp(key, "driver.", 7)) {
 		switch (cfg->station.driver) {
+#if HAVE_WS23XX
 		case WS23XX:
 			if (!strcmp(key, "driver.ws23xx.tty")) {
 				cfg->ws23xx.tty = strdup(value);
@@ -169,6 +177,7 @@ conf_decode(void *p, const char *key, const char *value)
 			} else {
 				errno = EINVAL;
 			}
+#endif
 			break;
 		default:
 			errno = EINVAL;

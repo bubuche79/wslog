@@ -7,18 +7,22 @@ libws_la_SOURCES = \
 	nybble.c \
 	util.c \
 	serial.c \
-	ws23xx/archive.c \
-	ws23xx/decoder.c \
-	ws23xx/ws23xx.c \
 	bitfield.h \
 	conf.h \
 	err.h \
 	nybble.h \
 	util.h \
-	serial.h \
+	serial.h
+
+if HAVE_WS23XX
+libws_la_SOURCES += \
+	ws23xx/archive.c \
+	ws23xx/decoder.c \
+	ws23xx/ws23xx.c \
 	ws23xx/archive.h \
 	ws23xx/decoder.h \
 	ws23xx/ws23xx.h
+endif
 
 libws_la_CFLAGS = \
 	-I../../common -I..

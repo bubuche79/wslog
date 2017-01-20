@@ -7,7 +7,6 @@ wslogd_SOURCES = \
 	sqlite.c \
 	main.c \
 	worker.c \
-	ws23xx.c \
 	wunder.c \
 	board.h \
 	conf.h \
@@ -15,8 +14,13 @@ wslogd_SOURCES = \
 	sqlite.h \
 	worker.h \
 	wslogd.h \
-	ws23xx.h \
 	wunder.h
+
+if HAVE_WS23XX
+wslogd_SOURCES += \
+	ws23xx.c \
+	ws23xx.h
+endif
 
 wslogd_CFLAGS = \
 	-I../../common -I../../lib
