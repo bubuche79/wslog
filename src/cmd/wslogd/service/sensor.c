@@ -50,7 +50,9 @@ sensor_main(struct timespec *timer)
 	printf("LOOP: reading\n");
 #endif
 
-	clock_gettime(CLOCK_REALTIME, &loop.time);
+	if (clock_gettime(CLOCK_REALTIME, &loop.time) == -1) {
+		goto error;
+	}
 
 	/* Read sensors */
 	switch (driver)
@@ -70,18 +72,22 @@ sensor_main(struct timespec *timer)
 	}
 
 	/* Push loop event in board */
-	board_push(&loop);
+	if (board_push(&loop) == -1) {
+		goto error;
+	}
 
 #if DEBUG
 	printf("LOOP read: %.2f°C %hhu%%\n", loop.temp, loop.humidity);
 #endif
 
+	return 0;
+
 error:
-	return ret;
+	return -1;
 }
 
 int
-sensor_destroy()
+sensor_destroy(void)
 {
 	int ret;
 

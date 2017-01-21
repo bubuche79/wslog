@@ -45,13 +45,13 @@ board_init(struct ws_board *p, size_t len)
 	(void) pthread_mutexattr_destroy(&attr);
 
 	/* Pointers */
-	boardp->loop_off = sizeof(*p);
-	boardp->loop_len = 100;
-	boardp->loop_idx = boardp->loop_len;
+	boardp->loop_sz = 100;
+	boardp->loop_nel = 0;
+	boardp->loop_idx = 0;
 
-	boardp->ar_off = sizeof(*p) + p->loop_len * sizeof(struct ws_loop);
-	boardp->ar_len = 10;
-	boardp->ar_idx = boardp->ar_len;
+	boardp->ar_sz = 10;
+	boardp->ar_nel = 0;
+	boardp->ar_idx = 0;
 
 	return 0;
 
@@ -140,66 +140,31 @@ board_unlink()
 }
 
 int
-board_get_ar(struct ws_archive *p)
-{
-	size_t idx;
-	int ret;
-
-	ret = 0;
-
-	if (pthread_mutex_lock(&boardp->mutex) == -1) {
-		return -1;
-	}
-
-	idx = boardp->loop_idx;
-
-	if (idx == boardp->loop_len) {
-		ret = -1;
-	} else {
-		memcpy(p, board_ar_p(boardp, idx-1), sizeof(*p));
-	}
-
-	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
-		return -1;
-	}
-
-	return ret;
-}
-
-int
 board_push(const struct ws_loop *p)
 {
-	size_t idx;
-
 	if (pthread_mutex_lock(&boardp->mutex) == -1) {
 		return -1;
 	}
 
-	idx = boardp->loop_idx;
+	if (boardp->loop_nel == 0) {
+		boardp->loop_nel = 1;
+	} else {
+		if (boardp->loop_nel < boardp->loop_sz) {
+			boardp->loop_nel++;
+		}
 
-	if (idx == boardp->loop_len) {
-		idx = 0;
+		if (boardp->loop_idx + 1 < boardp->loop_sz) {
+			boardp->loop_idx++;
+		} else {
+			boardp->loop_idx = 0;
+		}
 	}
 
-	memcpy(board_loop_p(boardp, idx), p, sizeof(*p));
-
-	boardp->loop_idx = (idx + 1) % boardp->loop_len;
+	memcpy(board_loop_p(0), p, sizeof(*p));
 
 	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
 		return -1;
 	}
 
 	return 0;
-}
-
-int
-ws_isset(const struct ws_loop *p, int mask)
-{
-	return p->wl_mask & mask;
-}
-
-int
-ws_isset_ar(const struct ws_archive *p, int mask)
-{
-	return p->data.wl_mask & mask;
 }

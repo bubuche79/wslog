@@ -17,18 +17,16 @@ board_print(void)
 {
 	int i;
 
-	if (boardp->loop_idx != boardp->loop_len) {
-		for (i = 0; i < boardp->loop_idx; i++) {
-			char buf[32];
-			const struct ws_loop *p = board_loop_p(boardp, i);
+	for (i = 0; i < boardp->loop_nel; i++) {
+		char buf[32];
+		const struct ws_loop *p = board_loop_p(i);
 
-			strftimespec(buf, sizeof(buf), &p->time);
+		strftimespec(buf, sizeof(buf), &p->time);
 
-			printf("%s %.2f°C %hhu%% %.2fm/s %.2f°C %hhu%%\n",
-					buf,
-					p->temp, p->humidity, p->wind_speed,
-					p->temp_in, p->humidity_in);
-		}
+		printf("%s %.2f°C %hhu%% %.2fm/s %.2f°C %hhu%%\n",
+				buf,
+				p->temp, p->humidity, p->wind_speed,
+				p->temp_in, p->humidity_in);
 	}
 }
 

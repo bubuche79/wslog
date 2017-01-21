@@ -28,7 +28,7 @@
 
 struct ws_loop
 {
-	struct timespec time;		/* loop packet time */
+	struct timespec time;		/* loop packet time (UTC) */
 	uint32_t wl_mask;			/* loop packet fields mask */
 
 	float barometer;			/* relative pressure (hPa) */
@@ -70,12 +70,12 @@ struct ws_board
 	size_t lost;				/* lost packets */
 	size_t received;			/* received packets */
 
-	size_t loop_off;			/* offset to loop array */
-	size_t loop_len;
+	size_t loop_sz;				/* max number of elements */
+	size_t loop_nel;			/* number of elements */
 	size_t loop_idx;			/* next index */
 
-	size_t ar_off;				/* offset to archive array */
-	size_t ar_len;
+	size_t ar_sz;
+	size_t ar_nel;
 	size_t ar_idx;				/* next index */
 };
 
@@ -85,28 +85,45 @@ struct ws_board *boardp;
 extern "C" {
 #endif
 
-inline struct ws_loop *
-board_loop_p(const struct ws_board *p, size_t i)
+inline int
+ws_isset(const struct ws_loop *p, int mask)
 {
-	return (struct ws_loop *) ((void *) p + p->loop_off + i * sizeof(struct ws_loop));
+	return p->wl_mask & mask;
 }
 
-inline struct ws_archive *
-board_ar_p(const struct ws_board *p, size_t i)
+inline int
+ws_isset_ar(const struct ws_archive *p, int mask)
 {
-	return (struct ws_archive *) ((void *) p + p->ar_off + i * sizeof(struct ws_archive));
+	return p->data.wl_mask & mask;
+}
+
+inline struct ws_loop *
+board_loop_p(size_t i)
+{
+	struct ws_loop *p;
+
+	if (boardp->loop_nel <= i) {
+		return NULL;
+	}
+
+	if (i <= boardp->loop_idx) {
+		i = boardp->loop_idx - i;
+	} else {
+		i = boardp->loop_nel - (i - boardp->loop_idx);
+	}
+
+	p = (struct ws_loop *) ((void *) boardp + sizeof(*boardp));
+
+	return &p[i];
 }
 
 int board_open(int oflag);
 int board_unlink(void);
 
-int board_get_ar(struct ws_archive *p);
+int board_push(const struct ws_loop *p);
 int board_push_ar(const struct ws_archive *p);
 
-int board_push(const struct ws_loop *p);
-
-int ws_isset(const struct ws_loop *p, int mask);
-int ws_isset_ar(const struct ws_archive *p, int mask);
+int board_peek_ar(struct ws_archive *p);
 
 #ifdef __cplusplus
 }

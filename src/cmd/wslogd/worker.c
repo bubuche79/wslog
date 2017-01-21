@@ -255,7 +255,7 @@ threads_start(void)
 		threads[i].w_ifreq.tv_sec = confp->wunder.freq;
 		threads[i].w_ifreq.tv_nsec = 0;
 		threads[i].w_init = wunder_init;
-		threads[i].w_action = (void *)wunder_write;
+		threads[i].w_action = wunder_update;
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;

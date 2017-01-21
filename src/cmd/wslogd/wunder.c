@@ -169,28 +169,11 @@ error:
 	return -1;
 }
 
-int
-wunder_init(void)
-{
-	CURLcode code;
-
-	code = curl_global_init(CURL_GLOBAL_DEFAULT);
-	if (code != CURLE_OK) {
-		syslog(LOG_ERR, "curl_global_init(): %s", curl_easy_strerror(code));
-		goto error;
-	}
-
-	return 0;
-
-error:
-	return -1;
-}
-
 /**
  * See http://wiki.wunderground.com/index.php/PWS_-_Upload_Protocol
  */
-int
-wunder_write(const struct ws_archive *p)
+static int
+wunder_perform(const struct ws_loop *p)
 {
 	int ret;
 	CURL *curl = NULL;
@@ -203,7 +186,7 @@ wunder_write(const struct ws_archive *p)
 		CURLcode code;
 		char url[512];
 
-		if (wunder_url(url, sizeof(url), curl, &p->data) == -1) {
+		if (wunder_url(url, sizeof(url), curl, p) == -1) {
 			goto error;
 		}
 
@@ -223,6 +206,10 @@ wunder_write(const struct ws_archive *p)
 			syslog(LOG_ERR, "curl_easy_setopt(): %s", curl_easy_strerror(code));
 			goto error;
 		}
+
+#ifdef DEBUG
+		printf("WUNDER: %s\n", url);
+#endif
 
 		/* Perform request */
 		code = curl_easy_perform(curl);
@@ -256,6 +243,50 @@ error:
 	html_cleanup(&html);
 
 	return -1;
+}
+
+int
+wunder_init(void)
+{
+	CURLcode code;
+
+	code = curl_global_init(CURL_GLOBAL_DEFAULT);
+	if (code != CURLE_OK) {
+		syslog(LOG_ERR, "curl_global_init(): %s", curl_easy_strerror(code));
+		goto error;
+	}
+
+	return 0;
+
+error:
+	return -1;
+}
+
+int
+wunder_update(struct timespec *timer)
+{
+//	struct ws_archive arbuf;
+//
+//	if (board_peek_ar(&arbuf) == -1) {
+//		if (errno == ENODATA) {
+//			goto exit;
+//		}
+//	}
+
+	struct ws_loop *p = board_loop_p(0);
+
+	if (p == NULL) {
+		goto exit;
+	}
+
+	if (wunder_perform(p) == -1) {
+		syslog(LOG_ERR, "wunder service error");
+
+		/* Not a fatal error */
+	}
+
+exit:
+	return 0;
 }
 
 int
