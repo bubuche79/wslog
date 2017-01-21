@@ -1,4 +1,15 @@
-bin_PROGRAMS = wslogd
+bin_PROGRAMS = wslogd wslogc
+
+wslogc_SOURCES = \
+	board.c \
+	wslogc.c \
+	board.h
+
+wslogc_CPPFLAGS = \
+	-I../../common -I../../lib
+
+wslogc_LDADD = \
+	-L../../lib/libws -lws -lrt -lpthread
 
 wslogd_SOURCES = \
 	board.c \
@@ -24,7 +35,7 @@ wslogd_SOURCES += \
 	driver/ws23xx.h
 endif
 
-wslogd_CFLAGS = \
+wslogd_CPPFLAGS = \
 	-DDEBUG -Wall -Werror -I../../common -I../../lib
 
 wslogd_LDADD = \

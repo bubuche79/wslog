@@ -124,7 +124,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 	char ctime[22];					/* date utc */
 
 	/* Convert date */
-	gmftime(ctime, sizeof(ctime), &p->time.tv_sec, "%F %T");
+	gmftime_r(ctime, sizeof(ctime), &p->time.tv_sec, "%F %T");
 
 	/* URL encode parameters */
 	char *dateutc = curl_easy_escape(h, ctime, 0);

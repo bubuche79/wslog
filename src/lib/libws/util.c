@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 
 #include "defs/dso.h"
 
@@ -94,10 +95,36 @@ ws_inch(double len)
 }
 
 DSO_EXPORT size_t
-gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
+gmftime_r(char *s, size_t max, const time_t *timep, const char *fmt)
 {
 	struct tm tm;
 
 	gmtime_r(timep, &tm);
 	return strftime(s, max, fmt, &tm);
+}
+
+DSO_EXPORT ssize_t
+strftimespec(char *s, size_t len, const struct timespec *ts)
+{
+    size_t ret1;
+    int ret2;
+    struct tm t;
+
+    if (localtime_r(&ts->tv_sec, &t) == NULL) {
+        return -1;
+    }
+
+    ret1 = strftime(s, len, "%F %T", &t);
+    if (ret1 == 0) {
+    	return 0;
+    } else if (ret1 == (size_t) -1) {
+    	return -1;
+    }
+
+    ret2 = snprintf(s + ret1, len - ret1, ".%3ld", ts->tv_nsec / 1000000);
+    if (ret2 == -1) {
+    	return -1;
+    }
+
+    return ret1 + ret2;
 }

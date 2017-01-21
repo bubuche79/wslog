@@ -172,7 +172,6 @@ board_push(const struct ws_loop *p)
 	size_t idx;
 
 	if (pthread_mutex_lock(&boardp->mutex) == -1) {
-		perror("mutex\n");
 		return -1;
 	}
 
