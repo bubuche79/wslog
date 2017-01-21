@@ -67,12 +67,15 @@ struct ws_board
 {
 	pthread_mutex_t mutex;
 
-	struct ws_loop *loop;
-	size_t loop_sz;
+	size_t lost;				/* lost packets */
+	size_t received;			/* received packets */
+
+	size_t loop_off;			/* offset to loop array */
+	size_t loop_len;
 	size_t loop_idx;			/* next index */
 
-	struct ws_archive *ar;
-	size_t ar_sz;
+	size_t ar_off;				/* offset to archive array */
+	size_t ar_len;
 	size_t ar_idx;				/* next index */
 };
 
@@ -81,6 +84,18 @@ struct ws_board *boardp;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+inline struct ws_loop *
+board_loop_p(const struct ws_board *p, size_t i)
+{
+	return (struct ws_loop *) ((void *) p + p->loop_off + i * sizeof(struct ws_loop));
+}
+
+inline struct ws_archive *
+board_ar_p(const struct ws_board *p, size_t i)
+{
+	return (struct ws_archive *) ((void *) p + p->ar_off + i * sizeof(struct ws_archive));
+}
 
 int board_open(int oflag);
 int board_unlink(void);

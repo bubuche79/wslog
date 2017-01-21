@@ -2,10 +2,11 @@
 #include "config.h"
 #endif
 
+#include <time.h>
+#include <syslog.h>
 #ifdef DEBUG
 #include <stdio.h>
 #endif
-#include <syslog.h>
 
 #ifdef HAVE_WS23XX
 #include "driver/ws23xx.h"
@@ -49,6 +50,8 @@ sensor_main(struct timespec *timer)
 	printf("LOOP: reading\n");
 #endif
 
+	clock_gettime(CLOCK_REALTIME, &loop.time);
+
 	/* Read sensors */
 	switch (driver)
 	{
@@ -70,7 +73,7 @@ sensor_main(struct timespec *timer)
 	board_push(&loop);
 
 #if DEBUG
-	printf("LOOP read: %.2f %hhu%%\n", loop.temp, loop.humidity);
+	printf("LOOP read: %.2f°C %hhu%%\n", loop.temp, loop.humidity);
 #endif
 
 error:

@@ -348,7 +348,7 @@ worker_main(int *halt)
 			return -1;
 		}
 
-		if (board_open(0) == -1) {
+		if (board_open(O_CREAT) == -1) {
 			syslog(LOG_EMERG, "board_open(): %m");
 			goto error;
 		}
