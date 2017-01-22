@@ -34,5 +34,6 @@ AC_CONFIG_FILES([Makefile
                  src/cmd/Makefile
                  src/cmd/ws23xx/Makefile
                  src/cmd/wslogd/Makefile
+                 tests/Makefile
                  ])
 AC_OUTPUT

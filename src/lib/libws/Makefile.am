@@ -1,12 +1,14 @@
 lib_LTLIBRARIES = libws.la
 
 libws_la_SOURCES = \
+	aggregate.c \
 	bitfield.c \
 	conf.c \
 	err.c \
 	nybble.c \
 	util.c \
 	serial.c \
+	aggregate.h \
 	bitfield.h \
 	conf.h \
 	err.h \

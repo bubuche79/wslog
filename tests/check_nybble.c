@@ -1,20 +1,25 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <check.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <limits.h>
 #include <errno.h>
 
 #include "libws/nybble.h"
 
-#define ck_assert_err(X, Y, Z) do { \
-	ck_assert_uint_eq(X, Y); \
-	ck_assert_uint_eq(errno, Z); \
-} while (0)
+#define ck_assert_err(X, Y, Z) \
+	do { \
+		ck_assert_uint_eq(X, Y); \
+		ck_assert_uint_eq(errno, Z); \
+	} while (0)
 
-#define ck_assert_ultonyb(buf, nnyb, off, v, base) do { \
-	ultonyb(buf, nnyb, off, v, base); \
-	ck_assert_uint_eq(nybtoul(buf, nnyb, off, base), v); \
-} while (0)
+#define ck_assert_ultonyb(buf, nnyb, off, v, base) \
+	do { \
+		ultonyb(buf, nnyb, off, v, base); \
+		ck_assert_uint_eq(nybtoul(buf, nnyb, off, base), v); \
+	} while (0)
 
 static const uint8_t a1[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x13 };
 static const uint8_t a2[] = { 0xFD, 0xFF, 0x36, 0x47, 0x58, 0x69, 0x7A, 0x8B, 0x9C };
@@ -90,7 +95,8 @@ START_TEST(test_nybtoul_einval)
 }
 END_TEST
 
-Suite *nybble_suite(void)
+Suite *
+aggregate_suite(void)
 {
 	Suite *s;
 	TCase *tc_core;
@@ -117,17 +123,17 @@ Suite *nybble_suite(void)
 }
 
 int
-main()
+main(void)
 {
 	int number_failed;
 	Suite *s;
 	SRunner *sr;
 
-	s = nybble_suite();
+	s = aggregate_suite();
 	sr = srunner_create(s);
 
 	srunner_run_all(sr, CK_NORMAL);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
-	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+	return (number_failed == 0) ? 0 : 1;
 }
