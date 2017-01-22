@@ -9,7 +9,8 @@ Makefile.in
 /aclocal.m4
 /compile
 /config.guess
-/config.h.in
+/config.h
+/config.h.in*
 /config.log
 /config.status
 /config.sub
@@ -28,6 +29,9 @@ Makefile.in
 .deps/
 .libs/
 
+.dirstamp
+
 *.o
 *.la
 *.lo
+*.so*
