@@ -2,6 +2,10 @@
  * Worker module.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -223,7 +227,7 @@ threads_start(void)
 #endif
 
 	/* Configure reader thread */
-	threads[i].w_signo = SIGALRM;
+	threads[i].w_signo = signo;
 	threads[i].w_ifreq.tv_sec = confp->ws23xx.freq;
 	threads[i].w_ifreq.tv_nsec = 0;
 	threads[i].w_init = sensor_init;

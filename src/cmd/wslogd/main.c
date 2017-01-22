@@ -2,6 +2,10 @@
  * Weather station daemon (main file).
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unistd.h>
 #include <syslog.h>
 #include <locale.h>

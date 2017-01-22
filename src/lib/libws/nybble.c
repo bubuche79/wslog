@@ -2,6 +2,10 @@
  * Nybbles utilities.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <errno.h>
 #include <string.h>
 #include <limits.h>
