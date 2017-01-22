@@ -112,7 +112,7 @@ board_loop_p(size_t i)
 		i = boardp->loop_nel - (i - boardp->loop_idx);
 	}
 
-	p = (struct ws_loop *) ((void *) boardp + sizeof(*boardp));
+	p = (struct ws_loop *) ((char *) boardp + sizeof(*boardp));
 
 	return &p[i];
 }

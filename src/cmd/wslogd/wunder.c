@@ -7,6 +7,7 @@
 #include <syslog.h>
 
 #include "libws/util.h"
+#include "libws/log.h"
 
 #include "conf.h"
 #include "board.h"
@@ -63,7 +64,7 @@ html_write(char *ptr, size_t size, size_t nmemb, struct html *s)
 		s->buf = realloc(s->buf, s->len);
 
 		if (s->buf == NULL) {
-			syslog(LOG_ERR, "realloc(): %m");
+			csyslog1(LOG_ERR, "realloc(): %m");
 			return 0;
 		}
 	}
@@ -89,7 +90,7 @@ url_add(char *str, size_t len, int isset, const char *fmt, ...)
 		va_end(ap);
 
 		if (ret == -1) {
-			syslog(LOG_ERR, "snprintf(): %m");
+			csyslog1(LOG_ERR, "snprintf(): %m");
 			goto error;
 		} else if (len <= (size_t) ret) {
 			syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
@@ -124,7 +125,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 	char ctime[22];					/* date utc */
 
 	/* Convert date */
-	gmftime_r(ctime, sizeof(ctime), &p->time.tv_sec, "%F %T");
+	gmftime(ctime, sizeof(ctime), &p->time.tv_sec, "%F %T");
 
 	/* URL encode parameters */
 	char *dateutc = curl_easy_escape(h, ctime, 0);
@@ -138,7 +139,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 			"PASSWORD", password,
 			"dateutc", dateutc, p->time.tv_nsec);
 	if (ret == -1) {
-		syslog(LOG_ERR, "snprintf(): %m");
+		csyslog1(LOG_ERR, "snprintf(): %m");
 		goto error;
 	} else if (len <= (size_t) ret) {
 		syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
@@ -282,7 +283,7 @@ wunder_update(struct timespec *timer)
 	if (wunder_perform(p) == -1) {
 		syslog(LOG_ERR, "wunder service error");
 
-		/* Not a fatal error */
+		/* Continue, not a fatal error */
 	}
 
 exit:

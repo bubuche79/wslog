@@ -14,6 +14,7 @@
 #endif
 
 #include "defs/std.h"
+#include "libws/log.h"
 
 #include "board.h"
 #include "conf.h"
@@ -94,11 +95,11 @@ sigthread_main(void *arg)
 	itimer.it_value.tv_nsec = 100;
 
 	if (timer_create(CLOCK_REALTIME, &se, &timer) == -1) {
-		syslog(LOG_ERR, "timer_create(): %m");
+		csyslog1(LOG_ERR, "timer_create(): %m");
 		goto error;
 	}
 	if (timer_settime(timer, 0, &itimer, NULL) == -1) {
-		syslog(LOG_ERR, "timer_settime(): %m");
+		csyslog1(LOG_ERR, "timer_settime(): %m");
 		goto error;
 	}
 
@@ -109,7 +110,7 @@ sigthread_main(void *arg)
 
 		ret = sigwaitinfo(&set, &info);
 		if (ret == -1) {
-			syslog(LOG_ERR, "sigwaitinfo(): %m");
+			csyslog1(LOG_ERR, "sigwaitinfo(): %m");
 			goto error;
 		} else {
 			if (hangup_pending || shutdown_pending) {
@@ -149,7 +150,7 @@ static int
 sigthread_create(struct worker *dt)
 {
 	if (pthread_create(&dt->w_thread, NULL, sigthread_main, dt) == -1) {
-		syslog(LOG_EMERG, "pthread_create(): %m");
+		csyslog1(LOG_EMERG, "pthread_create(): %m");
 		return -1;
 	}
 
@@ -234,13 +235,14 @@ threads_start(void)
 	signo++;
 #endif
 
+#if 0
 	/* Configure SQLite thread */
 	if (!confp->sqlite.disabled) {
 		threads[i].w_signo = signo;
 		threads[i].w_ifreq.tv_sec = 2;
 		threads[i].w_ifreq.tv_nsec = 0;
 		threads[i].w_init = sqlite_init;
-		threads[i].w_action = (void *)sqlite_write;
+		threads[i].w_action = sqlite_write;
 		threads[i].w_destroy = sqlite_destroy;
 
 		i++;
@@ -248,6 +250,7 @@ threads_start(void)
 		signo++;
 #endif
 	}
+#endif
 
 	/* Configure Wunder thread */
 	if (!confp->wunder.disabled) {
@@ -282,7 +285,7 @@ threads_start(void)
 		struct worker *dt = &threads[i];
 
 		if (sigthread_create(dt) == -1) {
-			syslog(LOG_EMERG, "pthread_create(): %m");
+			csyslog1(LOG_EMERG, "pthread_create(): %m");
 			return -1;
 		}
 	}
@@ -344,12 +347,12 @@ worker_main(int *halt)
 	/* Startup initialization */
 	if (startup) {
 		if (pthread_sigmask(SIG_BLOCK, &set, NULL) == -1) {
-			syslog(LOG_ERR, "pthread_sigmask: %m");
+			csyslog1(LOG_ERR, "pthread_sigmask: %m");
 			return -1;
 		}
 
 		if (board_open(O_CREAT) == -1) {
-			syslog(LOG_EMERG, "board_open(): %m");
+			csyslog1(LOG_EMERG, "board_open(): %m");
 			goto error;
 		}
 
@@ -359,7 +362,7 @@ worker_main(int *halt)
 
 	/* Start all workers */
 	if (threads_start() == -1) {
-		syslog(LOG_EMERG, "threads_start(): %m");
+		csyslog1(LOG_EMERG, "threads_start(): %m");
 		goto error;
 	}
 
@@ -371,7 +374,7 @@ worker_main(int *halt)
 		/* Signals to wait for */
 		ret = sigwaitinfo(&set, &info);
 		if (ret == -1) {
-			syslog(LOG_ERR, "sigwaitinfo(): %m");
+			csyslog1(LOG_ERR, "sigwaitinfo(): %m");
 		} else {
 			switch (ret) {
 			case SIGHUP:
@@ -393,7 +396,7 @@ worker_main(int *halt)
 	*halt = shutdown_pending;
 
 	if (worker_destroy() == -1) {
-		syslog(LOG_ERR, "worker_destroy(): %m");
+		csyslog1(LOG_ERR, "worker_destroy(): %m");
 	}
 
 	return 0;

@@ -95,7 +95,7 @@ ws_inch(double len)
 }
 
 DSO_EXPORT size_t
-gmftime_r(char *s, size_t max, const time_t *timep, const char *fmt)
+gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 {
 	struct tm tm;
 

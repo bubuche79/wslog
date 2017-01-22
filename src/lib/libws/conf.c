@@ -1,11 +1,6 @@
-/*
- * Copyright 2010 Trophy. All rights reserved.
- * Use is subject to license terms.
- */
-
-/*
- * Configuration functions.
- */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <unistd.h>
 #include <limits.h>

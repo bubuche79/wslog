@@ -16,6 +16,12 @@
 
 static enum ws_driver driver;
 
+static void
+sensor_derived(struct ws_loop *p)
+{
+	// TODO
+}
+
 int
 sensor_init(void)
 {
@@ -70,6 +76,9 @@ sensor_main(struct timespec *timer)
 	if (ret == -1) {
 		goto error;
 	}
+
+	/* Compute derived measures */
+	sensor_derived(&loop);
 
 	/* Push loop event in board */
 	if (board_push(&loop) == -1) {

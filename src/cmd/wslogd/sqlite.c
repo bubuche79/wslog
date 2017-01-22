@@ -5,6 +5,8 @@
 #include <syslog.h>
 #include <sqlite3.h>
 
+#include "libws/log.h"
+
 #include "board.h"
 #include "wslogd.h"
 #include "sqlite.h"
@@ -90,7 +92,11 @@ sqlite_init(void)
 	db = NULL;
 	stmt = NULL;
 
-	try_sqlite(sqlite3_initialize);
+	ret = sqlite3_initialize();
+	if (ret != SQLITE_OK) {
+		syslog(LOG_ERR, "sqlite3_initialize(): %s", sqlite3_errstr(ret));
+		goto error;
+	}
 
 	/* Open database */
 	ret = stat(dbfile, &buf);
@@ -98,7 +104,7 @@ sqlite_init(void)
 		if (errno == ENOENT) {
 			oflag |= SQLITE_OPEN_CREATE;
 		} else {
-			syslog(LOG_ERR, "stat(%s): %m", dbfile);
+			csyslog(LOG_ERR, "stat(%s): %m", dbfile);
 			goto error;
 		}
 	}

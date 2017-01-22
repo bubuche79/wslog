@@ -10,6 +10,7 @@ libws_la_SOURCES = \
 	bitfield.h \
 	conf.h \
 	err.h \
+	log.h \
 	nybble.h \
 	util.h \
 	serial.h
@@ -25,7 +26,7 @@ libws_la_SOURCES += \
 endif
 
 libws_la_CFLAGS = \
-	-Wall -Werror -I../../common -I..
+	-std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I..
 
 libws_la_LIBADD = \
 	-lm

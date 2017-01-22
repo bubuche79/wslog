@@ -2,6 +2,7 @@
 #define _CORE_UTIL_H
 
 #include <time.h>
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,7 +16,7 @@ double ws_fahrenheit(double temp);
 double ws_mph(double speed);
 double ws_inch(double len);
 
-size_t gmftime_r(char *s, size_t max, const time_t *timep, const char *fmt);
+size_t gmftime(char *s, size_t max, const time_t *timep, const char *fmt);
 ssize_t strftimespec(char *s, size_t max, const struct timespec *ts);
 
 #ifdef __cplusplus

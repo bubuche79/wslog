@@ -9,7 +9,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
 
 # Checks for programs.
 LT_INIT
-AC_PROG_CC_STDC
+#AC_PROG_CC_STDC
 AC_PROG_INSTALL
 
 # Checks for libraries.

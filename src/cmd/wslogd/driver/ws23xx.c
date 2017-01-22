@@ -160,7 +160,7 @@ ws23xx_fetch(struct ws_loop *p, struct timespec *ts)
 	}
 
 	/* Unsupported fields */
-	p->wl_mask &= ~(WF_WIND_GUST|WF_RAIN_RATE|WF_HEAD_INDEX);
+	p->wl_mask &= ~(WF_BAROMETER|WF_WIND_GUST|WF_RAIN_RATE|WF_HEAD_INDEX);
 
 	return 0;
 }

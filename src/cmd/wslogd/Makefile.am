@@ -16,6 +16,7 @@ wslogd_SOURCES = \
 	conf.c \
 	daemon.c \
 	service/sensor.c \
+	service/archive.c \
 	sqlite.c \
 	main.c \
 	worker.c \
@@ -23,7 +24,7 @@ wslogd_SOURCES = \
 	board.h \
 	conf.h \
 	daemon.h \
-	service/sensor.h \
+	service/service.h \
 	sqlite.h \
 	worker.h \
 	wslogd.h \
@@ -36,7 +37,7 @@ wslogd_SOURCES += \
 endif
 
 wslogd_CPPFLAGS = \
-	-DDEBUG -Wall -Werror -I../../common -I../../lib
+	-DDEBUG -std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I../../lib
 
 wslogd_LDADD = \
 	-L../../lib/libws -lws -lsqlite3 -lcurl -lrt -lpthread
