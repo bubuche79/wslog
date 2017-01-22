@@ -85,38 +85,6 @@ struct ws_board *boardp;
 extern "C" {
 #endif
 
-inline int
-ws_isset(const struct ws_loop *p, int mask)
-{
-	return p->wl_mask & mask;
-}
-
-inline int
-ws_isset_ar(const struct ws_archive *p, int mask)
-{
-	return p->data.wl_mask & mask;
-}
-
-inline struct ws_loop *
-board_loop_p(size_t i)
-{
-	struct ws_loop *p;
-
-	if (boardp->loop_nel <= i) {
-		return NULL;
-	}
-
-	if (i <= boardp->loop_idx) {
-		i = boardp->loop_idx - i;
-	} else {
-		i = boardp->loop_nel - (i - boardp->loop_idx);
-	}
-
-	p = (struct ws_loop *) ((char *) boardp + sizeof(*boardp));
-
-	return &p[i];
-}
-
 int board_open(int oflag);
 int board_unlink(void);
 
@@ -124,6 +92,11 @@ int board_push(const struct ws_loop *p);
 int board_push_ar(const struct ws_archive *p);
 
 int board_peek_ar(struct ws_archive *p);
+
+int ws_isset(const struct ws_loop *p, int mask);
+int ws_isset_ar(const struct ws_archive *p, int mask);
+
+struct ws_loop *board_loop_p(size_t i);
 
 #ifdef __cplusplus
 }

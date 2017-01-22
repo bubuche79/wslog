@@ -168,3 +168,35 @@ board_push(const struct ws_loop *p)
 
 	return 0;
 }
+
+int
+ws_isset(const struct ws_loop *p, int mask)
+{
+	return p->wl_mask & mask;
+}
+
+int
+ws_isset_ar(const struct ws_archive *p, int mask)
+{
+	return p->data.wl_mask & mask;
+}
+
+struct ws_loop *
+board_loop_p(size_t i)
+{
+	struct ws_loop *p;
+
+	if (boardp->loop_nel <= i) {
+		return NULL;
+	}
+
+	if (i <= boardp->loop_idx) {
+		i = boardp->loop_idx - i;
+	} else {
+		i = boardp->loop_nel - (i - boardp->loop_idx);
+	}
+
+	p = (struct ws_loop *) ((char *) boardp + sizeof(*boardp));
+
+	return &p[i];
+}
