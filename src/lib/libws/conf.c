@@ -141,9 +141,9 @@ ws_getfloat(const char *str, float *val)
 DSO_EXPORT int
 ws_getbool(const char *str, int *val)
 {
-	if (!strcmp(str, "yes")) {
+	if (!strcmp(str, "yes") || !strcmp(str, "1")) {
 		*val = 1;
-	} else if (!strcmp(str, "no")) {
+	} else if (!strcmp(str, "no") || !strcmp(str, "0")) {
 		*val = 0;
 	} else {
 		errno = EINVAL;

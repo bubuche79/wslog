@@ -18,7 +18,7 @@
 #include "wslogd.h"
 #include "wunder.h"
 
-#define URL "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+#define URL "weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
 #define try_add(fn, str, len, p, isset, value) \
 	do { \
@@ -122,6 +122,11 @@ url_add_float(char *str, size_t len, const char *p, int isset, float value)
 	return url_add(str, len, isset, "&%s=%f", p, value);
 }
 
+static void
+curl_log(const char *fn, CURLcode code) {
+	syslog(LOG_ERR, "%s(): %s (%d)", fn, curl_easy_strerror(code), code);
+}
+
 static int
 wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 {
@@ -137,7 +142,8 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 
 	/* Compute GET request */
 	ret = snprintf(str, len,
-			URL "?%s=%s&%s=%s&%s=%s&%s=%s.%ld",
+			"%s://" URL "?%s=%s&%s=%s&%s=%s&%s=%s.%ld",
+			confp->wunder.https ? "https" : "http",
 			"action", "updateraw",
 			"ID", confp->wunder.station,
 			"PASSWORD", password,
@@ -198,17 +204,17 @@ wunder_perform(const struct ws_loop *p)
 		/* Set request option */
 		code = curl_easy_setopt(curl, CURLOPT_URL, url);
 		if (code != CURLE_OK) {
-			syslog(LOG_ERR, "curl_easy_setopt(): %s", curl_easy_strerror(code));
+			curl_log("curl_easy_setopt", code);
 			goto error;
 		}
 		code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, html_write);
 		if (code != CURLE_OK) {
-			syslog(LOG_ERR, "curl_easy_setopt(): %s", curl_easy_strerror(code));
+			curl_log("curl_easy_setopt", code);
 			goto error;
 		}
 		code = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &html);
 		if (code != CURLE_OK) {
-			syslog(LOG_ERR, "curl_easy_setopt(): %s", curl_easy_strerror(code));
+			curl_log("curl_easy_setopt", code);
 			goto error;
 		}
 
@@ -219,7 +225,7 @@ wunder_perform(const struct ws_loop *p)
 		/* Perform request */
 		code = curl_easy_perform(curl);
 		if (code != CURLE_OK) {
-			syslog(LOG_ERR, "curl_easy_perform(): %s", curl_easy_strerror(code));
+			curl_log("curl_easy_perform", code);
 			goto error;
 		}
 
@@ -257,7 +263,7 @@ wunder_init(void)
 
 	code = curl_global_init(CURL_GLOBAL_DEFAULT);
 	if (code != CURLE_OK) {
-		syslog(LOG_ERR, "curl_global_init(): %s", curl_easy_strerror(code));
+		curl_log("curl_global_init", code);
 		goto error;
 	}
 

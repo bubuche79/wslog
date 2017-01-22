@@ -135,11 +135,12 @@ conf_init(struct ws_conf *cfg)
 
 	/* SQLite */
 	cfg->sqlite.disabled = 0;
-	cfg->sqlite.db = "/var/lib/wslogd/wslogd.db";
+	cfg->sqlite.db = "/var/lib/wslogd.db";
 	cfg->sqlite.freq = 300;
 
 	/* Wunderstation */
 	cfg->wunder.disabled = 1;
+	cfg->wunder.https = 1;
 	cfg->wunder.freq = 300;
 
 	return 0;
@@ -188,7 +189,7 @@ conf_decode(void *p, const char *key, const char *value)
 		}
 	} else if (!strncmp(key, "sqlite.", 4)) {
 		if (!strcmp(key, "sqlite.disabled")) {
-			ws_getint(value, &cfg->sqlite.disabled);
+			ws_getbool(value, &cfg->sqlite.disabled);
 		} else if (!strcmp(key, "sqlite.db")) {
 			cfg->sqlite.db = strdup(value);
 		} else {
@@ -196,7 +197,9 @@ conf_decode(void *p, const char *key, const char *value)
 		}
 	} else if (!strncmp(key, "wunder.", 7)) {
 		if (!strcmp(key, "wunder.disabled")) {
-			ws_getint(value, &cfg->wunder.disabled);
+			ws_getbool(value, &cfg->wunder.disabled);
+		} else if (!strcmp(key, "wunder.https")) {
+			ws_getbool(value, &cfg->wunder.https);
 		} else if (!strcmp(key, "wunder.station")) {
 			cfg->wunder.station = strdup(value);
 		} else if (!strcmp(key, "wunder.password")) {

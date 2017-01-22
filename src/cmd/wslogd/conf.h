@@ -49,6 +49,7 @@ struct ws_conf
 	struct
 	{
 		int disabled;					/* disabled flag */
+		int https;						/* https flag */
 		const char *station;			/* station id */
 		const char *password;			/* account password */
 		int freq;						/* update frequency, in seconds */
