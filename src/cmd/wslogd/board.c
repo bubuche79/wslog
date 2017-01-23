@@ -174,15 +174,15 @@ board_push(const struct ws_loop *p)
 }
 
 int
-ws_isset(const struct ws_loop *p, int mask)
+ws_isset(const struct ws_loop *p, int flag)
 {
-	return (p->wl_mask & mask) == mask;
+	return (p->wl_mask & flag) == flag;
 }
 
 int
-ws_isset_ar(const struct ws_archive *p, int mask)
+ws_isset_ar(const struct ws_archive *p, int flag)
 {
-	return (p->data.wl_mask & mask) == mask;
+	return (p->data.wl_mask & flag) == flag;
 }
 
 struct ws_loop *

@@ -93,8 +93,8 @@ int board_push_ar(const struct ws_archive *p);
 
 int board_peek_ar(struct ws_archive *p);
 
-int ws_isset(const struct ws_loop *p, int mask);
-int ws_isset_ar(const struct ws_archive *p, int mask);
+int ws_isset(const struct ws_loop *p, int flag);
+int ws_isset_ar(const struct ws_archive *p, int flag);
 
 struct ws_loop *board_loop_p(size_t i);
 
