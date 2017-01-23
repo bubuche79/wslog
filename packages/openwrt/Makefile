@@ -33,7 +33,7 @@ endef
 
 define Package/wslog/install
 	$(INSTALL_DIR) $(1)/etc
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/etc/wslogd.conf $(1)/etc
+	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/wslogd.conf $(1)/etc
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libws.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/bin
