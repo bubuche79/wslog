@@ -76,7 +76,6 @@ error:
 int
 archive_main(void)
 {
-	size_t i;
 	int dirty;
 	time_t next;
 
@@ -84,34 +83,40 @@ archive_main(void)
 
 	(void) time(&next);
 
-	if (pthread_mutex_lock(&boardp->mutex) == -1) {
+	if (board_lock() == -1) {
 		return -1;
 	}
 
 	/* Compute metrics since last archive */
 	dirty = 1;
 
-	for (i = 0; dirty && i < boardp->loop_nel; i++) {
-		const struct ws_loop *p = board_loop_p(i);
+//	for (i = 0; dirty && i < boardp->loop_nel; i++) {
+//		const struct ws_loop *p = board_loop_p(i);
+//
+//		if (last < p->time.tv_sec) {
+//			//aggr_update(&aggr, p);
+//		} else {
+//			/* Already processed */
+//			dirty = 0;
+//		}
+//	}
 
-		if (last < p->time.tv_sec) {
-			//aggr_update(&aggr, p);
-		} else {
-			/* Already processed */
-			dirty = 0;
-		}
-	}
+	// TODO
+	ar.time = next;
+	ar.interval = 300;
+	memcpy(&ar.data, board_peek(0), sizeof(ar.data));
 
-	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
+	board_push_ar(&ar);
+
+	if (board_unlock() == -1) {
 		return -1;
 	}
 
 	/* Finalize aggregate */
 	//aggr_finalize(&aggr, &ar, i);
-	ar.time = next;
-	ar.interval = 300;
-	memcpy(&ar.data, board_loop_p(0), sizeof(ar.data));
 
+	if (dirty)
+		;
 	last = next;
 
 	return 0;

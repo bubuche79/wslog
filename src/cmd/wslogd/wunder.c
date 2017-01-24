@@ -184,7 +184,7 @@ error:
  * See http://wiki.wunderground.com/index.php/PWS_-_Upload_Protocol
  */
 static int
-wunder_perform(const struct ws_loop *p)
+wunder_perform(const struct ws_archive *p)
 {
 	int ret;
 	CURL *curl = NULL;
@@ -197,7 +197,7 @@ wunder_perform(const struct ws_loop *p)
 		CURLcode code;
 		char url[512];
 
-		if (wunder_url(url, sizeof(url), curl, p) == -1) {
+		if (wunder_url(url, sizeof(url), curl, &p->data) == -1) {
 			goto error;
 		}
 
@@ -276,15 +276,7 @@ error:
 int
 wunder_update(struct timespec *timer)
 {
-//	struct ws_archive arbuf;
-//
-//	if (board_peek_ar(&arbuf) == -1) {
-//		if (errno == ENODATA) {
-//			goto exit;
-//		}
-//	}
-
-	struct ws_loop *p = board_loop_p(0);
+	struct ws_archive *p = board_peek_ar(0);
 
 	if (p == NULL) {
 		goto exit;

@@ -19,14 +19,31 @@
 #define SHM_NAME "/wslog"			/* shared memory object name */
 #define SHM_SIZE (16*1024)			/* shared memory size */
 
+struct shm_buf
+{
+	size_t off;						/* offset to buffer */
+	size_t sz;						/* max number of elements */
+
+	size_t nel;						/* number of elements */
+	size_t idx;						/* next index */
+};
+
+struct shm_board
+{
+	pthread_mutex_t mutex;
+
+	struct shm_buf loop;			/* loop array */
+	struct shm_buf ar;				/* archive array */
+};
+
 static int shmflag = 0;				/* open flag */
 static size_t shmlen = 0;			/* shared memory size */
 static void *shmbufp = MAP_FAILED;	/* shared memory */
 
-struct ws_board *boardp = NULL;
+struct shm_board *boardp = NULL;
 
 static int
-board_init(struct ws_board *p, size_t len)
+shm_board_init(size_t len)
 {
 	int errsv;
 	pthread_mutexattr_t attr;
@@ -42,20 +59,26 @@ board_init(struct ws_board *p, size_t len)
 		goto error;
 	}
 
-	if (pthread_mutex_init(&p->mutex, &attr) == -1) {
+	if (pthread_mutex_init(&boardp->mutex, &attr) == -1) {
 		goto error;
 	}
 
 	(void) pthread_mutexattr_destroy(&attr);
 
-	/* Pointers */
-	boardp->loop_sz = 100;
-	boardp->loop_nel = 0;
-	boardp->loop_idx = 0;
+	/* Shared arrays */
+	size_t off = sizeof(*boardp);
 
-	boardp->ar_sz = 10;
-	boardp->ar_nel = 0;
-	boardp->ar_idx = 0;
+	boardp->loop.off = off;
+	boardp->loop.sz = 100;
+	boardp->loop.nel = 0;
+	boardp->loop.idx = 0;
+
+	off += boardp->loop.sz * sizeof(struct ws_loop);
+
+	boardp->ar.off = off;
+	boardp->ar.sz = 10;
+	boardp->ar.nel = 0;
+	boardp->ar.idx = 0;
 
 	return 0;
 
@@ -65,6 +88,16 @@ error:
 
 	errno = errsv;
 	return -1;
+}
+
+static int
+shm_board_destroy()
+{
+	int ret;
+
+	ret = pthread_mutex_destroy(&boardp->mutex);
+
+	return ret;
 }
 
 int
@@ -101,7 +134,7 @@ board_open(int oflag)
 
 	/* Initialize shared_memory content */
 	if (oflag & O_CREAT) {
-		if (board_init(boardp, SHM_SIZE) == -1) {
+		if (shm_board_init(SHM_SIZE) == -1) {
 			goto error;
 		}
 	}
@@ -114,10 +147,7 @@ error:
 		(void) close(shmfd);
 	}
 	if (shmbufp != MAP_FAILED) {
-		if (oflag & O_CREAT) {
-			(void) shm_unlink(SHM_NAME);
-		}
-		(void) munmap(shmbufp, shmlen);
+		(void) board_unlink();
 	}
 
 	errno = errsv;
@@ -135,6 +165,9 @@ board_unlink()
 		ret = -1;
 	}
 	if (shmflag & O_CREAT) {
+		if (shm_board_destroy() == -1) {
+			ret = -1;
+		}
 		if (shm_unlink(SHM_NAME) == -1) {
 			ret = -1;
 		}
@@ -144,33 +177,113 @@ board_unlink()
 }
 
 int
+board_lock(void)
+{
+	int ret;
+
+	ret = pthread_mutex_lock(&boardp->mutex);
+	if (ret == -1) {
+		/* Owner died with lock */
+		if (errno == EOWNERDEAD) {
+			if (shmflag & O_CREAT) {
+				/* Unrecoverable error */
+			} else {
+				ret = pthread_mutex_consistent(&boardp->mutex);
+			}
+		}
+	}
+
+	return ret;
+}
+
+int
+board_unlock(void)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(&boardp->mutex);
+
+	return ret;
+}
+
+/**
+ * Increment the circular buffer pointed to by {@code buf}.
+ */
+static void
+shm_buf_inc(struct shm_buf *buf)
+{
+	if (buf->nel == 0) {
+		buf->nel = 1;
+	} else {
+		if (buf->nel < buf->sz) {
+			buf->nel++;
+		}
+		if (buf->idx + 1 < buf->sz) {
+			buf->idx++;
+		} else {
+			buf->idx = 0;
+		}
+	}
+}
+
+/**
+ * Computes the index of the i-the element of the circular buffer pointed to
+ * by {@code buf}.
+ */
+static int
+shm_buf_index(const struct shm_buf *buf, size_t i)
+{
+	if (i <= buf->idx) {
+		i = buf->idx - i;
+	} else {
+		i = buf->nel - (i - buf->idx);
+	}
+
+	return i;
+}
+
+void
 board_push(const struct ws_loop *p)
 {
-	if (pthread_mutex_lock(&boardp->mutex) == -1) {
-		return -1;
-	}
+	shm_buf_inc(&boardp->loop);
+	memcpy(board_peek(0), p, sizeof(*p));
+}
 
-	if (boardp->loop_nel == 0) {
-		boardp->loop_nel = 1;
+void
+board_push_ar(const struct ws_archive *p)
+{
+	shm_buf_inc(&boardp->ar);
+	memcpy(board_peek_ar(0), p, sizeof(*p));
+}
+
+struct ws_loop *
+board_peek(size_t i)
+{
+	struct ws_loop *p;
+
+	if (boardp->loop.nel <= i) {
+		p = NULL;
 	} else {
-		if (boardp->loop_nel < boardp->loop_sz) {
-			boardp->loop_nel++;
-		}
-
-		if (boardp->loop_idx + 1 < boardp->loop_sz) {
-			boardp->loop_idx++;
-		} else {
-			boardp->loop_idx = 0;
-		}
+		i = shm_buf_index(&boardp->loop, i);
+		p = &((struct ws_loop *) ((char *) boardp + boardp->loop.off))[i];
 	}
 
-	memcpy(board_loop_p(0), p, sizeof(*p));
+	return p;
+}
 
-	if (pthread_mutex_unlock(&boardp->mutex) == -1) {
-		return -1;
+struct ws_archive *
+board_peek_ar(size_t i)
+{
+	struct ws_archive *p;
+
+	if (boardp->ar.nel <= i) {
+		p = NULL;
+	} else {
+		i = shm_buf_index(&boardp->ar, i);
+		p = &((struct ws_archive *) ((char *) boardp + boardp->ar.off))[i];
 	}
 
-	return 0;
+	return p;
 }
 
 int
@@ -183,24 +296,4 @@ int
 ws_isset_ar(const struct ws_archive *p, int flag)
 {
 	return (p->data.wl_mask & flag) == flag;
-}
-
-struct ws_loop *
-board_loop_p(size_t i)
-{
-	struct ws_loop *p;
-
-	if (boardp->loop_nel <= i) {
-		return NULL;
-	}
-
-	if (i <= boardp->loop_idx) {
-		i = boardp->loop_idx - i;
-	} else {
-		i = boardp->loop_nel - (i - boardp->loop_idx);
-	}
-
-	p = (struct ws_loop *) ((char *) boardp + sizeof(*boardp));
-
-	return &p[i];
 }

@@ -369,7 +369,7 @@ init(void)
 }
 
 static char *
-decode_str_bit(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
+decode_str_bit(const uint8_t *buf, int type, char *s, size_t len, size_t offset)
 {
 	const struct ws_type *t = &types[type];
 	uint8_t v = ws23xx_bit(buf, offset, t->bit.b);
@@ -380,7 +380,7 @@ decode_str_bit(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size
 }
 
 static char *
-decode_str_text(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
+decode_str_text(const uint8_t *buf, int type, char *s, size_t len, size_t offset)
 {
 	int i;
 
@@ -401,7 +401,7 @@ decode_str_text(const uint8_t *buf, enum ws_etype type, char *s, size_t len, siz
 }
 
 static char *
-decode_str(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
+decode_str(const uint8_t *buf, int type, char *s, size_t len, size_t offset)
 {
 	switch (type) {
 	case WS23XX_TEMP:

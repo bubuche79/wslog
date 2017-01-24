@@ -26,6 +26,27 @@
 #define WF_HUMIDITY_IN		0x8000
 #define WF_ALL				0xFFFF
 
+enum {
+	WS_BAROMETER = 0,
+	WS_ABS_PRESSURE,
+	WS_TEMP,
+	WS_HUMIDITY,
+	WS_WIND_SPEED,
+	WS_WIND_DIR,
+	WS_WIND_GUST,
+	WS_WIND_GUST_DIR,
+	WS_RAIN,
+	WS_RAIN_RATE,
+	WS_RAIN_1H,
+	WS_RAIN_24H,
+	WS_DEW_POINT,
+	WS_WINDCHILL,
+	WS_HEAT_INDEX,
+	WS_TEMP_IN,
+	WS_HUMIDITY_IN,
+	WS_MAX						/* do not use */
+};
+
 struct ws_loop
 {
 	struct timespec time;		/* loop packet time (UTC) */
@@ -63,24 +84,6 @@ struct ws_archive
 	struct ws_loop data;		/* aggregated data */
 };
 
-struct ws_board
-{
-	pthread_mutex_t mutex;
-
-	size_t lost;				/* lost packets */
-	size_t received;			/* received packets */
-
-	size_t loop_sz;				/* max number of elements */
-	size_t loop_nel;			/* number of elements */
-	size_t loop_idx;			/* next index */
-
-	size_t ar_sz;
-	size_t ar_nel;
-	size_t ar_idx;				/* next index */
-};
-
-struct ws_board *boardp;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -88,15 +91,17 @@ extern "C" {
 int board_open(int oflag);
 int board_unlink(void);
 
-int board_push(const struct ws_loop *p);
-int board_push_ar(const struct ws_archive *p);
+int board_lock(void);
+int board_unlock(void);
 
-int board_peek_ar(struct ws_archive *p);
+void board_push(const struct ws_loop *p);
+void board_push_ar(const struct ws_archive *p);
+
+struct ws_loop *board_peek(size_t i);
+struct ws_archive *board_peek_ar(size_t i);
 
 int ws_isset(const struct ws_loop *p, int flag);
 int ws_isset_ar(const struct ws_archive *p, int flag);
-
-struct ws_loop *board_loop_p(size_t i);
 
 #ifdef __cplusplus
 }

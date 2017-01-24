@@ -11,6 +11,7 @@
 #ifdef HAVE_WS23XX
 #include "driver/ws23xx.h"
 #endif
+#include "board.h"
 #include "wslogd.h"
 #include "service/service.h"
 
@@ -19,7 +20,28 @@ static enum ws_driver driver;
 static void
 sensor_derived(struct ws_loop *p)
 {
-	// TODO
+//	if (sensor_updt(p, WF_WINDCHILL, WF_WIND|WF_TEMP)) {
+//		p->windchill = ws_windchill(p->wind_dir, p->temp);
+//	}
+//	if (sensor_updt(p, WF_DEW_POINT, WF_TEMP|WF_HUMIDITY)) {
+//		p->dew_point = ws_dewpoint(p->temp, p->humidity);
+//	}
+}
+
+static int
+sensor_push(const struct ws_loop *p)
+{
+	if (board_lock() == -1) {
+		return -1;
+	}
+
+	board_push(p);
+
+	if (board_unlock() == -1) {
+		return -1;
+	}
+
+	return 0;
 }
 
 int
@@ -81,7 +103,7 @@ sensor_main(struct timespec *timer)
 	sensor_derived(&loop);
 
 	/* Push loop event in board */
-	if (board_push(&loop) == -1) {
+	if (sensor_push(&loop) == -1) {
 		goto error;
 	}
 

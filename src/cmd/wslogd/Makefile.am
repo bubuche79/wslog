@@ -6,7 +6,7 @@ wslogc_SOURCES = \
 	board.h
 
 wslogc_CPPFLAGS = \
-	-I../../common -I../../lib
+	-DDEBUG -std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I../../lib
 
 wslogc_LDADD = \
 	-L../../lib/libws -lws -lrt -lpthread
