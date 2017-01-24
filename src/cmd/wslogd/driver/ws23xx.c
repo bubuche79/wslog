@@ -14,34 +14,34 @@ static int fd;					/* device file */
 static float total_rain;		/* total rain sensor */
 
 static void *
-ws23xx_val(const uint8_t *buf, enum ws_etype type, void *v, size_t offset)
+ws23xx_val(const uint8_t *buf, int type, void *v, size_t offset)
 {
 	switch (type) {
-	case WS_TEMP:
+	case WS23XX_TEMP:
 		ws23xx_temp(buf, (float *) v, offset);
 		break;
-	case WS_PRESSURE:
+	case WS23XX_PRESSURE:
 		ws23xx_pressure(buf, (float *) v, offset);
 		break;
-	case WS_HUMIDITY:
+	case WS23XX_HUMIDITY:
 		ws23xx_humidity(buf, (uint8_t *) v, offset);
 		break;
-	case WS_SPEED:
+	case WS23XX_SPEED:
 		ws23xx_speed(buf, (float *) v, offset);
 		break;
-	case WS_WIND_DIR:
+	case WS23XX_WIND_DIR:
 		ws23xx_wind_dir(buf, (uint16_t *) v, offset);
 		break;
-	case WS_RAIN:
+	case WS23XX_RAIN:
 		ws23xx_rain(buf, (float *) v, offset);
 		break;
-	case WS_CONNECTION:
+	case WS23XX_CONNECTION:
 		ws23xx_connection(buf, (uint8_t *) v, offset);
 		break;
-	case WS_INT_SEC:
+	case WS23XX_INT_SEC:
 		ws23xx_interval_sec(buf, (float *) v, offset);
 		break;
-	case WS_WIND_VALID:
+	case WS23XX_WIND_VALID:
 		ws23xx_wind_valid(buf, (uint8_t *) v, offset);
 		break;
 	default:
@@ -79,29 +79,29 @@ ws23xx_fetch(struct ws_loop *p, struct timespec *ts)
 	struct ws23xx_io
 	{
 		uint16_t addr;
-		enum ws_etype type;
+		int type;
 		size_t nnyb;
 		void *p;
 	};
 
 	struct ws23xx_io io[] =
 	{
-			{ 0x346, WS_TEMP, 4, &p->temp_in },
-			{ 0x373, WS_TEMP, 4, &p->temp },
-			{ 0x3a0, WS_TEMP, 4, &p->windchill },
-			{ 0x3ce, WS_TEMP, 4, &p->dew_point },
-			{ 0x3fb, WS_HUMIDITY, 2, &p->humidity_in },
-			{ 0x419, WS_HUMIDITY, 2, &p->humidity },
-			{ 0x497, WS_RAIN, 6, &p->rain_24h },
-			{ 0x4b4, WS_RAIN, 6, &p->rain_1h },
-			{ 0x4d2, WS_RAIN, 6, &total_rain_now },
-			{ 0x528, WS_WIND_VALID, 1, &wind_valid },
-			{ 0x529, WS_SPEED, 3, &p->wind_speed },
-			{ 0x52c, WS_WIND_DIR, 1, &p->wind_dir },
-			{ 0x54d, WS_CONNECTION, 1, &cnx_type },
-			{ 0x54f, WS_INT_SEC, 2, &cnx_countdown },
-			{ 0x5d8, WS_PRESSURE, 5, &p->abs_pressure },
-			{ 0x5e2, WS_PRESSURE, 5, &p->barometer }
+			{ 0x346, WS23XX_TEMP, 4, &p->temp_in },
+			{ 0x373, WS23XX_TEMP, 4, &p->temp },
+			{ 0x3a0, WS23XX_TEMP, 4, &p->windchill },
+			{ 0x3ce, WS23XX_TEMP, 4, &p->dew_point },
+			{ 0x3fb, WS23XX_HUMIDITY, 2, &p->humidity_in },
+			{ 0x419, WS23XX_HUMIDITY, 2, &p->humidity },
+			{ 0x497, WS23XX_RAIN, 6, &p->rain_24h },
+			{ 0x4b4, WS23XX_RAIN, 6, &p->rain_1h },
+			{ 0x4d2, WS23XX_RAIN, 6, &total_rain_now },
+			{ 0x528, WS23XX_WIND_VALID, 1, &wind_valid },
+			{ 0x529, WS23XX_SPEED, 3, &p->wind_speed },
+			{ 0x52c, WS23XX_WIND_DIR, 1, &p->wind_dir },
+			{ 0x54d, WS23XX_CONNECTION, 1, &cnx_type },
+			{ 0x54f, WS23XX_INT_SEC, 2, &cnx_countdown },
+			{ 0x5d8, WS23XX_PRESSURE, 5, &p->abs_pressure },
+			{ 0x5e2, WS23XX_PRESSURE, 5, &p->barometer }
 	};
 
 	size_t nel = array_size(io);

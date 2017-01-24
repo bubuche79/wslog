@@ -17,6 +17,8 @@
 #include "libws/ws23xx/decoder.h"
 #include "libws/ws23xx/archive.h"
 
+#include "util.h"
+
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
 
 #ifndef PROGNAME
@@ -27,213 +29,245 @@
 #define VERSION		"0.1"
 #endif
 
+struct ws_type {
+	int id;								/* internal id */
+	const char *units;					/* units name (eg hPa) */
+	uint8_t nybble;						/* nybble count */
+	const char *desc;					/* type description (eg pressure) */
+
+	union {
+		struct {
+			uint8_t scale;
+		} num;
+		struct {
+			struct {
+				uint8_t key;
+				const char *value;
+			} a[6];
+		} text;
+		struct {
+			uint8_t b;
+			const char *unset;
+			const char *set;
+		} bit;
+	};
+};
+
+struct ws_measure {
+	uint16_t addr;						/* nybble addr */
+	const char *id;						/* short name */
+	const struct ws_type *type;			/* data converter type */
+	const char *desc;					/* long name */
+	const char *reset;					/* id of measure to reset this one */
+};
+
 static const struct ws_type types[] =
 {
 	/* BCD converters */
-	{ WS_TEMP, "°C", 4, "temperature", .num = { 2 } },
-	{ WS_PRESSURE, "hPa", 5, "pressure", .num = { 1 } },
-	{ WS_HUMIDITY, "%", 2, "humidity", .num = { 0 } },
-	{ WS_RAIN, "mm", 6, "rain", .num = { 2 } },
+	{ WS23XX_TEMP, "°C", 4, "temperature", .num = { 2 } },
+	{ WS23XX_PRESSURE, "hPa", 5, "pressure", .num = { 1 } },
+	{ WS23XX_HUMIDITY, "%", 2, "humidity", .num = { 0 } },
+	{ WS23XX_RAIN, "mm", 6, "rain", .num = { 2 } },
 
 	/* Wind direction converter */
-	{ WS_WIND_DIR, "deg", 1, "wind direction, North=0 clockwise" },
+	{ WS23XX_WIND_DIR, "deg", 1, "wind direction, North=0 clockwise" },
 
 	/* Wind velocity converter */
-	{ WS_WIND_VELOCITY, "ms,d", 4, "wind speed and direction" },
+	{ WS23XX_WIND_VELOCITY, "ms,d", 4, "wind speed and direction" },
 
 	/* Bin converters */
-	{ WS_SPEED, "m/s", 3, "speed", .num = { 1 } },
-	{ WS_INT_SEC, "s", 2, "time interval", .num = { 1 } },
-	{ WS_INT_MIN, "min", 3, "time interval", .num = { 0 } },
-	{ WS_BIN_2NYB, NULL, 2, "record number", .num = { 0 } },
-	{ WS_CONTRAST, NULL, 1, "contrast", .num = { 0 } },
+	{ WS23XX_SPEED, "m/s", 3, "speed", .num = { 1 } },
+	{ WS23XX_INT_SEC, "s", 2, "time interval", .num = { 1 } },
+	{ WS23XX_INT_MIN, "min", 3, "time interval", .num = { 0 } },
+	{ WS23XX_BIN_2NYB, NULL, 2, "record number", .num = { 0 } },
+	{ WS23XX_CONTRAST, NULL, 1, "contrast", .num = { 0 } },
 
 	/* Date and time converters */
-	{ WS_DATE, NULL, 6, "yyyy-mm-dd" },
-	{ WS_TIMESTAMP, NULL, 10, "yyyy-mm-dd hh:mm" },
-	{ WS_DATETIME, NULL, 11, "yyyy-mm-dd hh:mm" },
-	{ WS_TIME, NULL, 6, "hh:mm:ss" },
+	{ WS23XX_DATE, NULL, 6, "yyyy-mm-dd" },
+	{ WS23XX_TIMESTAMP, NULL, 10, "yyyy-mm-dd hh:mm" },
+	{ WS23XX_DATETIME, NULL, 11, "yyyy-mm-dd hh:mm" },
+	{ WS23XX_TIME, NULL, 6, "hh:mm:ss" },
 
 	/* Text converters */
-	{ WS_CONNECTION, NULL, 1, .text.a = {{0, "cable"}, {3, "lost"}, {15, "wireless"}} },
-	{ WS_FORECAST, NULL, 1, .text.a = {{0, "rainy"}, {1, "cloudy"}, {2, "sunny"}} },
-	{ WS_TENDENCY, NULL, 1, .text.a = {{0, "steady"}, {1, "rising"}, {2, "falling"}} },
-	{ WS_SPEED_UNIT, NULL, 1, .text.a = {{0, "m/s"}, {1, "knots"}, {2, "beaufort"}, {3, "km/h"}, {4, "mph"}} },
-	{ WS_WIND_OVERFLOW, NULL, 1, .text.a = {{0, "no"}, {1, "overflow"}} },
-	{ WS_WIND_VALID, NULL, 1, .text.a = {{0, "ok"}, {1, "invalid"}, {2, "overflow"}} },
+	{ WS23XX_CONNECTION, NULL, 1, .text.a = {{0, "cable"}, {3, "lost"}, {15, "wireless"}} },
+	{ WS23XX_FORECAST, NULL, 1, .text.a = {{0, "rainy"}, {1, "cloudy"}, {2, "sunny"}} },
+	{ WS23XX_TENDENCY, NULL, 1, .text.a = {{0, "steady"}, {1, "rising"}, {2, "falling"}} },
+	{ WS23XX_SPEED_UNIT, NULL, 1, .text.a = {{0, "m/s"}, {1, "knots"}, {2, "beaufort"}, {3, "km/h"}, {4, "mph"}} },
+	{ WS23XX_WIND_OVERFLOW, NULL, 1, .text.a = {{0, "no"}, {1, "overflow"}} },
+	{ WS23XX_WIND_VALID, NULL, 1, .text.a = {{0, "ok"}, {1, "invalid"}, {2, "overflow"}} },
 
 	/* Bit converters */
-	{ WS_ALARM_SET_0, NULL, 1, .bit = { 0, "off", "on" } },
-	{ WS_ALARM_SET_1, NULL, 1, .bit = { 1, "off", "on" } },
-	{ WS_ALARM_SET_2, NULL, 1, .bit = { 2, "off", "on" } },
-	{ WS_ALARM_SET_3, NULL, 1, .bit = { 3, "off", "on" } },
-	{ WS_ALARM_ACTIVE_0, NULL, 1, .bit = { 0, "inactive", "active" } },
-	{ WS_ALARM_ACTIVE_1, NULL, 1, .bit = { 1, "inactive", "active" } },
-	{ WS_ALARM_ACTIVE_2, NULL, 1, .bit = { 2, "inactive", "active" } },
-	{ WS_ALARM_ACTIVE_3, NULL, 1, .bit = { 3, "inactive", "active" } },
-	{ WS_BUZZER, NULL, 1, .bit = { 3, "on", "off" } },
-	{ WS_BACKLIGHT, NULL, 1, .bit = { 0, "off", "on" } },
+	{ WS23XX_ALARM_SET_0, NULL, 1, .bit = { 0, "off", "on" } },
+	{ WS23XX_ALARM_SET_1, NULL, 1, .bit = { 1, "off", "on" } },
+	{ WS23XX_ALARM_SET_2, NULL, 1, .bit = { 2, "off", "on" } },
+	{ WS23XX_ALARM_SET_3, NULL, 1, .bit = { 3, "off", "on" } },
+	{ WS23XX_ALARM_ACTIVE_0, NULL, 1, .bit = { 0, "inactive", "active" } },
+	{ WS23XX_ALARM_ACTIVE_1, NULL, 1, .bit = { 1, "inactive", "active" } },
+	{ WS23XX_ALARM_ACTIVE_2, NULL, 1, .bit = { 2, "inactive", "active" } },
+	{ WS23XX_ALARM_ACTIVE_3, NULL, 1, .bit = { 3, "inactive", "active" } },
+	{ WS23XX_BUZZER, NULL, 1, .bit = { 3, "on", "off" } },
+	{ WS23XX_BACKLIGHT, NULL, 1, .bit = { 0, "off", "on" } },
 };
 
 /* ws23xx memory, ordered by address */
 static const struct ws_measure mem_addr[] =
 {
-	{ 0x006, "bz", &types[WS_BUZZER], "buzzer" },
-	{ 0x00f, "wsu", &types[WS_SPEED_UNIT], "wind speed units" },
-	{ 0x016, "lb", &types[WS_BACKLIGHT], "lcd backlight" },
-	{ 0x019, "sss", &types[WS_ALARM_SET_2], "storm warn alarm set" },
-	{ 0x019, "sts", &types[WS_ALARM_SET_0], "station time alarm set" },
-	{ 0x01a, "phs", &types[WS_ALARM_SET_3], "pressure max alarm set" },
-	{ 0x01a, "pls", &types[WS_ALARM_SET_2], "pressure min alarm set" },
-	{ 0x01b, "oths", &types[WS_ALARM_SET_3], "out temp max alarm set" },
-	{ 0x01b, "otls", &types[WS_ALARM_SET_2], "out temp min alarm set" },
-	{ 0x01b, "iths", &types[WS_ALARM_SET_1], "in temp max alarm set" },
-	{ 0x01b, "itls", &types[WS_ALARM_SET_0], "in temp min alarm set" },
-	{ 0x01c, "dphs", &types[WS_ALARM_SET_3], "dew point max alarm set" },
-	{ 0x01c, "dpls", &types[WS_ALARM_SET_2], "dew point min alarm set" },
-	{ 0x01c, "wchs", &types[WS_ALARM_SET_1], "wind chill max alarm set" },
-	{ 0x01c, "wcls", &types[WS_ALARM_SET_0], "wind chill min alarm set" },
-	{ 0x01d, "ihhs", &types[WS_ALARM_SET_3], "in humidity max alarm set" },
-	{ 0x01d, "ihls", &types[WS_ALARM_SET_2], "in humidity min alarm set" },
-	{ 0x01d, "ohhs", &types[WS_ALARM_SET_1], "out humidity max alarm set" },
-	{ 0x01d, "ohls", &types[WS_ALARM_SET_0], "out humidity min alarm set" },
-	{ 0x01e, "rhhs", &types[WS_ALARM_SET_1], "rain 1h alarm set" },
-	{ 0x01e, "rdhs", &types[WS_ALARM_SET_0], "rain 24h alarm set" },
-	{ 0x01f, "wds", &types[WS_ALARM_SET_2], "wind direction alarm set" },
-	{ 0x01f, "wshs", &types[WS_ALARM_SET_1], "wind speed max alarm set" },
-	{ 0x01f, "wsls", &types[WS_ALARM_SET_0], "wind speed min alarm set" },
-	{ 0x020, "siv", &types[WS_ALARM_ACTIVE_2], "icon alarm active" },
-	{ 0x020, "stv", &types[WS_ALARM_ACTIVE_0], "station time alarm active" },
-	{ 0x021, "phv", &types[WS_ALARM_ACTIVE_3], "pressure max alarm active" },
-	{ 0x021, "plv", &types[WS_ALARM_ACTIVE_2], "pressure min alarm active" },
-	{ 0x022, "othv", &types[WS_ALARM_ACTIVE_3], "out temp max alarm active" },
-	{ 0x022, "otlv", &types[WS_ALARM_ACTIVE_2], "out temp min alarm active" },
-	{ 0x022, "ithv", &types[WS_ALARM_ACTIVE_1], "in temp max alarm active" },
-	{ 0x022, "itlv", &types[WS_ALARM_ACTIVE_0], "in temp min alarm active" },
-	{ 0x023, "dphv", &types[WS_ALARM_ACTIVE_3], "dew point max alarm active" },
-	{ 0x023, "dplv", &types[WS_ALARM_ACTIVE_2], "dew point min alarm active" },
-	{ 0x023, "wchv", &types[WS_ALARM_ACTIVE_1], "wind chill max alarm active" },
-	{ 0x023, "wclv", &types[WS_ALARM_ACTIVE_0], "wind chill min alarm active" },
-	{ 0x024, "ihhv", &types[WS_ALARM_ACTIVE_3], "in humidity max alarm active" },
-	{ 0x024, "ihlv", &types[WS_ALARM_ACTIVE_2], "in humidity min alarm active" },
-	{ 0x024, "ohhv", &types[WS_ALARM_ACTIVE_1], "out humidity max alarm active" },
-	{ 0x024, "ohlv", &types[WS_ALARM_ACTIVE_0], "out humidity min alarm active" },
-	{ 0x025, "rhhv", &types[WS_ALARM_ACTIVE_1], "rain 1h alarm active" },
-	{ 0x025, "rdhv", &types[WS_ALARM_ACTIVE_0], "rain 24h alarm active" },
-	{ 0x026, "wdv", &types[WS_ALARM_ACTIVE_2], "wind direction alarm active" },
-	{ 0x026, "wshv", &types[WS_ALARM_ACTIVE_1], "wind speed max alarm active" },
-	{ 0x026, "wslv", &types[WS_ALARM_ACTIVE_0], "wind speed min alarm active" },
-/*	{ 0x027, NULL, &types[WS_ALARM_ACTIVE_3], "pressure max alarm active alias" },
-	{ 0x027, NULL, &types[WS_ALARM_ACTIVE_2], "pressure min alarm active alias" },
-	{ 0x028, NULL, &types[WS_ALARM_ACTIVE_3], "out temp max alarm active alias" },
-	{ 0x028, NULL, &types[WS_ALARM_ACTIVE_2], "out temp min alarm active alias" },
-	{ 0x028, NULL, &types[WS_ALARM_ACTIVE_1], "in temp max alarm active alias" },
-	{ 0x028, NULL, &types[WS_ALARM_ACTIVE_0], "in temp min alarm active alias" },
-	{ 0x029, NULL, &types[WS_ALARM_ACTIVE_3], "dew point max alarm active alias" },
-	{ 0x029, NULL, &types[WS_ALARM_ACTIVE_2], "dew point min alarm active alias" },
-	{ 0x029, NULL, &types[WS_ALARM_ACTIVE_1], "wind chill max alarm active alias" },
-	{ 0x029, NULL, &types[WS_ALARM_ACTIVE_0], "wind chill min alarm active alias" },
-	{ 0x02a, NULL, &types[WS_ALARM_ACTIVE_3], "in humidity max alarm active alias" },
-	{ 0x02a, NULL, &types[WS_ALARM_ACTIVE_2], "in humidity min alarm active alias" },
-	{ 0x02a, NULL, &types[WS_ALARM_ACTIVE_1], "out humidity max alarm active alias" },
-	{ 0x02a, NULL, &types[WS_ALARM_ACTIVE_0], "out humidity min alarm active alias" },
-	{ 0x02b, NULL, &types[WS_ALARM_ACTIVE_1], "rain 1h alarm active alias" },
-	{ 0x02b, NULL, &types[WS_ALARM_ACTIVE_0], "rain 24h alarm active alias" },
-	{ 0x02c, NULL, &types[WS_ALARM_ACTIVE_2], "wind direction alarm active alias" },
-	{ 0x02c, NULL, &types[WS_ALARM_ACTIVE_2], "wind speed max alarm active alias" },
-	{ 0x02c, NULL, &types[WS_ALARM_ACTIVE_2], "wind speed min alarm active alias" },*/
-	{ 0x200, "st", &types[WS_TIME], "station set time", "ct" },
-	{ 0x23b, "sw", &types[WS_DATETIME], "station current date time" },
-	{ 0x24d, "sd", &types[WS_DATE], "station set date", "cd" },
-	{ 0x266, "lc", &types[WS_CONTRAST], "lcd contrast (ro)" },
-	{ 0x26b, "for", &types[WS_FORECAST], "forecast" },
-	{ 0x26c, "ten", &types[WS_TENDENCY], "tendency" },
-	{ 0x346, "it", &types[WS_TEMP], "in temp" },
-	{ 0x34b, "itl", &types[WS_TEMP], "in temp min", "it" },
-	{ 0x350, "ith", &types[WS_TEMP], "in temp max", "it" },
-	{ 0x354, "itlw", &types[WS_TIMESTAMP], "in temp min when", "sw" },
-	{ 0x35e, "ithw", &types[WS_TIMESTAMP], "in temp max when", "sw" },
-	{ 0x369, "itla", &types[WS_TEMP], "in temp min alarm" },
-	{ 0x36e, "itha", &types[WS_TEMP], "in temp max alarm" },
-	{ 0x373, "ot", &types[WS_TEMP], "out temp" },
-	{ 0x378, "otl", &types[WS_TEMP], "out temp min", "ot" },
-	{ 0x37d, "oth", &types[WS_TEMP], "out temp max", "ot" },
-	{ 0x381, "otlw", &types[WS_TIMESTAMP], "out temp min when", "sw" },
-	{ 0x38b, "othw", &types[WS_TIMESTAMP], "out temp max when", "sw" },
-	{ 0x396, "otla", &types[WS_TEMP], "out temp min alarm" },
-	{ 0x39b, "otha", &types[WS_TEMP], "out temp max alarm" },
-	{ 0x3a0, "wc", &types[WS_TEMP], "wind chill" },
-	{ 0x3a5, "wcl", &types[WS_TEMP], "wind chill min", "wc" },
-	{ 0x3aa, "wch", &types[WS_TEMP], "wind chill max", "wc" },
-	{ 0x3ae, "wclw", &types[WS_TIMESTAMP], "wind chill min when", "sw" },
-	{ 0x3b8, "wchw", &types[WS_TIMESTAMP], "wind chill max when", "sw" },
-	{ 0x3c3, "wcla", &types[WS_TEMP], "wind chill min alarm" },
-	{ 0x3c8, "wcha", &types[WS_TEMP], "wind chill max alarm" },
-	{ 0x3ce, "dp", &types[WS_TEMP], "dew point" },
-	{ 0x3d3, "dpl", &types[WS_TEMP], "dew point min", "dp" },
-	{ 0x3d8, "dph", &types[WS_TEMP], "dew point max", "dp" },
-	{ 0x3dc, "dplw", &types[WS_TIMESTAMP], "dew point min when", "sw" },
-	{ 0x3e6, "dphw", &types[WS_TIMESTAMP], "dew point max when", "sw" },
-	{ 0x3f1, "dpla", &types[WS_TEMP], "dew point min alarm" },
-	{ 0x3f6, "dpha", &types[WS_TEMP], "dew point max alarm" },
-	{ 0x3fb, "ih", &types[WS_HUMIDITY], "in humidity" },
-	{ 0x3fd, "ihl", &types[WS_HUMIDITY], "in humidity min", "ih" },
-	{ 0x3ff, "ihh", &types[WS_HUMIDITY], "in humidity max", "ih" },
-	{ 0x401, "ihlw", &types[WS_TIMESTAMP], "in humidity min when", "sw" },
-	{ 0x40b, "ihhw", &types[WS_TIMESTAMP], "in humidity max when", "sw" },
-	{ 0x415, "ihla", &types[WS_HUMIDITY], "in humidity min alarm" },
-	{ 0x417, "ihha", &types[WS_HUMIDITY], "in humidity max alarm" },
-	{ 0x419, "oh", &types[WS_HUMIDITY], "out humidity" },
-	{ 0x41b, "ohl", &types[WS_HUMIDITY], "out humidity min", "oh" },
-	{ 0x41d, "ohh", &types[WS_HUMIDITY], "out humidity max", "oh" },
-	{ 0x41f, "ohlw", &types[WS_TIMESTAMP], "out humidity min when", "sw" },
-	{ 0x429, "ohhw", &types[WS_TIMESTAMP], "out humidity max when", "sw" },
-	{ 0x433, "ohla", &types[WS_HUMIDITY], "out humidity min alarm" },
-	{ 0x435, "ohha", &types[WS_HUMIDITY], "out humidity max alarm" },
-	{ 0x497, "rd", &types[WS_RAIN], "rain 24h" },
-	{ 0x49d, "rdh", &types[WS_RAIN], "rain 24h max", "rd" },
-	{ 0x4a3, "rdhw", &types[WS_TIMESTAMP], "rain 24h max when", "sw" },
-	{ 0x4ae, "rdha", &types[WS_RAIN], "rain 24h max alarm" },
-	{ 0x4b4, "rh", &types[WS_RAIN], "rain 1h" },
-	{ 0x4ba, "rhh", &types[WS_RAIN], "rain 1h max", "rh" },
-	{ 0x4c0, "rhhw", &types[WS_TIMESTAMP], "rain 1h max when", "sw" },
-	{ 0x4cb, "rhha", &types[WS_RAIN], "rain 1h max alarm" },
-	{ 0x4d2, "rt", &types[WS_RAIN], "rain total", "0" },
-	{ 0x4d8, "rtrw", &types[WS_TIMESTAMP], "rain total reset when", "sw" },
-	{ 0x4ee, "wsl", &types[WS_SPEED], "wind speed min", "ws" },
-	{ 0x4f4, "wsh", &types[WS_SPEED], "wind speed max", "ws" },
-	{ 0x4f8, "wslw", &types[WS_TIMESTAMP], "wind speed min when", "sw" },
-	{ 0x502, "wshw", &types[WS_TIMESTAMP], "wind speed max when", "sw" },
-	{ 0x527, "wso", &types[WS_WIND_OVERFLOW], "wind speed overflow" },
-	{ 0x528, "wsv", &types[WS_WIND_VALID], "wind speed validity" },
-	{ 0x529, "wv", &types[WS_WIND_VELOCITY], "wind velocity" },
-	{ 0x529, "ws", &types[WS_SPEED], "wind speed" },
-	{ 0x52c, "w0", &types[WS_WIND_DIR], "wind direction" },
-	{ 0x52d, "w1", &types[WS_WIND_DIR], "wind direction 1" },
-	{ 0x52e, "w2", &types[WS_WIND_DIR], "wind direction 2" },
-	{ 0x52f, "w3", &types[WS_WIND_DIR], "wind direction 3" },
-	{ 0x530, "w4", &types[WS_WIND_DIR], "wind direction 4" },
-	{ 0x531, "w5", &types[WS_WIND_DIR], "wind direction 5" },
-	{ 0x533, "wsla", &types[WS_SPEED], "wind speed min alarm" },
-	{ 0x538, "wsha", &types[WS_SPEED], "wind speed max alarm" },
-	{ 0x54d, "cn", &types[WS_CONNECTION], "connection type" },
-	{ 0x54f, "cc", &types[WS_INT_SEC], "connection time till connect" },
-	{ 0x5d8, "pa", &types[WS_PRESSURE], "pressure absolute" },
-	{ 0x5e2, "pr", &types[WS_PRESSURE], "pressure relative" },
-	{ 0x5ec, "pc", &types[WS_PRESSURE], "pressure correction" },
-	{ 0x5f6, "pal", &types[WS_PRESSURE], "pressure absolute min", "pa" },
-	{ 0x600, "prl", &types[WS_PRESSURE], "pressure relative min", "pr" },
-	{ 0x60a, "pah", &types[WS_PRESSURE], "pressure absolute max", "pa" },
-	{ 0x614, "prh", &types[WS_PRESSURE], "pressure relative max", "pr" },
-	{ 0x61e, "plw", &types[WS_TIMESTAMP], "pressure min when", "sw" },
-	{ 0x628, "phw", &types[WS_TIMESTAMP], "pressure max when", "sw" },
-	{ 0x63c, "pla", &types[WS_PRESSURE], "pressure min alarm" },
-	{ 0x650, "pha", &types[WS_PRESSURE], "pressure max alarm" },
-	{ 0x6b2, "hi", &types[WS_INT_MIN], "history interval" },
-	{ 0x6b5, "hc", &types[WS_INT_MIN], "history time till sample" },
-	{ 0x6b8, "hw", &types[WS_TIMESTAMP], "history last sample when" },
-	{ 0x6c2, "hp", &types[WS_BIN_2NYB], "history last record pointer", "0" },
-	{ 0x6c4, "hn", &types[WS_BIN_2NYB], "history number of records", "0"}
+	{ 0x006, "bz", &types[WS23XX_BUZZER], "buzzer" },
+	{ 0x00f, "wsu", &types[WS23XX_SPEED_UNIT], "wind speed units" },
+	{ 0x016, "lb", &types[WS23XX_BACKLIGHT], "lcd backlight" },
+	{ 0x019, "sss", &types[WS23XX_ALARM_SET_2], "storm warn alarm set" },
+	{ 0x019, "sts", &types[WS23XX_ALARM_SET_0], "station time alarm set" },
+	{ 0x01a, "phs", &types[WS23XX_ALARM_SET_3], "pressure max alarm set" },
+	{ 0x01a, "pls", &types[WS23XX_ALARM_SET_2], "pressure min alarm set" },
+	{ 0x01b, "oths", &types[WS23XX_ALARM_SET_3], "out temp max alarm set" },
+	{ 0x01b, "otls", &types[WS23XX_ALARM_SET_2], "out temp min alarm set" },
+	{ 0x01b, "iths", &types[WS23XX_ALARM_SET_1], "in temp max alarm set" },
+	{ 0x01b, "itls", &types[WS23XX_ALARM_SET_0], "in temp min alarm set" },
+	{ 0x01c, "dphs", &types[WS23XX_ALARM_SET_3], "dew point max alarm set" },
+	{ 0x01c, "dpls", &types[WS23XX_ALARM_SET_2], "dew point min alarm set" },
+	{ 0x01c, "wchs", &types[WS23XX_ALARM_SET_1], "wind chill max alarm set" },
+	{ 0x01c, "wcls", &types[WS23XX_ALARM_SET_0], "wind chill min alarm set" },
+	{ 0x01d, "ihhs", &types[WS23XX_ALARM_SET_3], "in humidity max alarm set" },
+	{ 0x01d, "ihls", &types[WS23XX_ALARM_SET_2], "in humidity min alarm set" },
+	{ 0x01d, "ohhs", &types[WS23XX_ALARM_SET_1], "out humidity max alarm set" },
+	{ 0x01d, "ohls", &types[WS23XX_ALARM_SET_0], "out humidity min alarm set" },
+	{ 0x01e, "rhhs", &types[WS23XX_ALARM_SET_1], "rain 1h alarm set" },
+	{ 0x01e, "rdhs", &types[WS23XX_ALARM_SET_0], "rain 24h alarm set" },
+	{ 0x01f, "wds", &types[WS23XX_ALARM_SET_2], "wind direction alarm set" },
+	{ 0x01f, "wshs", &types[WS23XX_ALARM_SET_1], "wind speed max alarm set" },
+	{ 0x01f, "wsls", &types[WS23XX_ALARM_SET_0], "wind speed min alarm set" },
+	{ 0x020, "siv", &types[WS23XX_ALARM_ACTIVE_2], "icon alarm active" },
+	{ 0x020, "stv", &types[WS23XX_ALARM_ACTIVE_0], "station time alarm active" },
+	{ 0x021, "phv", &types[WS23XX_ALARM_ACTIVE_3], "pressure max alarm active" },
+	{ 0x021, "plv", &types[WS23XX_ALARM_ACTIVE_2], "pressure min alarm active" },
+	{ 0x022, "othv", &types[WS23XX_ALARM_ACTIVE_3], "out temp max alarm active" },
+	{ 0x022, "otlv", &types[WS23XX_ALARM_ACTIVE_2], "out temp min alarm active" },
+	{ 0x022, "ithv", &types[WS23XX_ALARM_ACTIVE_1], "in temp max alarm active" },
+	{ 0x022, "itlv", &types[WS23XX_ALARM_ACTIVE_0], "in temp min alarm active" },
+	{ 0x023, "dphv", &types[WS23XX_ALARM_ACTIVE_3], "dew point max alarm active" },
+	{ 0x023, "dplv", &types[WS23XX_ALARM_ACTIVE_2], "dew point min alarm active" },
+	{ 0x023, "wchv", &types[WS23XX_ALARM_ACTIVE_1], "wind chill max alarm active" },
+	{ 0x023, "wclv", &types[WS23XX_ALARM_ACTIVE_0], "wind chill min alarm active" },
+	{ 0x024, "ihhv", &types[WS23XX_ALARM_ACTIVE_3], "in humidity max alarm active" },
+	{ 0x024, "ihlv", &types[WS23XX_ALARM_ACTIVE_2], "in humidity min alarm active" },
+	{ 0x024, "ohhv", &types[WS23XX_ALARM_ACTIVE_1], "out humidity max alarm active" },
+	{ 0x024, "ohlv", &types[WS23XX_ALARM_ACTIVE_0], "out humidity min alarm active" },
+	{ 0x025, "rhhv", &types[WS23XX_ALARM_ACTIVE_1], "rain 1h alarm active" },
+	{ 0x025, "rdhv", &types[WS23XX_ALARM_ACTIVE_0], "rain 24h alarm active" },
+	{ 0x026, "wdv", &types[WS23XX_ALARM_ACTIVE_2], "wind direction alarm active" },
+	{ 0x026, "wshv", &types[WS23XX_ALARM_ACTIVE_1], "wind speed max alarm active" },
+	{ 0x026, "wslv", &types[WS23XX_ALARM_ACTIVE_0], "wind speed min alarm active" },
+/*	{ 0x027, NULL, &types[WS23XX_ALARM_ACTIVE_3], "pressure max alarm active alias" },
+	{ 0x027, NULL, &types[WS23XX_ALARM_ACTIVE_2], "pressure min alarm active alias" },
+	{ 0x028, NULL, &types[WS23XX_ALARM_ACTIVE_3], "out temp max alarm active alias" },
+	{ 0x028, NULL, &types[WS23XX_ALARM_ACTIVE_2], "out temp min alarm active alias" },
+	{ 0x028, NULL, &types[WS23XX_ALARM_ACTIVE_1], "in temp max alarm active alias" },
+	{ 0x028, NULL, &types[WS23XX_ALARM_ACTIVE_0], "in temp min alarm active alias" },
+	{ 0x029, NULL, &types[WS23XX_ALARM_ACTIVE_3], "dew point max alarm active alias" },
+	{ 0x029, NULL, &types[WS23XX_ALARM_ACTIVE_2], "dew point min alarm active alias" },
+	{ 0x029, NULL, &types[WS23XX_ALARM_ACTIVE_1], "wind chill max alarm active alias" },
+	{ 0x029, NULL, &types[WS23XX_ALARM_ACTIVE_0], "wind chill min alarm active alias" },
+	{ 0x02a, NULL, &types[WS23XX_ALARM_ACTIVE_3], "in humidity max alarm active alias" },
+	{ 0x02a, NULL, &types[WS23XX_ALARM_ACTIVE_2], "in humidity min alarm active alias" },
+	{ 0x02a, NULL, &types[WS23XX_ALARM_ACTIVE_1], "out humidity max alarm active alias" },
+	{ 0x02a, NULL, &types[WS23XX_ALARM_ACTIVE_0], "out humidity min alarm active alias" },
+	{ 0x02b, NULL, &types[WS23XX_ALARM_ACTIVE_1], "rain 1h alarm active alias" },
+	{ 0x02b, NULL, &types[WS23XX_ALARM_ACTIVE_0], "rain 24h alarm active alias" },
+	{ 0x02c, NULL, &types[WS23XX_ALARM_ACTIVE_2], "wind direction alarm active alias" },
+	{ 0x02c, NULL, &types[WS23XX_ALARM_ACTIVE_2], "wind speed max alarm active alias" },
+	{ 0x02c, NULL, &types[WS23XX_ALARM_ACTIVE_2], "wind speed min alarm active alias" },*/
+	{ 0x200, "st", &types[WS23XX_TIME], "station set time", "ct" },
+	{ 0x23b, "sw", &types[WS23XX_DATETIME], "station current date time" },
+	{ 0x24d, "sd", &types[WS23XX_DATE], "station set date", "cd" },
+	{ 0x266, "lc", &types[WS23XX_CONTRAST], "lcd contrast (ro)" },
+	{ 0x26b, "for", &types[WS23XX_FORECAST], "forecast" },
+	{ 0x26c, "ten", &types[WS23XX_TENDENCY], "tendency" },
+	{ 0x346, "it", &types[WS23XX_TEMP], "in temp" },
+	{ 0x34b, "itl", &types[WS23XX_TEMP], "in temp min", "it" },
+	{ 0x350, "ith", &types[WS23XX_TEMP], "in temp max", "it" },
+	{ 0x354, "itlw", &types[WS23XX_TIMESTAMP], "in temp min when", "sw" },
+	{ 0x35e, "ithw", &types[WS23XX_TIMESTAMP], "in temp max when", "sw" },
+	{ 0x369, "itla", &types[WS23XX_TEMP], "in temp min alarm" },
+	{ 0x36e, "itha", &types[WS23XX_TEMP], "in temp max alarm" },
+	{ 0x373, "ot", &types[WS23XX_TEMP], "out temp" },
+	{ 0x378, "otl", &types[WS23XX_TEMP], "out temp min", "ot" },
+	{ 0x37d, "oth", &types[WS23XX_TEMP], "out temp max", "ot" },
+	{ 0x381, "otlw", &types[WS23XX_TIMESTAMP], "out temp min when", "sw" },
+	{ 0x38b, "othw", &types[WS23XX_TIMESTAMP], "out temp max when", "sw" },
+	{ 0x396, "otla", &types[WS23XX_TEMP], "out temp min alarm" },
+	{ 0x39b, "otha", &types[WS23XX_TEMP], "out temp max alarm" },
+	{ 0x3a0, "wc", &types[WS23XX_TEMP], "wind chill" },
+	{ 0x3a5, "wcl", &types[WS23XX_TEMP], "wind chill min", "wc" },
+	{ 0x3aa, "wch", &types[WS23XX_TEMP], "wind chill max", "wc" },
+	{ 0x3ae, "wclw", &types[WS23XX_TIMESTAMP], "wind chill min when", "sw" },
+	{ 0x3b8, "wchw", &types[WS23XX_TIMESTAMP], "wind chill max when", "sw" },
+	{ 0x3c3, "wcla", &types[WS23XX_TEMP], "wind chill min alarm" },
+	{ 0x3c8, "wcha", &types[WS23XX_TEMP], "wind chill max alarm" },
+	{ 0x3ce, "dp", &types[WS23XX_TEMP], "dew point" },
+	{ 0x3d3, "dpl", &types[WS23XX_TEMP], "dew point min", "dp" },
+	{ 0x3d8, "dph", &types[WS23XX_TEMP], "dew point max", "dp" },
+	{ 0x3dc, "dplw", &types[WS23XX_TIMESTAMP], "dew point min when", "sw" },
+	{ 0x3e6, "dphw", &types[WS23XX_TIMESTAMP], "dew point max when", "sw" },
+	{ 0x3f1, "dpla", &types[WS23XX_TEMP], "dew point min alarm" },
+	{ 0x3f6, "dpha", &types[WS23XX_TEMP], "dew point max alarm" },
+	{ 0x3fb, "ih", &types[WS23XX_HUMIDITY], "in humidity" },
+	{ 0x3fd, "ihl", &types[WS23XX_HUMIDITY], "in humidity min", "ih" },
+	{ 0x3ff, "ihh", &types[WS23XX_HUMIDITY], "in humidity max", "ih" },
+	{ 0x401, "ihlw", &types[WS23XX_TIMESTAMP], "in humidity min when", "sw" },
+	{ 0x40b, "ihhw", &types[WS23XX_TIMESTAMP], "in humidity max when", "sw" },
+	{ 0x415, "ihla", &types[WS23XX_HUMIDITY], "in humidity min alarm" },
+	{ 0x417, "ihha", &types[WS23XX_HUMIDITY], "in humidity max alarm" },
+	{ 0x419, "oh", &types[WS23XX_HUMIDITY], "out humidity" },
+	{ 0x41b, "ohl", &types[WS23XX_HUMIDITY], "out humidity min", "oh" },
+	{ 0x41d, "ohh", &types[WS23XX_HUMIDITY], "out humidity max", "oh" },
+	{ 0x41f, "ohlw", &types[WS23XX_TIMESTAMP], "out humidity min when", "sw" },
+	{ 0x429, "ohhw", &types[WS23XX_TIMESTAMP], "out humidity max when", "sw" },
+	{ 0x433, "ohla", &types[WS23XX_HUMIDITY], "out humidity min alarm" },
+	{ 0x435, "ohha", &types[WS23XX_HUMIDITY], "out humidity max alarm" },
+	{ 0x497, "rd", &types[WS23XX_RAIN], "rain 24h" },
+	{ 0x49d, "rdh", &types[WS23XX_RAIN], "rain 24h max", "rd" },
+	{ 0x4a3, "rdhw", &types[WS23XX_TIMESTAMP], "rain 24h max when", "sw" },
+	{ 0x4ae, "rdha", &types[WS23XX_RAIN], "rain 24h max alarm" },
+	{ 0x4b4, "rh", &types[WS23XX_RAIN], "rain 1h" },
+	{ 0x4ba, "rhh", &types[WS23XX_RAIN], "rain 1h max", "rh" },
+	{ 0x4c0, "rhhw", &types[WS23XX_TIMESTAMP], "rain 1h max when", "sw" },
+	{ 0x4cb, "rhha", &types[WS23XX_RAIN], "rain 1h max alarm" },
+	{ 0x4d2, "rt", &types[WS23XX_RAIN], "rain total", "0" },
+	{ 0x4d8, "rtrw", &types[WS23XX_TIMESTAMP], "rain total reset when", "sw" },
+	{ 0x4ee, "wsl", &types[WS23XX_SPEED], "wind speed min", "ws" },
+	{ 0x4f4, "wsh", &types[WS23XX_SPEED], "wind speed max", "ws" },
+	{ 0x4f8, "wslw", &types[WS23XX_TIMESTAMP], "wind speed min when", "sw" },
+	{ 0x502, "wshw", &types[WS23XX_TIMESTAMP], "wind speed max when", "sw" },
+	{ 0x527, "wso", &types[WS23XX_WIND_OVERFLOW], "wind speed overflow" },
+	{ 0x528, "wsv", &types[WS23XX_WIND_VALID], "wind speed validity" },
+	{ 0x529, "wv", &types[WS23XX_WIND_VELOCITY], "wind velocity" },
+	{ 0x529, "ws", &types[WS23XX_SPEED], "wind speed" },
+	{ 0x52c, "w0", &types[WS23XX_WIND_DIR], "wind direction" },
+	{ 0x52d, "w1", &types[WS23XX_WIND_DIR], "wind direction 1" },
+	{ 0x52e, "w2", &types[WS23XX_WIND_DIR], "wind direction 2" },
+	{ 0x52f, "w3", &types[WS23XX_WIND_DIR], "wind direction 3" },
+	{ 0x530, "w4", &types[WS23XX_WIND_DIR], "wind direction 4" },
+	{ 0x531, "w5", &types[WS23XX_WIND_DIR], "wind direction 5" },
+	{ 0x533, "wsla", &types[WS23XX_SPEED], "wind speed min alarm" },
+	{ 0x538, "wsha", &types[WS23XX_SPEED], "wind speed max alarm" },
+	{ 0x54d, "cn", &types[WS23XX_CONNECTION], "connection type" },
+	{ 0x54f, "cc", &types[WS23XX_INT_SEC], "connection time till connect" },
+	{ 0x5d8, "pa", &types[WS23XX_PRESSURE], "pressure absolute" },
+	{ 0x5e2, "pr", &types[WS23XX_PRESSURE], "pressure relative" },
+	{ 0x5ec, "pc", &types[WS23XX_PRESSURE], "pressure correction" },
+	{ 0x5f6, "pal", &types[WS23XX_PRESSURE], "pressure absolute min", "pa" },
+	{ 0x600, "prl", &types[WS23XX_PRESSURE], "pressure relative min", "pr" },
+	{ 0x60a, "pah", &types[WS23XX_PRESSURE], "pressure absolute max", "pa" },
+	{ 0x614, "prh", &types[WS23XX_PRESSURE], "pressure relative max", "pr" },
+	{ 0x61e, "plw", &types[WS23XX_TIMESTAMP], "pressure min when", "sw" },
+	{ 0x628, "phw", &types[WS23XX_TIMESTAMP], "pressure max when", "sw" },
+	{ 0x63c, "pla", &types[WS23XX_PRESSURE], "pressure min alarm" },
+	{ 0x650, "pha", &types[WS23XX_PRESSURE], "pressure max alarm" },
+	{ 0x6b2, "hi", &types[WS23XX_INT_MIN], "history interval" },
+	{ 0x6b5, "hc", &types[WS23XX_INT_MIN], "history time till sample" },
+	{ 0x6b8, "hw", &types[WS23XX_TIMESTAMP], "history last sample when" },
+	{ 0x6c2, "hp", &types[WS23XX_BIN_2NYB], "history last record pointer", "0" },
+	{ 0x6c4, "hn", &types[WS23XX_BIN_2NYB], "history number of records", "0"}
 };
 
 /* ws23xx memory, ordered by id */
@@ -370,69 +404,69 @@ static char *
 decode_str(const uint8_t *buf, enum ws_etype type, char *s, size_t len, size_t offset)
 {
 	switch (type) {
-	case WS_TEMP:
+	case WS23XX_TEMP:
 		ws23xx_temp_str(buf, s, len, offset);
 		break;
 
-	case WS_PRESSURE:
+	case WS23XX_PRESSURE:
 		ws23xx_pressure_str(buf, s, len, offset);
 		break;
 
-	case WS_HUMIDITY:
+	case WS23XX_HUMIDITY:
 		ws23xx_humidity_str(buf, s, len, offset);
 		break;
 
-	case WS_SPEED:
+	case WS23XX_SPEED:
 		ws23xx_speed_str(buf, s, len, offset);
 		break;
 
-	case WS_WIND_DIR:
+	case WS23XX_WIND_DIR:
 		ws23xx_wind_dir_str(buf, s, len, offset);
 		break;
 
-	case WS_RAIN:
+	case WS23XX_RAIN:
 		ws23xx_rain_str(buf, s, len, offset);
 		break;
 
-	case WS_INT_SEC:
+	case WS23XX_INT_SEC:
 		ws23xx_interval_sec_str(buf, s, len, offset);
 		break;
 
-	case WS_INT_MIN:
+	case WS23XX_INT_MIN:
 		ws23xx_interval_min_str(buf, s, len, offset);
 		break;
 
-	case WS_BIN_2NYB:
+	case WS23XX_BIN_2NYB:
 		ws23xx_bin_2nyb_str(buf, s, len, offset);
 		break;
 
-	case WS_TIMESTAMP:
+	case WS23XX_TIMESTAMP:
 		ws23xx_timestamp_str(buf, s, len, offset);
 		break;
 
-	case WS_DATETIME:
+	case WS23XX_DATETIME:
 		ws23xx_datetime_str(buf, s, len, offset);
 		break;
 
-	case WS_ALARM_SET_0:
-	case WS_ALARM_SET_1:
-	case WS_ALARM_SET_2:
-	case WS_ALARM_SET_3:
-	case WS_ALARM_ACTIVE_0:
-	case WS_ALARM_ACTIVE_1:
-	case WS_ALARM_ACTIVE_2:
-	case WS_ALARM_ACTIVE_3:
-	case WS_BACKLIGHT:
-	case WS_BUZZER:
+	case WS23XX_ALARM_SET_0:
+	case WS23XX_ALARM_SET_1:
+	case WS23XX_ALARM_SET_2:
+	case WS23XX_ALARM_SET_3:
+	case WS23XX_ALARM_ACTIVE_0:
+	case WS23XX_ALARM_ACTIVE_1:
+	case WS23XX_ALARM_ACTIVE_2:
+	case WS23XX_ALARM_ACTIVE_3:
+	case WS23XX_BACKLIGHT:
+	case WS23XX_BUZZER:
 		decode_str_bit(buf, type, s, len, offset);
 		break;
 
-	case WS_CONNECTION:
-	case WS_FORECAST:
-	case WS_TENDENCY:
-	case WS_SPEED_UNIT:
-	case WS_WIND_OVERFLOW:
-	case WS_WIND_VALID:
+	case WS23XX_CONNECTION:
+	case WS23XX_FORECAST:
+	case WS23XX_TENDENCY:
+	case WS23XX_SPEED_UNIT:
+	case WS23XX_WIND_OVERFLOW:
+	case WS23XX_WIND_VALID:
 		decode_str_text(buf, type, s, len, offset);
 		break;
 
@@ -467,25 +501,25 @@ static void
 ws23xx_desc(const struct ws_type *t, char *desc, size_t len)
 {
 	switch (t->id) {
-	case WS_ALARM_SET_0:
-	case WS_ALARM_SET_1:
-	case WS_ALARM_SET_2:
-	case WS_ALARM_SET_3:
-	case WS_ALARM_ACTIVE_0:
-	case WS_ALARM_ACTIVE_1:
-	case WS_ALARM_ACTIVE_2:
-	case WS_ALARM_ACTIVE_3:
-	case WS_BUZZER:
-	case WS_BACKLIGHT:
+	case WS23XX_ALARM_SET_0:
+	case WS23XX_ALARM_SET_1:
+	case WS23XX_ALARM_SET_2:
+	case WS23XX_ALARM_SET_3:
+	case WS23XX_ALARM_ACTIVE_0:
+	case WS23XX_ALARM_ACTIVE_1:
+	case WS23XX_ALARM_ACTIVE_2:
+	case WS23XX_ALARM_ACTIVE_3:
+	case WS23XX_BUZZER:
+	case WS23XX_BACKLIGHT:
 		desc_bit(t, desc, len);
 		break;
 
-	case WS_CONNECTION:
-	case WS_FORECAST:
-	case WS_TENDENCY:
-	case WS_SPEED_UNIT:
-	case WS_WIND_OVERFLOW:
-	case WS_WIND_VALID:
+	case WS23XX_CONNECTION:
+	case WS23XX_FORECAST:
+	case WS23XX_TENDENCY:
+	case WS23XX_SPEED_UNIT:
+	case WS23XX_WIND_OVERFLOW:
+	case WS23XX_WIND_VALID:
 		desc_text(t, desc, len);
 		break;
 

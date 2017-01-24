@@ -4,6 +4,40 @@
 #include <stdint.h>
 #include <time.h>
 
+enum {
+	WS23XX_TEMP,
+	WS23XX_PRESSURE,
+	WS23XX_HUMIDITY,
+	WS23XX_RAIN,
+	WS23XX_WIND_DIR,
+	WS23XX_WIND_VELOCITY,
+	WS23XX_SPEED,
+	WS23XX_INT_SEC,
+	WS23XX_INT_MIN,
+	WS23XX_BIN_2NYB,
+	WS23XX_CONTRAST,
+	WS23XX_DATE,							/* write only */
+	WS23XX_TIMESTAMP,
+	WS23XX_DATETIME,
+	WS23XX_TIME,							/* write only */
+	WS23XX_CONNECTION,
+	WS23XX_FORECAST,
+	WS23XX_TENDENCY,
+	WS23XX_SPEED_UNIT,
+	WS23XX_WIND_OVERFLOW,
+	WS23XX_WIND_VALID,
+	WS23XX_ALARM_SET_0,
+	WS23XX_ALARM_SET_1,
+	WS23XX_ALARM_SET_2,
+	WS23XX_ALARM_SET_3,
+	WS23XX_ALARM_ACTIVE_0,
+	WS23XX_ALARM_ACTIVE_1,
+	WS23XX_ALARM_ACTIVE_2,
+	WS23XX_ALARM_ACTIVE_3,
+	WS23XX_BUZZER,
+	WS23XX_BACKLIGHT
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,18 +59,6 @@ time_t ws23xx_datetime(const uint8_t *buf, time_t *v, size_t offset);
 uint8_t ws23xx_connection(const uint8_t *buf, uint8_t *v, size_t offset);
 uint8_t ws23xx_alarm_set(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit);
 uint8_t ws23xx_alarm_active(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit);
-
-char *ws23xx_temp_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_pressure_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_humidity_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_rain_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_speed_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_wind_dir_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_interval_sec_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_interval_min_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_bin_2nyb_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_timestamp_str(const uint8_t *buf, char *s, size_t len, size_t offset);
-char *ws23xx_datetime_str(const uint8_t *buf, char *s, size_t len, size_t offset);
 
 #ifdef __cplusplus
 }
