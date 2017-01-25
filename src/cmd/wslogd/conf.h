@@ -12,7 +12,10 @@ enum ws_driver
 #if HAVE_WS23XX
 	WS23XX,								/* La Crosse Technology WS23XX */
 #endif
-	NONE
+#if HAVE_SIMU
+	SIMU,								/* simulator device */
+#endif
+	UNUSED
 };
 
 struct ws_conf
@@ -59,6 +62,10 @@ struct ws_conf
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int ws_getuid(const char *str, uid_t *uid);
+int ws_getgid(const char *str, gid_t *gid);
+int ws_getdriver(const char *str, enum ws_driver *driver);
 
 int conf_load(struct ws_conf *cfg, const char *path);
 void conf_free(struct ws_conf *cfg);

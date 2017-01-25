@@ -36,6 +36,12 @@ wslogd_SOURCES += \
 	driver/ws23xx.h
 endif
 
+if HAVE_SIMU
+wslogd_SOURCES += \
+	driver/simu.c \
+	driver/simu.h
+endif
+
 wslogd_CPPFLAGS = \
 	-DDEBUG -std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I../../lib
 

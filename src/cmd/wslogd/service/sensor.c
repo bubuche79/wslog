@@ -11,6 +11,9 @@
 #ifdef HAVE_WS23XX
 #include "driver/ws23xx.h"
 #endif
+#ifdef HAVE_SIMU
+#include "driver/simu.h"
+#endif
 #include "board.h"
 #include "wslogd.h"
 #include "service/service.h"
@@ -59,6 +62,11 @@ sensor_init(void)
 		ret = ws23xx_init();
 		break;
 #endif
+#ifdef HAVE_SIMU
+	case SIMU:
+		ret = simu_init();
+		break;
+#endif
 	default:
 		syslog(LOG_ERR, "No supported driver");
 		ret = -1;
@@ -88,6 +96,11 @@ sensor_main(struct timespec *timer)
 #ifdef HAVE_WS23XX
 	case WS23XX:
 		ret = ws23xx_fetch(&loop, timer);
+		break;
+#endif
+#ifdef HAVE_SIMU
+	case SIMU:
+		ret = simu_fetch(&loop, timer);
 		break;
 #endif
 	default:
@@ -128,6 +141,11 @@ sensor_destroy(void)
 #ifdef HAVE_WS23XX
 	case WS23XX:
 		ret = ws23xx_destroy();
+		break;
+#endif
+#ifdef HAVE_SIMU
+	case SIMU:
+		ret = simu_destroy();
 		break;
 #endif
 	default:

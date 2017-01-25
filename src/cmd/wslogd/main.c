@@ -23,18 +23,23 @@
 
 static struct ws_conf conf;
 static int one_process_mode = 0;
+static enum ws_driver driver = -1;
 
 const struct ws_conf *confp = &conf;
 
 static void
 usage(FILE *std, const char *bin)
 {
-	fprintf(std, "Usage: %s [-X] [-c conf_file]\n", bin);
+	fprintf(std, "Usage: %s [-X] [-d driver] [-c conf_file]\n", bin);
 }
 
 static int
 post_config(void)
 {
+	if (driver != -1) {
+		conf.station.driver = driver;
+	}
+
 	return 0;
 }
 
@@ -86,12 +91,17 @@ main(int argc, char *argv[])
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "Xc:")) != -1) {
+	while ((c = getopt(argc, argv, "Xd:c:")) != -1) {
 		switch (c) {
+		case 'd':
+			if (ws_getdriver(optarg, &driver) == -1) {
+				die(1, "Unknown driver: %s\n", optarg);
+			}
+			break;
 		case 'c':
 			conf_file = optarg;
 			if (conf_file[0] != '/') {
-				die(1, "%s: Not an absolute file", conf_file);
+				die(1, "%s: Not an absolute file\n", conf_file);
 			}
 			break;
 		case 'X':

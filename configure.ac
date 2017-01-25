@@ -17,7 +17,7 @@ AC_CHECK_LIB([check], [srunner_create], [ ])
 AC_CHECK_LIB([curl], [curl_global_init], [ ])
 AC_CHECK_LIB([sqlite3], [sqlite3_initialize], [ ])
 
-# Add options
+# Add WS23XX device support
 AC_ARG_ENABLE([ws23xx],
 	[AS_HELP_STRING([--disable-ws23xx], [Disable La Crosse Technology WS23XX support])],
 	[], [enable_ws23xx=yes])
@@ -27,6 +27,16 @@ AS_IF([test "x$enable_ws23xx" != "xno"],
 
 AM_CONDITIONAL([HAVE_WS23XX], [test "x$enable_ws23xx" = "xyes"])
 
+# Add simulator device support
+AC_ARG_ENABLE([simu],
+	[AS_HELP_STRING([--enable-simu], [Enable simulator device support])],
+	[], [enable_simu=no])
+
+AS_IF([test "x$enable_simu" != "xno"],
+	[AC_DEFINE(HAVE_SIMU, 1, [Simulator device support])])
+
+AM_CONDITIONAL([HAVE_SIMU], [test "x$enable_simu" = "xyes"])
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/lib/Makefile
@@ -34,6 +44,5 @@ AC_CONFIG_FILES([Makefile
                  src/cmd/Makefile
                  src/cmd/ws23xx/Makefile
                  src/cmd/wslogd/Makefile
-                 tests/Makefile
                  ])
 AC_OUTPUT

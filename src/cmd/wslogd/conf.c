@@ -19,7 +19,7 @@
 
 #include "conf.h"
 
-static int
+int
 ws_getuid(const char *str, uid_t *uid)
 {
 	int ret;
@@ -56,7 +56,7 @@ ws_getuid(const char *str, uid_t *uid)
 	return ret;
 }
 
-static int
+int
 ws_getgid(const char *str, gid_t *gid)
 {
 	struct group grp;
@@ -91,21 +91,26 @@ ws_getgid(const char *str, gid_t *gid)
 	return 0;
 }
 
-static int
+int
 ws_getdriver(const char *str, enum ws_driver *driver)
 {
 	int ret;
 
 	ret = 0;
-	*driver = NONE;
+	*driver = UNUSED;
 
 #if HAVE_WS23XX
 	if (!strcmp(str, "ws23xx")) {
 		*driver = WS23XX;
 	}
 #endif
+#if HAVE_SIMU
+	if (!strcmp(str, "simu")) {
+		*driver = SIMU;
+	}
+#endif
 
-	if (*driver == NONE) {
+	if (*driver == UNUSED) {
 		ret = -1;
 		errno = EINVAL;
 	}
@@ -125,7 +130,7 @@ conf_init(struct ws_conf *cfg)
 	cfg->log_facility = LOG_LOCAL0;
 	cfg->log_mask = LOG_UPTO(LOG_NOTICE);
 
-	cfg->station.driver = NONE;
+	cfg->station.driver = UNUSED;
 
 	/* Default driver */
 #if HAVE_WS23XX

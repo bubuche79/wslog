@@ -38,8 +38,6 @@ Makefile.in
 *.so*
 
 ws23xx
-wslogc
-wslogd
 check_aggregate
 check_nybble
 
