@@ -226,7 +226,7 @@ threads_start(void)
 	signo = SIGALRM;
 #endif
 
-	/* Configure reader thread */
+	/* Configure sensor thread */
 	threads[i].w_signo = signo;
 	threads[i].w_ifreq.tv_sec = confp->ws23xx.freq;
 	threads[i].w_ifreq.tv_nsec = 0;
@@ -239,22 +239,20 @@ threads_start(void)
 	signo++;
 #endif
 
-#if 0
-	/* Configure SQLite thread */
+	/* Configure archive thread */
 	if (!confp->sqlite.disabled) {
 		threads[i].w_signo = signo;
-		threads[i].w_ifreq.tv_sec = 2;
+		threads[i].w_ifreq.tv_sec = confp->sqlite.freq;
 		threads[i].w_ifreq.tv_nsec = 0;
-		threads[i].w_init = sqlite_init;
-		threads[i].w_action = sqlite_write;
-		threads[i].w_destroy = sqlite_destroy;
+		threads[i].w_init = archive_init;
+		threads[i].w_action = archive_main;
+		threads[i].w_destroy = archive_destroy;
 
 		i++;
 #ifndef HAVE_SIGTHREADID
 		signo++;
 #endif
 	}
-#endif
 
 	/* Configure Wunder thread */
 	if (!confp->wunder.disabled) {

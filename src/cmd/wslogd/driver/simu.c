@@ -4,7 +4,6 @@
 
 #include <math.h>
 
-#include "wslogd.h"
 #include "simu.h"
 
 #define PI                  3.1415926535897932384626433832795
@@ -36,7 +35,7 @@ simu_fetch(struct ws_loop *p, struct timespec *ts)
 	p->temp = simu_sin(15, 25);
 	p->humidity = simu_sin(60, 80);
 	p->wind_speed = simu_sin(0, 2);
-	p->wind_dir = simu_sin(135, 225);
+	p->wind_dir = simu_sin(225, 315);
 
 	/* Supported sensors */
 	p->wl_mask = WF_PRESSURE|WF_TEMP|WF_HUMIDITY|WF_WIND;

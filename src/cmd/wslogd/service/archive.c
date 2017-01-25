@@ -12,21 +12,27 @@
 #include <stdio.h>
 #endif
 
+#include "libws/log.h"
+
 #ifdef HAVE_WS23XX
 #include "driver/ws23xx.h"
 #endif
+#include "sqlite.h"
 #include "board.h"
 #include "wslogd.h"
 #include "service/service.h"
 
 static time_t last;
 static enum ws_driver driver;
+static int freq;
+//static size_t tx_idx;
+//static struct ws_archive *tx_buf;
 
 int
 archive_init(void)
 {
 	int ret;
-	int hw_archive;
+//	int hw_archive;
 
 	(void) time(&last);
 	driver = confp->station.driver;
@@ -38,10 +44,6 @@ archive_init(void)
 	 * archive time otherwise, when supported by the driver.
 	 */
 	if (confp->sqlite.freq == 0) {
-		hw_archive = 1;
-	} else {
-		hw_archive = 0;
-
 		/* Unreliable hardware */
 		switch (driver)
 		{
@@ -54,17 +56,24 @@ archive_init(void)
 			break;
 		}
 
-		/* Required configuration not set */
-		if (ret == -1) {
-			syslog(LOG_ERR, "sqlite.freq shall be set");
-			goto error;
-		}
+		// TODO
+	} else {
+		freq = confp->sqlite.freq;
 	}
 
-	// TODO: set timespec
+	/* Flush buffer, if configured */
+//	if (confp->sqlite.flush_freq > 0) {
+//		size_t size = divup(confp->sqlite.flush_freq, confp->sqlite.freq);
+//
+//		tx_idx = 0;
+//		tx_buf = malloc(size * sizeof(*tx_buf));
+//		if (tx_buf == NULL) {
+//			goto error;
+//		}
+//	}
 
-	if (hw_archive) {
-
+	if (sqlite_init() == -1) {
+		goto error;
 	}
 
 	return 0;
@@ -74,50 +83,37 @@ error:
 }
 
 int
-archive_main(void)
+archive_main(struct timespec *timer)
 {
-	int dirty;
 	time_t next;
-
 	struct ws_archive ar;
 
 	(void) time(&next);
 
 	if (board_lock() == -1) {
+		csyslog1(LOG_CRIT, "board_lock(): %m");
 		return -1;
 	}
 
 	/* Compute metrics since last archive */
-	dirty = 1;
-
-//	for (i = 0; dirty && i < boardp->loop_nel; i++) {
-//		const struct ws_loop *p = board_loop_p(i);
-//
-//		if (last < p->time.tv_sec) {
-//			//aggr_update(&aggr, p);
-//		} else {
-//			/* Already processed */
-//			dirty = 0;
-//		}
-//	}
-
 	// TODO
 	ar.time = next;
-	ar.interval = 300;
+	ar.interval = freq;
 	memcpy(&ar.data, board_peek(0), sizeof(ar.data));
 
 	board_push_ar(&ar);
 
 	if (board_unlock() == -1) {
+		csyslog1(LOG_CRIT, "board_lock(): %m");
 		return -1;
 	}
 
-	/* Finalize aggregate */
-	//aggr_finalize(&aggr, &ar, i);
-
-	if (dirty)
-		;
 	last = next;
+
+	/* Save to database */
+	if (sqlite_write(&ar) == -1) {
+		return -1;
+	}
 
 	return 0;
 }
@@ -125,5 +121,9 @@ archive_main(void)
 int
 archive_destroy(void)
 {
+	if (sqlite_destroy() == -1) {
+		return -1;
+	}
+
 	return 0;
 }

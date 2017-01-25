@@ -134,7 +134,7 @@ conf_init(struct ws_conf *cfg)
 
 	/* Default driver */
 #if HAVE_WS23XX
-	cfg->ws23xx.freq = 128;
+	cfg->ws23xx.freq = 2;
 	cfg->ws23xx.tty = "/dev/ttyUSB0";
 #endif
 
@@ -197,6 +197,8 @@ conf_decode(void *p, const char *key, const char *value)
 			ws_getbool(value, &cfg->sqlite.disabled);
 		} else if (!strcmp(key, "sqlite.db")) {
 			cfg->sqlite.db = strdup(value);
+		} else if (!strcmp(key, "sqlite.freq")) {
+			ws_getint(value, &cfg->sqlite.freq);
 		} else {
 			errno = EINVAL;
 		}

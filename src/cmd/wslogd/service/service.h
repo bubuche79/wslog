@@ -9,6 +9,10 @@ int sensor_init(void);
 int sensor_main(struct timespec *);
 int sensor_destroy(void);
 
+int archive_init(void);
+int archive_main(struct timespec *);
+int archive_destroy(void);
+
 #ifdef __cplusplus
 }
 #endif

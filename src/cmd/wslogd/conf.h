@@ -47,6 +47,7 @@ struct ws_conf
 		int disabled;					/* disabled flag */
 		const char *db;					/* database file */
 		int freq;						/* archive frequency, in seconds */
+		int flush_freq;					/* flush frequency, in seconds */
 	} sqlite;
 
 	struct
