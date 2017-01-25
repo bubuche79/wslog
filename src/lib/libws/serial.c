@@ -41,7 +41,7 @@ ws_open(const char *device)
 	struct termios adtio;
 	int portstatus;
 
-	if ((fd = open(device, O_RDWR)) == -1) {
+	if ((fd = open(device, O_RDWR|O_NOCTTY)) == -1) {
 		goto error;
 	}
 	
@@ -57,33 +57,21 @@ ws_open(const char *device)
 	memset(&adtio, 0, sizeof(adtio));
 	
 	/* Serial control options */
-	adtio.c_iflag = INPCK;
+	adtio.c_iflag = IGNBRK|IGNPAR;
 	adtio.c_oflag = 0;
-	adtio.c_cflag = CREAD|HUPCL|CLOCAL|CS8|BAUDRATE;
+	adtio.c_cflag = CREAD|CLOCAL|CS8;
 	adtio.c_lflag = 0;
-#ifdef HAVE_SELECT
-	adtio.c_cc[VMIN] = 1;			/* blocking read until 1 char */
-	adtio.c_cc[VTIME] = 0;			/* timer 0s */
-#else
 	adtio.c_cc[VMIN] = 0;			/* no blocking read */
-	adtio.c_cc[VTIME] = 10;			/* timer 1s */
-#endif /* HAVE_SELECT */
+	adtio.c_cc[VTIME] = 0;			/* timer 0s */
 
-	if (cfsetispeed(&adtio, BAUDRATE) == -1) {
-		goto error;
-	}
-	if (cfsetospeed(&adtio, BAUDRATE) == -1) {
+	(void) cfsetispeed(&adtio, BAUDRATE);
+	(void) cfsetospeed(&adtio, BAUDRATE);
+
+	if (tcsetattr(fd, TCSANOW, &adtio) == -1) {
 		goto error;
 	}
 
 	if (tcflush(fd, TCIOFLUSH) == -1) {
-		goto error;
-	}
-	if (tcflow(fd, TCOON|TCION) == -1) {
-		goto error;
-	}
-
-	if (tcsetattr(fd, TCSAFLUSH, &adtio) == -1) {
 		goto error;
 	}
 
@@ -135,11 +123,10 @@ DSO_EXPORT int
 ws_read_byte(int fd, uint8_t *byte, long timeout)
 {
 	int ret;
-
-	/* Wait for input */
 	fd_set readset;
 	struct timeval tv;
 
+	/* Wait for input */
 	do {
 		FD_ZERO(&readset);
 		FD_SET(fd, &readset);
@@ -199,25 +186,9 @@ error:
 }
 
 DSO_EXPORT int
-ws_clear(int fd)
-{
-	if (tcflush(fd, TCIFLUSH) == -1) {
-		goto error;
-	}
-
-	return 0;
-
-error:
-#ifdef DEBUG
-	perror("ws_clear");
-#endif
-	return -1;
-}
-
-DSO_EXPORT int
 ws_flush(int fd)
 {
-	if (tcdrain(fd) == -1) {
+	if (tcflush(fd, TCIOFLUSH) == -1) {
 		goto error;
 	}
 
@@ -229,4 +200,3 @@ error:
 #endif
 	return -1;
 }
-

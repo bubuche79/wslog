@@ -113,7 +113,7 @@ ws23xx_reset_06(int fd)
 	int success;
 
 	for (i = 0; i < MAX_RESETS; i++) {
-		if (ws_clear(fd) == -1) {
+		if (ws_flush(fd) == -1) {
 			goto error;
 		}
 		if (ws_write_byte(fd, 0x06) == -1) {
