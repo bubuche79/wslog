@@ -9,6 +9,26 @@
 
 #include "util.h"
 
+static const char *wind_dir[] =
+{
+	"N",
+	"NNE",
+	"NE",
+	"ENE",
+	"E",
+	"ESE",
+	"SE",
+	"SSE",
+	"S",
+	"SSW",
+	"SW",
+	"WSW",
+	"W",
+	"WNW",
+	"NW",
+	"NNW"
+};
+
 /**
  * Calculate windchill using new post 2001 USA/Canadian formula
  * Twc = 13.112 + 0.6215*Ta -11.37*V^0.16 + 0.3965*Ta*V^0.16 [Celcius and km/h]
@@ -96,6 +116,12 @@ DSO_EXPORT double
 ws_inch(double len)
 {
 	return len / 25.4;
+}
+
+DSO_EXPORT const char *
+ws_dir(double dir)
+{
+	return wind_dir[(int) (dir / 22.5)];
 }
 
 DSO_EXPORT size_t

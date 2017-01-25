@@ -23,9 +23,12 @@ static void
 board_print(void)
 {
 	int i;
-	const struct ws_loop *p = NULL;
+	const struct ws_loop *p;
 
-	for (i = 0; p && (nel == 0 || i < nel); i++) {
+	i = 0;
+	p = NULL;
+
+	do {
 		char buf[32];
 
 		p = board_peek(i);
@@ -33,12 +36,14 @@ board_print(void)
 		if (p != NULL) {
 			strftimespec(buf, sizeof(buf), &p->time);
 
-			printf("%s %.1f°C %hhu%% %.1fm/s %.1fmm %.1f°C %hhu%%\n",
+			printf("%s %.1f°C %hhu%% %.1fm/s (%s) %.1fmm %.1f°C %hhu%%\n",
 					buf,
-					p->temp, p->humidity, p->wind_speed, p->rain,
+					p->temp, p->humidity, p->wind_speed, ws_dir(p->wind_dir), p->rain,
 					p->temp_in, p->humidity_in);
 		}
-	}
+
+		i++;
+	} while (p && (nel == 0 || i < nel));
 }
 
 int
