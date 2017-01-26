@@ -9,6 +9,7 @@
 #include "defs/dso.h"
 
 #include "libws/util.h"
+#include "libws/nybble.h"
 #include "libws/ws23xx/decoder.h"
 #include "libws/ws23xx/ws23xx.h"
 #include "libws/ws23xx/archive.h"
@@ -18,21 +19,21 @@ conv_history(const uint8_t *buf, struct ws23xx_ar *h)
 {
 	long v;
 
-	v = ((buf[2] & 0xF) << 16) + (buf[1] << 8) + buf[0];
+	v = nybtoul(buf, 5, 0, 16);
 	h->temp_in = (v % 1000) / 10.0 - 30.0;
 	h->temp_out = (v - (v % 1000)) / 10000.0 - 30.0;
 
-	v = (buf[4] << 12) + (buf[3] <<4 ) + (buf[2] >> 4);
-	h->abs_pressure = (v % 10000) / 10.0;
-	if (h->abs_pressure < 502.2) {
-		h->abs_pressure += 1000;
+	v = nybtoul(buf, 5, 5, 16);
+	h->abs_pressure = 1000 + (v % 10000) / 10.0;
+	if (h->abs_pressure > 1500) {
+		h->abs_pressure -= 1000;
 	}
 	h->humidity_in = (v - (v % 10000)) / 10000.0;
 
-	h->humidity_out = (buf[5] >> 4) * 10 + (buf[5] & 0xF);
+	h->humidity_out = nybtoul(buf, 2, 10, 10);
 	h->rain = ((buf[7] & 0xF) * 256 + buf[6]) * 0.518;
-	h->wind_speed = (buf[8] * 16 + (buf[7] >> 4)) / 10.0;
-	h->wind_dir = (buf[9] & 0xF) * 22.5;
+	h->wind_speed = nybtoul(buf, 3, 15, 16) / 10.0;
+	h->wind_dir = nybtoul(buf, 1, 18, 16) * 22.5;
 }
 
 DSO_EXPORT ssize_t
@@ -48,7 +49,7 @@ ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 	uint8_t last_record;
 	uint8_t record_count;
 
-	if (ws23xx_read_safe(fd, 0x6B2, 20, buf) == -1) {
+	if (ws23xx_read_safe(fd, 0x6b2, 20, buf) == -1) {
 		goto error;
 	}
 
