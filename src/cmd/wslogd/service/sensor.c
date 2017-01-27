@@ -8,17 +8,10 @@
 #include <stdio.h>
 #endif
 
-#ifdef HAVE_WS23XX
-#include "driver/ws23xx.h"
-#endif
-#ifdef HAVE_SIMU
-#include "driver/simu.h"
-#endif
 #include "board.h"
 #include "wslogd.h"
+#include "driver/driver.h"
 #include "service/service.h"
-
-static enum ws_driver driver;
 
 static void
 sensor_derived(struct ws_loop *p)
@@ -50,34 +43,11 @@ sensor_push(const struct ws_loop *p)
 int
 sensor_init(void)
 {
-	int ret;
-
-	driver = confp->station.driver;
-
-	/* Initialize driver */
-	switch (driver)
-	{
-#ifdef HAVE_WS23XX
-	case WS23XX:
-		ret = ws23xx_init();
-		break;
-#endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_init();
-		break;
-#endif
-	default:
-		syslog(LOG_ERR, "No supported driver");
-		ret = -1;
-		break;
-	}
-
-	return ret;
+	return 0;
 }
 
 int
-sensor_main(struct timespec *timer)
+sensor_main(void)
 {
 	int ret;
 	struct ws_loop loop;
@@ -91,22 +61,7 @@ sensor_main(struct timespec *timer)
 	}
 
 	/* Read sensors */
-	switch (driver)
-	{
-#ifdef HAVE_WS23XX
-	case WS23XX:
-		ret = ws23xx_fetch(&loop, timer);
-		break;
-#endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_fetch(&loop, timer);
-		break;
-#endif
-	default:
-		ret = -1;
-		break;
-	}
+	ret = drv_get_loop(&loop);
 
 	if (ret == -1) {
 		goto error;
@@ -133,25 +88,5 @@ error:
 int
 sensor_destroy(void)
 {
-	int ret;
-
-	/* Destroy driver */
-	switch (driver)
-	{
-#ifdef HAVE_WS23XX
-	case WS23XX:
-		ret = ws23xx_destroy();
-		break;
-#endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_destroy();
-		break;
-#endif
-	default:
-		ret = -1;
-		break;
-	}
-
-	return ret;
+	return 0;
 }

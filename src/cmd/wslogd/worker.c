@@ -32,7 +32,7 @@ struct worker {
 	int w_signo;									/* signal number */
 	struct timespec w_ifreq;						/* timer interval */
 	int (*w_init) (void);
-	int (*w_action) (struct timespec *);			/* action on signal */
+	int (*w_action) (void);							/* action on signal */
 	int (*w_destroy) (void);
 
 	timer_t w_timer;
@@ -121,7 +121,7 @@ sigthread_main(void *arg)
 				/* Stop requested */
 			} else {
 				if (dt->w_action != NULL) {
-					ret = dt->w_action(NULL);
+					ret = dt->w_action();
 				} else {
 					syslog(LOG_ERR, "Real-time signal %d", ret - SIGRTMIN);
 					goto error;
@@ -332,6 +332,10 @@ worker_destroy(void)
 		syslog(LOG_INFO, "resources released");
 	}
 
+	if (drv_destroy() == -1) {
+		ret = -1;
+	}
+
 	return ret;
 }
 
@@ -345,6 +349,11 @@ worker_main(int *halt)
 	hangup_pending = 0;
 
 	sig_set(&set);
+
+	/* Open device */
+	if (drv_init() == -1) {
+		return -1;
+	}
 
 	/* Startup initialization */
 	if (startup) {

@@ -16,7 +16,8 @@ extern "C" {
 #endif
 
 int simu_init(void);
-int simu_fetch(struct ws_loop *p, struct timespec *ts);
+int simu_get_itimer(struct itimerspec *p, int type);
+int simu_get_loop(struct ws_loop *p);
 int simu_destroy(void);
 
 #ifdef __cplusplus

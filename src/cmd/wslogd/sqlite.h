@@ -1,6 +1,8 @@
 #ifndef _SQLITE_H
 #define _SQLITE_H
 
+#include "board.h"
+
 /*
  * SQLite 3 support.
  */

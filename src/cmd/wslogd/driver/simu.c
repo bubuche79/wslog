@@ -3,8 +3,10 @@
 #endif
 
 #include <math.h>
+#include <errno.h>
 
-#include "simu.h"
+#include "driver/driver.h"
+#include "driver/simu.h"
 
 #define PI                  3.1415926535897932384626433832795
 #define RAD                 (PI/180.0)
@@ -29,7 +31,31 @@ simu_init(void)
 }
 
 int
-simu_fetch(struct ws_loop *p, struct timespec *ts)
+simu_get_itimer(struct itimerspec *p, int type)
+{
+	int ret;
+
+	switch (type)
+	{
+	case WS_ITIMER_LOOP:
+	case WS_ITIMER_ARCHIVE:
+		p->it_interval.tv_nsec = 0;
+		p->it_interval.tv_sec = (type == WS_ITIMER_LOOP) ? 10 : 300;
+		p->it_value.tv_sec = 0;
+		p->it_value.tv_nsec = 0;
+		ret = 0;
+		break;
+	default:
+		errno = ENOTSUP;
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
+int
+simu_get_loop(struct ws_loop *p)
 {
 	p->abs_pressure = simu_sin(950, 1020);
 	p->temp = simu_sin(15, 25);

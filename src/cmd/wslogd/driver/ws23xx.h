@@ -14,7 +14,8 @@ extern "C" {
 #endif
 
 int ws23xx_init(void);
-int ws23xx_fetch(struct ws_loop *p, struct timespec *ts);
+int ws23xx_get_itimer(struct itimerspec *p, int type);
+int ws23xx_get_loop(struct ws_loop *p);
 int ws23xx_destroy(void);
 
 #ifdef __cplusplus

@@ -14,9 +14,6 @@
 
 #include "libws/log.h"
 
-#ifdef HAVE_WS23XX
-#include "driver/ws23xx.h"
-#endif
 #include "sqlite.h"
 #include "board.h"
 #include "wslogd.h"
@@ -83,7 +80,7 @@ error:
 }
 
 int
-archive_main(struct timespec *timer)
+archive_main(void)
 {
 	time_t next;
 	struct ws_archive ar;

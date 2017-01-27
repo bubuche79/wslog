@@ -15,6 +15,7 @@ wslogd_SOURCES = \
 	board.c \
 	conf.c \
 	daemon.c \
+	driver/driver.c \
 	service/sensor.c \
 	service/archive.c \
 	sqlite.c \
@@ -24,6 +25,7 @@ wslogd_SOURCES = \
 	board.h \
 	conf.h \
 	daemon.h \
+	driver/driver.h \
 	service/service.h \
 	sqlite.h \
 	worker.h \

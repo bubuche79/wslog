@@ -274,7 +274,7 @@ error:
 }
 
 int
-wunder_update(struct timespec *timer)
+wunder_update(void)
 {
 	struct ws_archive *p = board_peek_ar(0);
 

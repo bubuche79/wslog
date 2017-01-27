@@ -3,20 +3,11 @@
 
 #include <sys/types.h>
 
+#include "driver/driver.h"
+
 /*
  * Weather station configuration.
  */
-
-enum ws_driver
-{
-#if HAVE_WS23XX
-	WS23XX,								/* La Crosse Technology WS23XX */
-#endif
-#if HAVE_SIMU
-	SIMU,								/* simulator device */
-#endif
-	UNUSED
-};
 
 struct ws_conf
 {
@@ -39,6 +30,7 @@ struct ws_conf
 		{
 			const char *tty;			/* tty device */
 			int freq;					/* read frequency, in seconds */
+			int close;					/* close device in meantime */
 		} ws23xx;
 	};
 
