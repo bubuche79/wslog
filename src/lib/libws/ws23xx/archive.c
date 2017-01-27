@@ -31,7 +31,7 @@ conv_history(const uint8_t *buf, struct ws23xx_ar *h)
 	h->humidity_in = (v - (v % 10000)) / 10000.0;
 
 	h->humidity_out = nybtoul(buf, 2, 10, 10);
-	h->rain = ((buf[7] & 0xF) * 256 + buf[6]) * 0.518;
+	h->rain = nybtoul(buf, 3, 12, 16) * 0.518;
 	h->wind_speed = nybtoul(buf, 3, 15, 16) / 10.0;
 	h->wind_dir = nybtoul(buf, 1, 18, 16) * 22.5;
 }
@@ -44,7 +44,6 @@ ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 
 	/* Read history settings */
 	uint16_t save_int;
-	uint16_t count_down;
 	time_t last_sample;
 	uint8_t last_record;
 	uint8_t record_count;
@@ -54,7 +53,6 @@ ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 	}
 
 	ws23xx_interval_min(buf, &save_int, 0);
-	ws23xx_interval_min(buf, &count_down, 3);
 	ws23xx_timestamp(buf, &last_sample, 6);
 	ws23xx_bin_2nyb(buf, &last_record, 16);
 	ws23xx_bin_2nyb(buf, &record_count, 18);
@@ -67,10 +65,17 @@ ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 	}
 
 	for (i = 0; i < nel; i++) {
+		uint16_t addr;
 		uint8_t nyb_data[19];
 		struct ws23xx_ar *p = &h[nel-i-1];
 
-		if (ws23xx_read_safe(fd, 0x6c6 + (last_record - i) * 19, 19, nyb_data) == -1) {
+		if (i <= last_record) {
+			addr = last_record - i;
+		} else {
+			addr = record_count - (i - last_record);
+		}
+
+		if (ws23xx_read_safe(fd, 0x6c6 + addr * 19, 19, nyb_data) == -1) {
 			goto error;
 		}
 
