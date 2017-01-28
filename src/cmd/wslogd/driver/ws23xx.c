@@ -83,54 +83,70 @@ ws23xx_init(void)
 }
 
 int
-ws23xx_get_itimer(struct itimerspec *itimer, int type)
+ws23xx_get_itimer(struct itimerspec *it, int type)
 {
-	int ret;
+	uint8_t buf[8];
 
-	itimer->it_interval.tv_nsec = 0;
-	itimer->it_value.tv_nsec = 0;
+	it->it_interval.tv_nsec = 0;
+	it->it_value.tv_nsec = 0;
 
-	if (WS_ITIMER_LOOP == type) {
-//		uint8_t cnx_type;
-//		float cnx_countdown;
-//
-//		struct ws23xx_io io[] = {
-//				{ 0x54d, WS23XX_CONNECTION, 1, &cnx_type },
-//				{ 0x54f, WS23XX_INT_SEC, 2, &cnx_countdown }
-//		};
-//
-//		switch (cnx_type) {
-//		case 0:				/* cable */
-//			cnx_countdown = 128;
-//			p->it_interval.tv_sec = 8;
-//			break;
-//
-//		case 15:			/* wireless */
-//			cnx_countdown = 0;
-//			p->it_interval.tv_sec = 128;
-//			break;
-//
-//		default:
-//			cnx_countdown = 0;
-//			p->it_interval.tv_sec = 128;
-//			break;
-//		}
-//
-//		/* Delay sensor read */
-//		p->it_value.tv_sec = cnx_countdown + 15;
-//
-//		/* Override with configuration */
-//		if (confp->ws23xx.freq > 0) {
-//			p->it_interval.tv_sec = confp->ws23xx.freq;
-//		}
-	} else if (WS_ITIMER_ARCHIVE == type) {
-
-	} else {
-		errno = ENOTSUP;
-		ret = -1;
+	if (pthread_mutex_lock(&mutex) == -1) {
+		return -1;
 	}
 
-	return ret;
+	if (WS_ITIMER_LOOP == type) {
+		uint8_t cnx_type;
+		float cnx_countdown;
+
+		if (ws23xx_read_safe(fd, 0x54d, 4, buf) == -1) {
+			goto error;
+		}
+
+		ws23xx_connection(buf, &cnx_type, 0);
+		ws23xx_interval_sec(buf, &cnx_countdown, 2);
+
+		switch (cnx_type) {
+		case 0:				/* cable */
+			it->it_interval.tv_sec = 8;
+			it->it_value.tv_sec = lround(cnx_countdown) + 2;
+			break;
+
+		case 15:			/* wireless */
+			it->it_interval.tv_sec = 128;
+			it->it_value.tv_sec = lround(cnx_countdown) + 10;
+			break;
+
+		default:
+			goto error;
+			break;
+		}
+	} else if (WS_ITIMER_ARCHIVE == type) {
+		uint16_t save_int;
+		time_t last_sample;
+
+		if (ws23xx_read_safe(fd, 0x6b2, 16, buf) == -1) {
+			goto error;
+		}
+
+		ws23xx_interval_min(buf, &save_int, 0);
+		ws23xx_timestamp(buf, &last_sample, 6);
+
+		it->it_interval.tv_sec = (save_int + 1) * 60;
+		it->it_value.tv_sec = last_sample + it->it_interval.tv_sec - time(NULL) + 10;
+	} else {
+		errno = ENOTSUP;
+		goto error;
+	}
+
+	if (pthread_mutex_unlock(&mutex) == -1) {
+		return -1;
+	}
+
+	return 0;
+
+error:
+	(void) pthread_mutex_unlock(&mutex);
+	return -1;
 }
 
 int
@@ -225,7 +241,7 @@ ws23xx_get_loop(struct ws_loop *loop)
 	return 0;
 
 error:
-	pthread_mutex_unlock(&mutex);
+	(void) pthread_mutex_unlock(&mutex);
 	return -1;
 }
 
@@ -279,7 +295,7 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel)
 	return res;
 
 error:
-	pthread_mutex_unlock(&mutex);
+	(void) pthread_mutex_unlock(&mutex);
 	return -1;
 }
 

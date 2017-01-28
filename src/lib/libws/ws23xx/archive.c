@@ -40,7 +40,7 @@ DSO_EXPORT ssize_t
 ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 {
 	size_t i;
-	uint8_t buf[20];
+	uint8_t buf[10];
 
 	/* Read history settings */
 	uint16_t save_int;
@@ -68,7 +68,7 @@ ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 
 	for (i = 0; i < nel; i++) {
 		uint16_t addr;
-		uint8_t nyb_data[19];
+		uint8_t nyb_data[10];
 		struct ws23xx_ar *p = &h[nel-i-1];
 
 		if (i <= last_record) {

@@ -8,6 +8,8 @@
 #include <stdio.h>
 #endif
 
+#include "libws/log.h"
+
 #include "board.h"
 #include "wslogd.h"
 #include "driver/driver.h"
@@ -58,11 +60,13 @@ sensor_init(struct itimerspec *it)
 
 #ifdef DEBUG
 	printf("driver.freq: %ld\n", it->it_interval.tv_sec);
+	printf("driver.delay: %ld\n", it->it_value.tv_sec);
 #endif
 
 	return 0;
 
 error:
+	csyslog1(LOG_ERR, "sensor_init(): %m");
 	return 0;
 }
 

@@ -37,6 +37,7 @@ archive_init(struct itimerspec *it)
 
 #ifdef DEBUG
 	printf("archive.freq: %ld\n", it->it_interval.tv_sec);
+	printf("archive.delay: %ld\n", it->it_value.tv_sec);
 #endif
 
 	/* Initialize database */
@@ -49,6 +50,7 @@ archive_init(struct itimerspec *it)
 	return 0;
 
 error:
+	csyslog1(LOG_ERR, "archive_init(): %m");
 	return -1;
 }
 

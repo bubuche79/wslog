@@ -139,7 +139,7 @@ conf_init(struct ws_conf *cfg)
 #endif
 
 	/* Archive */
-	cfg->archive.freq = 300;
+	cfg->archive.freq = 0;
 	cfg->archive.delay = 15;
 
 	/* SQLite */
