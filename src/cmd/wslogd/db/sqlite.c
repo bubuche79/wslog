@@ -140,7 +140,7 @@ error:
 }
 
 int
-sqlite_write(const struct ws_archive *p)
+sqlite_insert(const struct ws_archive *p)
 {
 	int ret;
 	int bind_index;
@@ -181,6 +181,12 @@ sqlite_write(const struct ws_archive *p)
 	return 0;
 
 error:
+	return -1;
+}
+
+int
+sqlite_select_last(struct ws_archive *p)
+{
 	return -1;
 }
 

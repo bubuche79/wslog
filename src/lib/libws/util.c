@@ -134,10 +134,11 @@ gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 }
 
 DSO_EXPORT ssize_t
-strftimespec(char *s, size_t len, const struct timespec *ts)
+strftimespec(char *s, size_t len, const struct timespec *ts, int width)
 {
     size_t ret1;
     int ret2;
+    long xsec;
     struct tm t;
 
     if (localtime_r(&ts->tv_sec, &t) == NULL) {
@@ -151,7 +152,8 @@ strftimespec(char *s, size_t len, const struct timespec *ts)
     	return -1;
     }
 
-    ret2 = snprintf(s + ret1, len - ret1, ".%3ld", ts->tv_nsec / 1000000);
+	xsec = ts->tv_nsec / (long) pow(10, 9 - width);
+	ret2 = snprintf(s + ret1, len - ret1, ".%0*ld", width, xsec);
     if (ret2 == -1) {
     	return -1;
     }

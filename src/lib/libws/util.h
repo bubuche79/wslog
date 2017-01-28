@@ -19,7 +19,7 @@ double ws_inch(double len);
 const char *ws_dir(double dir);
 
 size_t gmftime(char *s, size_t max, const time_t *timep, const char *fmt);
-ssize_t strftimespec(char *s, size_t max, const struct timespec *ts);
+ssize_t strftimespec(char *s, size_t max, const struct timespec *ts, int width);
 
 #ifdef __cplusplus
 }

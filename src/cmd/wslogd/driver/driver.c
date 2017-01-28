@@ -12,6 +12,7 @@
 #ifdef HAVE_SIMU
 #include "driver/simu.h"
 #endif
+#include "wslogd.h"
 #include "driver.h"
 
 static enum ws_driver driver;
@@ -20,6 +21,8 @@ int
 drv_init(void)
 {
 	int ret;
+
+	driver = confp->station.driver;
 
 	switch (driver)
 	{
@@ -83,6 +86,32 @@ drv_get_loop(struct ws_loop *loop)
 #ifdef HAVE_SIMU
 	case SIMU:
 		ret = simu_get_loop(loop);
+		break;
+#endif
+	default:
+		errno = ENOTSUP;
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
+ssize_t
+drv_get_archive(struct ws_archive *ar, size_t nel)
+{
+	ssize_t ret;
+
+	switch (driver)
+	{
+#ifdef HAVE_WS23XX
+	case WS23XX:
+		ret = ws23xx_get_archive(ar, nel);
+		break;
+#endif
+#ifdef HAVE_SIMU
+	case SIMU:
+		ret = simu_get_archive(ar, nel);
 		break;
 #endif
 	default:

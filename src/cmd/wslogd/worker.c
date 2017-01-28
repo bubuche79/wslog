@@ -198,12 +198,9 @@ sigthread_kill(struct worker *dt)
 static void
 threads_count(void)
 {
-	threads_nel = 1;
+	threads_nel = 2;
 
-	if (!confp->sqlite.disabled) {
-		threads_nel++;
-	}
-	if (!confp->wunder.disabled) {
+	if (confp->wunder.enabled) {
 		threads_nel++;
 	}
 }
@@ -228,7 +225,7 @@ threads_start(void)
 
 	/* Configure sensor thread */
 	threads[i].w_signo = signo;
-	threads[i].w_ifreq.tv_sec = confp->ws23xx.freq;
+	threads[i].w_ifreq.tv_sec = 10;//confp->ws23xx.freq;
 	threads[i].w_ifreq.tv_nsec = 0;
 	threads[i].w_init = sensor_init;
 	threads[i].w_action = sensor_main;
@@ -240,22 +237,20 @@ threads_start(void)
 #endif
 
 	/* Configure archive thread */
-	if (!confp->sqlite.disabled) {
-		threads[i].w_signo = signo;
-		threads[i].w_ifreq.tv_sec = confp->sqlite.freq;
-		threads[i].w_ifreq.tv_nsec = 0;
-		threads[i].w_init = archive_init;
-		threads[i].w_action = archive_main;
-		threads[i].w_destroy = archive_destroy;
+	threads[i].w_signo = signo;
+	threads[i].w_ifreq.tv_sec = confp->archive.freq;
+	threads[i].w_ifreq.tv_nsec = 0;
+	threads[i].w_init = archive_init;
+	threads[i].w_action = archive_main;
+	threads[i].w_destroy = archive_destroy;
 
-		i++;
+	i++;
 #ifndef HAVE_SIGTHREADID
-		signo++;
+	signo++;
 #endif
-	}
 
 	/* Configure Wunder thread */
-	if (!confp->wunder.disabled) {
+	if (!confp->wunder.enabled) {
 		threads[i].w_signo = signo;
 		threads[i].w_ifreq.tv_sec = confp->wunder.freq;
 		threads[i].w_ifreq.tv_nsec = 0;

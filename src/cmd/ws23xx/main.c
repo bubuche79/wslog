@@ -847,8 +847,8 @@ main_history(int argc, char* const argv[]) {
 		strftime(cbuf, sizeof(cbuf), CSV_DATE, &tm);
 
 		printf("%s%c%.2f%c%.2f%c%.1f%c%d%c%d%c%.2f%c%.1f%c%.1f\n",
-				cbuf, sep, h->temp_in, sep, h->temp_out, sep,
-				h->abs_pressure, sep, h->humidity_in, sep, h->humidity_out, sep,
+				cbuf, sep, h->temp_in, sep, h->temp, sep,
+				h->abs_pressure, sep, h->humidity_in, sep, h->humidity, sep,
 				h->rain, sep, h->wind_speed, sep, h->wind_dir);
 	}
 

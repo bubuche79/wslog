@@ -12,14 +12,17 @@
 #define RAD                 (PI/180.0)
 #define PERIOD_FACTOR       4
 
+#define ARCHIVE_INTERVAL	300
+#define LOOP_INTERVAL		10
+
 static int simu_index;
 
 static double
-simu_sin(double from, double to)
+simu_sin(double from, double to, int idx)
 {
 	double range = (to - from) / 2;
 
-	return from + range + sin(simu_index * RAD / PERIOD_FACTOR) * range;
+	return from + range + sin(idx * RAD / PERIOD_FACTOR) * range;
 }
 
 int
@@ -40,7 +43,11 @@ simu_get_itimer(struct itimerspec *p, int type)
 	case WS_ITIMER_LOOP:
 	case WS_ITIMER_ARCHIVE:
 		p->it_interval.tv_nsec = 0;
-		p->it_interval.tv_sec = (type == WS_ITIMER_LOOP) ? 10 : 300;
+		if (type == WS_ITIMER_LOOP) {
+			p->it_interval.tv_sec = LOOP_INTERVAL;
+		} else {
+			p->it_interval.tv_sec = ARCHIVE_INTERVAL;
+		}
 		p->it_value.tv_sec = 0;
 		p->it_value.tv_nsec = 0;
 		ret = 0;
@@ -54,22 +61,44 @@ simu_get_itimer(struct itimerspec *p, int type)
 	return ret;
 }
 
+void
+simu_make(struct ws_loop* p, int idx) {
+	p->abs_pressure = simu_sin(950, 1020, idx);
+	p->temp = simu_sin(15, 25, idx);
+	p->humidity = simu_sin(60, 80, idx);
+	p->wind_speed = simu_sin(0, 2, idx);
+	p->wind_dir = simu_sin(225, 315, idx);
+
+	/* Supported sensors */
+	p->wl_mask = WF_PRESSURE | WF_TEMP | WF_HUMIDITY | WF_WIND;
+}
+
 int
 simu_get_loop(struct ws_loop *p)
 {
-	p->abs_pressure = simu_sin(950, 1020);
-	p->temp = simu_sin(15, 25);
-	p->humidity = simu_sin(60, 80);
-	p->wind_speed = simu_sin(0, 2);
-	p->wind_dir = simu_sin(225, 315);
-
-	/* Supported sensors */
-	p->wl_mask = WF_PRESSURE|WF_TEMP|WF_HUMIDITY|WF_WIND;
+	simu_make(p, simu_index);
 
 	/* Next simulator index */
 	simu_index = (simu_index + 1) % (360 * PERIOD_FACTOR);
 
 	return 0;
+}
+
+ssize_t
+simu_get_archive(struct ws_archive *p, size_t nel)
+{
+	if (nel > 1) {
+		return -1;
+	}
+
+	p->time = time(NULL);
+	p->interval = ARCHIVE_INTERVAL;
+
+	p->data.time.tv_sec = p->time;
+	p->data.time.tv_nsec = 0;
+	simu_make(&p->data, simu_index);
+
+	return nel;
 }
 
 int

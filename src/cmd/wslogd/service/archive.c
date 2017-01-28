@@ -40,37 +40,23 @@ archive_init(void)
 	 * Use configuration supplied frequency. When not set, use the station
 	 * archive time otherwise, when supported by the driver.
 	 */
-	if (confp->sqlite.freq == 0) {
-		/* Unreliable hardware */
-		switch (driver)
-		{
-#ifdef HAVE_WS23XX
-		case WS23XX:
-			ret = -1;
-			break;
-#endif
-		default:
-			break;
+	if (confp->archive.freq == 0) {
+		struct itimerspec buf;
+
+		if (drv_get_itimer(&buf, WS_ITIMER_ARCHIVE) == -1) {
+			goto error;
 		}
 
-		// TODO
+		freq = buf.it_interval.tv_sec;
 	} else {
-		freq = confp->sqlite.freq;
+		freq = confp->archive.freq;
 	}
 
-	/* Flush buffer, if configured */
-//	if (confp->sqlite.flush_freq > 0) {
-//		size_t size = divup(confp->sqlite.flush_freq, confp->sqlite.freq);
-//
-//		tx_idx = 0;
-//		tx_buf = malloc(size * sizeof(*tx_buf));
-//		if (tx_buf == NULL) {
-//			goto error;
-//		}
-//	}
-
-	if (sqlite_init() == -1) {
-		goto error;
+	/* Initialize database */
+	if (confp->sqlite.enabled) {
+		if (sqlite_init() == -1) {
+			goto error;
+		}
 	}
 
 	return 0;
@@ -82,34 +68,38 @@ error:
 int
 archive_main(void)
 {
-	time_t next;
 	struct ws_archive ar;
 
-	(void) time(&next);
+#if DEBUG
+	printf("ARCHIVE: reading\n");
+#endif
 
+	if (drv_get_archive(&ar, 1) == -1) {
+		return -1;
+	}
+
+	/* Update board */
 	if (board_lock() == -1) {
 		csyslog1(LOG_CRIT, "board_lock(): %m");
 		return -1;
 	}
 
-	/* Compute metrics since last archive */
-	// TODO
-	ar.time = next;
-	ar.interval = freq;
-	memcpy(&ar.data, board_peek(0), sizeof(ar.data));
-
 	board_push_ar(&ar);
 
 	if (board_unlock() == -1) {
-		csyslog1(LOG_CRIT, "board_lock(): %m");
+		csyslog1(LOG_CRIT, "board_unlock(): %m");
 		return -1;
 	}
 
-	last = next;
+#if DEBUG
+	printf("ARCHIVE read: %.2f°C %hhu%%\n", ar.data.temp, ar.data.humidity);
+#endif
 
 	/* Save to database */
-	if (sqlite_write(&ar) == -1) {
-		return -1;
+	if (confp->sqlite.enabled) {
+		if (sqlite_insert(&ar) == -1) {
+			return -1;
+		}
 	}
 
 	return 0;
@@ -118,8 +108,10 @@ archive_main(void)
 int
 archive_destroy(void)
 {
-	if (sqlite_destroy() == -1) {
-		return -1;
+	if (confp->sqlite.enabled) {
+		if (sqlite_destroy() == -1) {
+			return -1;
+		}
 	}
 
 	return 0;

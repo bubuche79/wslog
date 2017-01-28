@@ -9,16 +9,14 @@
  * Weather station configuration.
  */
 
-struct ws_conf
-{
+struct ws_conf {
 	uid_t uid;							/* effective user id */
 	gid_t gid;							/* effective group id */
 	const char *pid_file;				/* the daemon PID file */
 	int log_facility;					/* syslog facility */
 	int log_mask;						/* syslog priority mask */
 
-	struct
-	{
+	struct {
 		float latitude;					/* latitude */
 		float longitude;				/* longitude */
 		int altitude;					/* altitude (m) */
@@ -26,25 +24,24 @@ struct ws_conf
 	} station;
 
 	union {
-		struct
-		{
+		struct {
 			const char *tty;			/* tty device */
 			int freq;					/* read frequency, in seconds */
-			int close;					/* close device in meantime */
 		} ws23xx;
 	};
 
-	struct
-	{
-		int disabled;					/* disabled flag */
-		const char *db;					/* database file */
+	struct {
 		int freq;						/* archive frequency, in seconds */
-		int flush_freq;					/* flush frequency, in seconds */
+		int delay;						/* archive delay, in seconds */
+	} archive;
+
+	struct {
+		int enabled;					/* disabled flag */
+		const char *db;					/* database file */
 	} sqlite;
 
-	struct
-	{
-		int disabled;					/* disabled flag */
+	struct {
+		int enabled;					/* disabled flag */
 		int https;						/* https flag */
 		const char *station;			/* station id */
 		const char *password;			/* account password */

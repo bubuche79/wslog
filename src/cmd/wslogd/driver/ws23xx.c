@@ -5,6 +5,7 @@
 
 #include "defs/std.h"
 #include "libws/serial.h"
+#include "libws/ws23xx/archive.h"
 #include "libws/ws23xx/decoder.h"
 #include "libws/ws23xx/ws23xx.h"
 
@@ -208,6 +209,48 @@ ws23xx_get_loop(struct ws_loop *loop)
 	loop->wl_mask &= ~(WF_BAROMETER|WF_WIND_GUST|WF_RAIN_RATE|WF_HEAD_INDEX);
 
 	return 0;
+}
+
+ssize_t
+ws23xx_get_archive(struct ws_archive *ar, size_t nel)
+{
+	ssize_t i, res;
+	struct ws23xx_ar arbuf[nel];
+
+	/* Read from device */
+	res = ws23xx_fetch_ar(fd, arbuf, nel);
+	if (res <= 0) {
+		return res;
+	}
+
+	/* Copy values */
+	for (i = 0; i < res; i++) {
+		uint32_t mask = WF_PRESSURE|WF_TEMP_IN|WF_HUMIDITY_IN;
+
+		ar[i].time = arbuf[i].tstamp;
+		ar[i].data.time.tv_sec = arbuf[i].tstamp;
+		ar[i].data.time.tv_nsec = 0;
+
+		ar[i].data.abs_pressure = arbuf[i].abs_pressure;
+		ar[i].data.temp_in = arbuf[i].temp_in;
+		ar[i].data.humidity_in = arbuf[i].humidity_in;
+
+		if (arbuf[i].temp != 0) {
+			mask |= WF_TEMP;
+			ar[i].data.temp = arbuf[i].temp;
+		}
+		if (arbuf[i].humidity != 0) {
+			mask |= WF_HUMIDITY;
+			ar[i].data.humidity = arbuf[i].humidity;
+		}
+		if (arbuf[i].wind_speed != 0) {
+			mask |= WF_WIND;
+			ar[i].data.wind_speed = arbuf[i].wind_speed;
+			ar[i].data.wind_dir = arbuf[i].wind_dir;
+		}
+	}
+
+	return res;
 }
 
 int

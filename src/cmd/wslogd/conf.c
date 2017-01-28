@@ -134,19 +134,22 @@ conf_init(struct ws_conf *cfg)
 
 	/* Default driver */
 #if HAVE_WS23XX
-	cfg->ws23xx.freq = 2;
+	cfg->ws23xx.freq = 0;
 	cfg->ws23xx.tty = "/dev/ttyUSB0";
 #endif
 
+	/* Archive */
+	cfg->archive.freq = 300;
+	cfg->archive.delay = 15;
+
 	/* SQLite */
-	cfg->sqlite.disabled = 0;
+	cfg->sqlite.enabled = 0;
 	cfg->sqlite.db = "/var/lib/wslogd.db";
-	cfg->sqlite.freq = 300;
 
 	/* Wunderstation */
-	cfg->wunder.disabled = 1;
+	cfg->wunder.enabled = 1;
 	cfg->wunder.https = 1;
-	cfg->wunder.freq = 300;
+	cfg->wunder.freq = 0;
 
 	return 0;
 }
@@ -192,19 +195,21 @@ conf_decode(void *p, const char *key, const char *value)
 		default:
 			errno = EINVAL;
 		}
-	} else if (!strncmp(key, "sqlite.", 4)) {
-		if (!strcmp(key, "sqlite.disabled")) {
-			ws_getbool(value, &cfg->sqlite.disabled);
-		} else if (!strcmp(key, "sqlite.db")) {
+	} else if (!strncmp(key, "archive.", 4)) {
+		if (!strcmp(key, "archive.freq")) {
+			ws_getint(value, &cfg->archive.freq);
+		} else if (!strcmp(key, "archive.delay")) {
+			ws_getint(value, &cfg->archive.delay);
+		} else if (!strcmp(key, "archive.sqlite.enabled")) {
+			ws_getbool(value, &cfg->sqlite.enabled);
+		} else if (!strcmp(key, "archive.sqlite.db")) {
 			cfg->sqlite.db = strdup(value);
-		} else if (!strcmp(key, "sqlite.freq")) {
-			ws_getint(value, &cfg->sqlite.freq);
 		} else {
 			errno = EINVAL;
 		}
 	} else if (!strncmp(key, "wunder.", 7)) {
-		if (!strcmp(key, "wunder.disabled")) {
-			ws_getbool(value, &cfg->wunder.disabled);
+		if (!strcmp(key, "wunder.enabled")) {
+			ws_getbool(value, &cfg->wunder.enabled);
 		} else if (!strcmp(key, "wunder.https")) {
 			ws_getbool(value, &cfg->wunder.https);
 		} else if (!strcmp(key, "wunder.station")) {

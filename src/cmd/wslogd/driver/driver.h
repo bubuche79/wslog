@@ -2,6 +2,7 @@
 #define _DRIVER_H
 
 #include <time.h>
+#include <sys/types.h>
 
 #include "board.h"
 
@@ -27,6 +28,7 @@ enum ws_driver {
 int drv_init(void);
 int drv_get_itimer(struct itimerspec *p, int type);
 int drv_get_loop(struct ws_loop *p);
+ssize_t drv_get_archive(struct ws_archive *p, size_t nel);
 int drv_destroy(void);
 
 #ifdef __cplusplus

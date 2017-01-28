@@ -12,7 +12,8 @@ extern "C" {
 #endif
 
 int sqlite_init(void);
-int sqlite_write(const struct ws_archive *p);
+int sqlite_insert(const struct ws_archive *p);
+int sqlite_select_last(struct ws_archive *p);
 int sqlite_destroy(void);
 
 #ifdef __cplusplus
