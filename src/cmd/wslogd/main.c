@@ -23,24 +23,13 @@
 
 static struct ws_conf conf;
 static int one_process_mode = 0;
-static enum ws_driver driver = -1;
 
 const struct ws_conf *confp = &conf;
 
 static void
 usage(FILE *std, const char *bin)
 {
-	fprintf(std, "Usage: %s [-X] [-d driver] [-c conf_file]\n", bin);
-}
-
-static int
-post_config(void)
-{
-	if (driver != -1) {
-		conf.station.driver = driver;
-	}
-
-	return 0;
+	fprintf(std, "Usage: %s [-X] [-c conf_file]\n", bin);
 }
 
 static int
@@ -61,9 +50,6 @@ loop_reinit(const char *config_file)
 {
 	conf_free(&conf);
 	if (conf_load(&conf, config_file) == -1) {
-		goto error;
-	}
-	if (post_config() == -1) {
 		goto error;
 	}
 
@@ -91,13 +77,8 @@ main(int argc, char *argv[])
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "Xd:c:")) != -1) {
+	while ((c = getopt(argc, argv, "Xc:")) != -1) {
 		switch (c) {
-		case 'd':
-			if (ws_getdriver(optarg, &driver) == -1) {
-				die(1, "Unknown driver: %s\n", optarg);
-			}
-			break;
 		case 'c':
 			conf_file = optarg;
 			if (conf_file[0] != '/') {
@@ -121,9 +102,6 @@ main(int argc, char *argv[])
 
 	/* Required stuff before fork() */
 	if (conf_load(&conf, conf_file) == -1) {
-		return 1;
-	}
-	if (post_config() == -1) {
 		return 1;
 	}
 
