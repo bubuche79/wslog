@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 int simu_init(void);
-int simu_get_itimer(struct itimerspec *p, int type);
+int simu_get_itimer(struct itimerspec *it, int type);
 int simu_get_loop(struct ws_loop *p);
 ssize_t simu_get_archive(struct ws_archive *p, size_t nel);
 int simu_destroy(void);

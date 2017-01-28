@@ -15,7 +15,7 @@
 #define ARCHIVE_INTERVAL	300
 #define LOOP_INTERVAL		10
 
-static int simu_index;
+static volatile int simu_index;
 
 static double
 simu_sin(double from, double to, int idx)
@@ -25,43 +25,7 @@ simu_sin(double from, double to, int idx)
 	return from + range + sin(idx * RAD / PERIOD_FACTOR) * range;
 }
 
-int
-simu_init(void)
-{
-	simu_index = 0;
-
-	return 0;
-}
-
-int
-simu_get_itimer(struct itimerspec *p, int type)
-{
-	int ret;
-
-	switch (type)
-	{
-	case WS_ITIMER_LOOP:
-	case WS_ITIMER_ARCHIVE:
-		p->it_interval.tv_nsec = 0;
-		if (type == WS_ITIMER_LOOP) {
-			p->it_interval.tv_sec = LOOP_INTERVAL;
-		} else {
-			p->it_interval.tv_sec = ARCHIVE_INTERVAL;
-		}
-		p->it_value.tv_sec = 0;
-		p->it_value.tv_nsec = 0;
-		ret = 0;
-		break;
-	default:
-		errno = ENOTSUP;
-		ret = -1;
-		break;
-	}
-
-	return ret;
-}
-
-void
+static void
 simu_make(struct ws_loop* p, int idx) {
 	p->abs_pressure = simu_sin(950, 1020, idx);
 	p->temp = simu_sin(15, 25, idx);
@@ -74,12 +38,50 @@ simu_make(struct ws_loop* p, int idx) {
 }
 
 int
+simu_init(void)
+{
+	simu_index = 0;
+
+	return 0;
+}
+
+int
+simu_get_itimer(struct itimerspec *it, int type)
+{
+	int ret;
+
+	switch (type)
+	{
+	case WS_ITIMER_LOOP:
+	case WS_ITIMER_ARCHIVE:
+		it->it_interval.tv_nsec = 0;
+		if (type == WS_ITIMER_LOOP) {
+			it->it_interval.tv_sec = LOOP_INTERVAL;
+		} else {
+			it->it_interval.tv_sec = ARCHIVE_INTERVAL;
+		}
+		it->it_value.tv_sec = 0;
+		it->it_value.tv_nsec = 0;
+		ret = 0;
+		break;
+	default:
+		errno = ENOTSUP;
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
+int
 simu_get_loop(struct ws_loop *p)
 {
-	simu_make(p, simu_index);
+	int idx = simu_index;
+
+	simu_make(p, idx);
 
 	/* Next simulator index */
-	simu_index = (simu_index + 1) % (360 * PERIOD_FACTOR);
+	simu_index = (idx + 1) % (360 * PERIOD_FACTOR);
 
 	return 0;
 }
@@ -87,6 +89,8 @@ simu_get_loop(struct ws_loop *p)
 ssize_t
 simu_get_archive(struct ws_archive *p, size_t nel)
 {
+	int idx = simu_index;
+
 	if (nel > 1) {
 		return -1;
 	}
@@ -96,7 +100,7 @@ simu_get_archive(struct ws_archive *p, size_t nel)
 
 	p->data.time.tv_sec = p->time;
 	p->data.time.tv_nsec = 0;
-	simu_make(&p->data, simu_index);
+	simu_make(&p->data, idx);
 
 	return nel;
 }

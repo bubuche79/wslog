@@ -133,9 +133,9 @@ conf_init(struct ws_conf *cfg)
 	cfg->station.driver = UNUSED;
 
 	/* Default driver */
+	cfg->driver.freq = 0;
 #if HAVE_WS23XX
-	cfg->ws23xx.freq = 0;
-	cfg->ws23xx.tty = "/dev/ttyUSB0";
+	cfg->driver.ws23xx.tty = "/dev/ttyUSB0";
 #endif
 
 	/* Archive */
@@ -143,8 +143,8 @@ conf_init(struct ws_conf *cfg)
 	cfg->archive.delay = 15;
 
 	/* SQLite */
-	cfg->sqlite.enabled = 0;
-	cfg->sqlite.db = "/var/lib/wslogd.db";
+	cfg->archive.sqlite.enabled = 0;
+	cfg->archive.sqlite.db = "/var/lib/wslogd.db";
 
 	/* Wunderstation */
 	cfg->wunder.enabled = 1;
@@ -180,19 +180,13 @@ conf_decode(void *p, const char *key, const char *value)
 			errno = EINVAL;
 		}
 	} else if (!strncmp(key, "driver.", 7)) {
-		switch (cfg->station.driver) {
+		if (!strcmp(key, "driver.freq")) {
+			ws_getint(value, &cfg->driver.freq);
 #if HAVE_WS23XX
-		case WS23XX:
-			if (!strcmp(key, "driver.ws23xx.tty")) {
-				cfg->ws23xx.tty = strdup(value);
-			} else if (!strcmp(key, "driver.ws23xx.freq")) {
-				ws_getint(value, &cfg->ws23xx.freq);
-			} else {
-				errno = EINVAL;
-			}
+		} else if (!strcmp(key, "driver.ws23xx.tty")) {
+			cfg->driver.ws23xx.tty = strdup(value);
 #endif
-			break;
-		default:
+		} else {
 			errno = EINVAL;
 		}
 	} else if (!strncmp(key, "archive.", 4)) {
@@ -201,9 +195,9 @@ conf_decode(void *p, const char *key, const char *value)
 		} else if (!strcmp(key, "archive.delay")) {
 			ws_getint(value, &cfg->archive.delay);
 		} else if (!strcmp(key, "archive.sqlite.enabled")) {
-			ws_getbool(value, &cfg->sqlite.enabled);
+			ws_getbool(value, &cfg->archive.sqlite.enabled);
 		} else if (!strcmp(key, "archive.sqlite.db")) {
-			cfg->sqlite.db = strdup(value);
+			cfg->archive.sqlite.db = strdup(value);
 		} else {
 			errno = EINVAL;
 		}

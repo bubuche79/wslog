@@ -23,22 +23,23 @@ struct ws_conf {
 		enum ws_driver driver;			/* station type */
 	} station;
 
-	union {
+	struct {
+		int freq;						/* sensor frequency, in seconds */
+
 		struct {
 			const char *tty;			/* tty device */
-			int freq;					/* read frequency, in seconds */
 		} ws23xx;
-	};
+	} driver;
 
 	struct {
 		int freq;						/* archive frequency, in seconds */
 		int delay;						/* archive delay, in seconds */
-	} archive;
 
-	struct {
-		int enabled;					/* disabled flag */
-		const char *db;					/* database file */
-	} sqlite;
+		struct {
+			int enabled;				/* disabled flag */
+			const char *db;				/* database file */
+		} sqlite;
+	} archive;
 
 	struct {
 		int enabled;					/* disabled flag */

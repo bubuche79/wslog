@@ -17,43 +17,30 @@
 #include "board.h"
 #include "wslogd.h"
 #include "db/sqlite.h"
-#include "service/service.h"
-
-static time_t last;
-static enum ws_driver driver;
-static int freq;
-//static size_t tx_idx;
-//static struct ws_archive *tx_buf;
+#include "service/util.h"
+#include "service/archive.h"
 
 int
-archive_init(void)
+archive_init(struct itimerspec *it)
 {
-	int ret;
-//	int hw_archive;
-
-	(void) time(&last);
-	driver = confp->station.driver;
-
-	ret = 0;
-
 	/*
 	 * Use configuration supplied frequency. When not set, use the station
 	 * archive time otherwise, when supported by the driver.
 	 */
 	if (confp->archive.freq == 0) {
-		struct itimerspec buf;
-
-		if (drv_get_itimer(&buf, WS_ITIMER_ARCHIVE) == -1) {
+		if (drv_get_itimer(it, WS_ITIMER_ARCHIVE) == -1) {
 			goto error;
 		}
-
-		freq = buf.it_interval.tv_sec;
 	} else {
-		freq = confp->archive.freq;
+		itimer_set(it, confp->archive.freq);
 	}
 
+#ifdef DEBUG
+	printf("archive.freq: %ld\n", it->it_interval.tv_sec);
+#endif
+
 	/* Initialize database */
-	if (confp->sqlite.enabled) {
+	if (confp->archive.sqlite.enabled) {
 		if (sqlite_init() == -1) {
 			goto error;
 		}
@@ -62,7 +49,7 @@ archive_init(void)
 	return 0;
 
 error:
-	return ret;
+	return -1;
 }
 
 int
@@ -70,7 +57,7 @@ archive_main(void)
 {
 	struct ws_archive ar;
 
-#if DEBUG
+#ifdef DEBUG
 	printf("ARCHIVE: reading\n");
 #endif
 
@@ -91,12 +78,12 @@ archive_main(void)
 		return -1;
 	}
 
-#if DEBUG
+#ifdef DEBUG
 	printf("ARCHIVE read: %.2f°C %hhu%%\n", ar.data.temp, ar.data.humidity);
 #endif
 
 	/* Save to database */
-	if (confp->sqlite.enabled) {
+	if (confp->archive.sqlite.enabled) {
 		if (sqlite_insert(&ar) == -1) {
 			return -1;
 		}
@@ -108,7 +95,7 @@ archive_main(void)
 int
 archive_destroy(void)
 {
-	if (confp->sqlite.enabled) {
+	if (confp->archive.sqlite.enabled) {
 		if (sqlite_destroy() == -1) {
 			return -1;
 		}

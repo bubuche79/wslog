@@ -25,13 +25,13 @@
 #include "db/sqlite.h"
 #include "wunder.h"
 #include "wslogd.h"
-#include "service/service.h"
+#include "service/archive.h"
+#include "service/sensor.h"
 #include "worker.h"
 
 struct worker {
 	int w_signo;									/* signal number */
-	struct timespec w_ifreq;						/* timer interval */
-	int (*w_init) (void);
+	int (*w_init) (struct itimerspec *);
 	int (*w_action) (void);							/* action on signal */
 	int (*w_destroy) (void);
 
@@ -73,10 +73,8 @@ sigthread_main(void *arg)
 	dt = (struct worker *) arg;
 
 	/* Initialize */
-	if (dt->w_init != NULL) {
-		if (dt->w_init() == -1) {
-			return NULL;
-		}
+	if (dt->w_init(&itimer) == -1) {
+		return NULL;
 	}
 
 	/* Change blocked signals */
@@ -93,10 +91,10 @@ sigthread_main(void *arg)
 	se.sigev_signo = dt->w_signo;
 	se.sigev_value.sival_ptr = &dt->w_timer;
 
-	itimer.it_interval.tv_sec = dt->w_ifreq.tv_sec;
-	itimer.it_interval.tv_nsec = dt->w_ifreq.tv_nsec;
-	itimer.it_value.tv_sec = 0;
-	itimer.it_value.tv_nsec = 100;
+	/* Start ASAP */
+	if (itimer.it_value.tv_sec == 0 && itimer.it_value.tv_nsec == 0) {
+		itimer.it_value.tv_nsec = 100;
+	}
 
 	if (timer_create(CLOCK_REALTIME, &se, &timer) == -1) {
 		csyslog1(LOG_ERR, "timer_create(): %m");
@@ -120,12 +118,7 @@ sigthread_main(void *arg)
 			if (hangup_pending || shutdown_pending) {
 				/* Stop requested */
 			} else {
-				if (dt->w_action != NULL) {
-					ret = dt->w_action();
-				} else {
-					syslog(LOG_ERR, "Real-time signal %d", ret - SIGRTMIN);
-					goto error;
-				}
+				ret = dt->w_action();
 			}
 		}
 	}
@@ -133,10 +126,8 @@ sigthread_main(void *arg)
 	(void) timer_delete(&timer);
 
 	/* Cleanup */
-	if (dt->w_destroy != NULL) {
-		if (dt->w_destroy() == -1) {
-			return NULL;
-		}
+	if (dt->w_destroy() == -1) {
+		return NULL;
 	}
 
 	return NULL;
@@ -225,8 +216,6 @@ threads_start(void)
 
 	/* Configure sensor thread */
 	threads[i].w_signo = signo;
-	threads[i].w_ifreq.tv_sec = 10;//confp->ws23xx.freq;
-	threads[i].w_ifreq.tv_nsec = 0;
 	threads[i].w_init = sensor_init;
 	threads[i].w_action = sensor_main;
 	threads[i].w_destroy = sensor_destroy;
@@ -238,8 +227,6 @@ threads_start(void)
 
 	/* Configure archive thread */
 	threads[i].w_signo = signo;
-	threads[i].w_ifreq.tv_sec = confp->archive.freq;
-	threads[i].w_ifreq.tv_nsec = 0;
 	threads[i].w_init = archive_init;
 	threads[i].w_action = archive_main;
 	threads[i].w_destroy = archive_destroy;
@@ -252,9 +239,7 @@ threads_start(void)
 	/* Configure Wunder thread */
 	if (!confp->wunder.enabled) {
 		threads[i].w_signo = signo;
-		threads[i].w_ifreq.tv_sec = confp->wunder.freq;
-		threads[i].w_ifreq.tv_nsec = 0;
-		threads[i].w_init = wunder_init;
+		threads[i].w_init = NULL;//wunder_init;
 		threads[i].w_action = wunder_update;
 		threads[i].w_destroy = wunder_destroy;
 
@@ -354,7 +339,7 @@ worker_main(int *halt)
 	if (startup) {
 		if (pthread_sigmask(SIG_BLOCK, &set, NULL) == -1) {
 			csyslog1(LOG_ERR, "pthread_sigmask: %m");
-			return -1;
+			goto error;
 		}
 
 		if (board_open(O_CREAT) == -1) {

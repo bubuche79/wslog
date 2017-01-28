@@ -46,7 +46,7 @@ drv_init(void)
 }
 
 int
-drv_get_itimer(struct itimerspec *spec, int type)
+drv_get_itimer(struct itimerspec *itimer, int type)
 {
 	int ret;
 
@@ -54,12 +54,12 @@ drv_get_itimer(struct itimerspec *spec, int type)
 	{
 #ifdef HAVE_WS23XX
 	case WS23XX:
-		ret = ws23xx_get_itimer(spec, type);
+		ret = ws23xx_get_itimer(itimer, type);
 		break;
 #endif
 #ifdef HAVE_SIMU
 	case SIMU:
-		ret = simu_get_itimer(spec, type);
+		ret = simu_get_itimer(itimer, type);
 		break;
 #endif
 	default:

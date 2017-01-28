@@ -11,7 +11,8 @@
 #include "board.h"
 #include "wslogd.h"
 #include "driver/driver.h"
-#include "service/service.h"
+#include "service/util.h"
+#include "service/sensor.h"
 
 static void
 sensor_derived(struct ws_loop *p)
@@ -41,8 +42,27 @@ sensor_push(const struct ws_loop *p)
 }
 
 int
-sensor_init(void)
+sensor_init(struct itimerspec *it)
 {
+	/*
+	 * Use configuration supplied frequency. When not set, use the station
+	 * sensor time otherwise, when supported by the driver.
+	 */
+	if (confp->driver.freq == 0) {
+		if (drv_get_itimer(it, WS_ITIMER_LOOP) == -1) {
+			goto error;
+		}
+	} else {
+		itimer_set(it, confp->driver.freq);
+	}
+
+#ifdef DEBUG
+	printf("driver.freq: %ld\n", it->it_interval.tv_sec);
+#endif
+
+	return 0;
+
+error:
 	return 0;
 }
 
@@ -53,7 +73,7 @@ sensor_main(void)
 	struct ws_loop loop;
 
 #if DEBUG
-	printf("LOOP: reading\n");
+	printf("SENSOR: reading\n");
 #endif
 
 	if (clock_gettime(CLOCK_REALTIME, &loop.time) == -1) {
@@ -76,7 +96,7 @@ sensor_main(void)
 	}
 
 #if DEBUG
-	printf("LOOP read: %.2f°C %hhu%%\n", loop.temp, loop.humidity);
+	printf("SENSOR read: %.2f°C %hhu%%\n", loop.temp, loop.humidity);
 #endif
 
 	return 0;

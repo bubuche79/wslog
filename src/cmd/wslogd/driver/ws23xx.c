@@ -1,6 +1,7 @@
 #include <time.h>
 #include <math.h>
 #include <errno.h>
+#include <pthread.h>
 #include <syslog.h>
 
 #include "defs/std.h"
@@ -21,6 +22,7 @@ struct ws23xx_io
 };
 
 static int fd;					/* device file */
+static pthread_mutex_t mutex;	/* device access mutex */
 static float total_rain;		/* total rain sensor */
 
 static void *
@@ -68,8 +70,12 @@ ws23xx_init(void)
 {
 	total_rain = 0;
 
-	fd = ws_open(confp->ws23xx.tty);
+	fd = ws_open(confp->driver.ws23xx.tty);
 	if (fd == -1) {
+		return -1;
+	}
+
+	if (pthread_mutex_init(&mutex, NULL) == -1) {
 		return -1;
 	}
 
@@ -77,12 +83,12 @@ ws23xx_init(void)
 }
 
 int
-ws23xx_get_itimer(struct itimerspec *p, int type)
+ws23xx_get_itimer(struct itimerspec *itimer, int type)
 {
 	int ret;
 
-	p->it_interval.tv_nsec = 0;
-	p->it_value.tv_nsec = 0;
+	itimer->it_interval.tv_nsec = 0;
+	itimer->it_value.tv_nsec = 0;
 
 	if (WS_ITIMER_LOOP == type) {
 //		uint8_t cnx_type;
@@ -173,7 +179,15 @@ ws23xx_get_loop(struct ws_loop *loop)
 	}
 
 	/* Read from device */
+	if (pthread_mutex_lock(&mutex) == -1) {
+		return -1;
+	}
+
 	if (ws23xx_read_batch(fd, addr, nnyb, nel, buf) == -1) {
+		goto error;
+	}
+
+	if (pthread_mutex_unlock(&mutex) == -1) {
 		return -1;
 	}
 
@@ -209,6 +223,10 @@ ws23xx_get_loop(struct ws_loop *loop)
 	loop->wl_mask &= ~(WF_BAROMETER|WF_WIND_GUST|WF_RAIN_RATE|WF_HEAD_INDEX);
 
 	return 0;
+
+error:
+	pthread_mutex_unlock(&mutex);
+	return -1;
 }
 
 ssize_t
@@ -218,9 +236,17 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel)
 	struct ws23xx_ar arbuf[nel];
 
 	/* Read from device */
+	if (pthread_mutex_lock(&mutex) == -1) {
+		return -1;
+	}
+
 	res = ws23xx_fetch_ar(fd, arbuf, nel);
 	if (res <= 0) {
-		return res;
+		goto error;
+	}
+
+	if (pthread_mutex_unlock(&mutex) == -1) {
+		return -1;
 	}
 
 	/* Copy values */
@@ -251,10 +277,22 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel)
 	}
 
 	return res;
+
+error:
+	pthread_mutex_unlock(&mutex);
+	return -1;
 }
 
 int
 ws23xx_destroy(void)
 {
-	return ws_close(fd);
+	int ret;
+
+	ret = pthread_mutex_destroy(&mutex);
+
+	if (ws_close(fd) == -1) {
+		ret = -1;
+	}
+
+	return ret;
 }

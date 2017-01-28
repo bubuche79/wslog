@@ -90,7 +90,7 @@ sqlite_init(void)
 	int ret;
 	struct stat buf;
 	int oflag = 0;
-	const char* dbfile = confp->sqlite.db;
+	const char* dbfile = confp->archive.sqlite.db;
 
 	/* Clear */
 	db = NULL;

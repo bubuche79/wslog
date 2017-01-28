@@ -17,8 +17,9 @@ wslogd_SOURCES = \
 	daemon.c \
 	db/sqlite.c \
 	driver/driver.c \
-	service/sensor.c \
 	service/archive.c \
+	service/sensor.c \
+	service/util.c \
 	main.c \
 	worker.c \
 	wunder.c \
@@ -27,7 +28,9 @@ wslogd_SOURCES = \
 	daemon.h \
 	db/sqlite.h \
 	driver/driver.h \
-	service/service.h \
+	service/archive.h \
+	service/sensor.h \
+	service/util.h \
 	worker.h \
 	wslogd.h \
 	wunder.h
