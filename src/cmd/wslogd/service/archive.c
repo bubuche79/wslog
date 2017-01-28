@@ -14,9 +14,9 @@
 
 #include "libws/log.h"
 
-#include "sqlite.h"
 #include "board.h"
 #include "wslogd.h"
+#include "db/sqlite.h"
 #include "service/service.h"
 
 static time_t last;

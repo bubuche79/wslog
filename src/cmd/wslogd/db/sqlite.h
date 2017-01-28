@@ -1,5 +1,5 @@
-#ifndef _SQLITE_H
-#define _SQLITE_H
+#ifndef _DB_SQLITE_H
+#define _DB_SQLITE_H
 
 #include "board.h"
 
@@ -19,4 +19,4 @@ int sqlite_destroy(void);
 }
 #endif
 
-#endif /* _SQLITE_H */
+#endif /* _DB_SQLITE_H */

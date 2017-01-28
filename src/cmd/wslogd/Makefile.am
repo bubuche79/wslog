@@ -15,19 +15,19 @@ wslogd_SOURCES = \
 	board.c \
 	conf.c \
 	daemon.c \
+	db/sqlite.c \
 	driver/driver.c \
 	service/sensor.c \
 	service/archive.c \
-	sqlite.c \
 	main.c \
 	worker.c \
 	wunder.c \
 	board.h \
 	conf.h \
 	daemon.h \
+	db/sqlite.h \
 	driver/driver.h \
 	service/service.h \
-	sqlite.h \
 	worker.h \
 	wslogd.h \
 	wunder.h

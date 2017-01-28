@@ -22,7 +22,7 @@
 
 #include "board.h"
 #include "conf.h"
-#include "sqlite.h"
+#include "db/sqlite.h"
 #include "wunder.h"
 #include "wslogd.h"
 #include "service/service.h"
