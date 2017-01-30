@@ -1,8 +1,8 @@
 noinst_LIBRARIES = libwslog.a
 
 libwslog_a_SOURCES = \
-	conf.c \
 	board.c \
+	conf.c \
 	driver/driver.c \
 	conf.h \
 	board.h \
@@ -36,6 +36,7 @@ wslogc_LDADD = \
 
 wslogd_SOURCES = \
 	daemon.c \
+	dataset.c \
 	db/sqlite.c \
 	service/archive.c \
 	service/sensor.c \
@@ -45,6 +46,7 @@ wslogd_SOURCES = \
 	wunder.c \
 	board.h \
 	daemon.h \
+	dataset.h \
 	db/sqlite.h \
 	service/archive.h \
 	service/sensor.h \

@@ -1,7 +1,7 @@
 #ifndef _DB_SQLITE_H
 #define _DB_SQLITE_H
 
-#include "board.h"
+#include "dataset.h"
 
 /*
  * SQLite 3 support.

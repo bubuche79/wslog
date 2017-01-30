@@ -6,6 +6,7 @@
 #include "config.h"
 #endif
 
+#include <pthread.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -284,16 +285,4 @@ board_peek_ar(size_t i)
 	}
 
 	return p;
-}
-
-int
-ws_isset(const struct ws_loop *p, int flag)
-{
-	return (p->wl_mask & flag) == flag;
-}
-
-int
-ws_isset_ar(const struct ws_archive *p, int flag)
-{
-	return (p->data.wl_mask & flag) == flag;
 }

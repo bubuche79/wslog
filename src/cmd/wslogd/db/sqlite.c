@@ -167,7 +167,7 @@ sqlite_insert(const struct ws_archive *p)
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_RAIN_24H), l->rain_24h);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_DEW_POINT), l->dew_point);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WINDCHILL), l->windchill);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_HEAD_INDEX), l->heat_idx);
+	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_HEAD_INDEX), l->heat_index);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_TEMP_IN), l->temp_in);
 	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_HUMIDITY_IN), l->humidity_in);
 

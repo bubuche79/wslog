@@ -4,7 +4,7 @@
 #include <time.h>
 #include <sys/types.h>
 
-#include "board.h"
+#include "dataset.h"
 
 #ifdef __cplusplus
 extern "C" {

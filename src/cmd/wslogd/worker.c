@@ -6,6 +6,7 @@
 #include "config.h"
 #endif
 
+#include <pthread.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
