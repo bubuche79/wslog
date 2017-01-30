@@ -10,6 +10,8 @@ extern "C" {
 
 double ws_windchill(double speed, double temp);
 double ws_dewpoint(double temp, double humidity);
+double ws_heat_index(double temp, double hr);
+double ws_humidex(double temp, double hr);
 
 double ws_inhg(double p);
 double ws_fahrenheit(double temp);

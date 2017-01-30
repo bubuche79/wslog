@@ -29,48 +29,95 @@ static const char *wind_dir[] =
 	"NNW"
 };
 
-/**
- * Calculate windchill using new post 2001 USA/Canadian formula
- * Twc = 13.112 + 0.6215*Ta -11.37*V^0.16 + 0.3965*Ta*V^0.16 [Celcius and km/h]
- *
- * @param speed the wind speed
- * @param temp the outdoor temperator
- * @return the windchill
- */
-DSO_EXPORT double
-ws_windchill(double speed, double temp)
+static double
+ws_celsius(double temp)
 {
-	double windchill;
-	double wind_kmph = 3.6 * speed;
-
-	if (wind_kmph > 4.8) {
-		windchill = 13.112 + 0.6215 * temp
-				- 11.37 * pow(wind_kmph, 0.16)
-		        + 0.3965 * temp * pow(wind_kmph, 0.16);
-	} else {
-		windchill = temp;
-	}
-
-	return windchill;
+	return (temp - 32) / 1.8;
 }
 
 /**
- * Calculate dewpoint.
+ * Compute wind chill using new post 2001 USA/Canadian formula.
  *
- * REF http://www.faqs.org/faqs/meteorology/temp-dewpoint/
+ * The {@code temp} is the temperature in Celcius, and {@code speed} the wind
+ * speed in m/s.
  *
- * @param temp the outdoor temperator
- * @param humidity the outdoor humidity
- * @return the dew point
+ * https://en.wikipedia.org/wiki/Wind_chill
  */
 DSO_EXPORT double
-ws_dewpoint(double temp, double humidity)
+ws_windchill(double temp, double speed)
 {
-	double A = 17.2694;
-	double B = (temp > 0) ? 237.3 : 265.5;
-	double C = (A * temp) / (B + temp) + log(humidity / 100.0);
+	double wc;
+	double wind_kmph = 3.6 * speed;
 
-	return B * C / (A - C);
+	if (temp < 10 && wind_kmph > 4.8) {
+		wc = 13.12 + 0.6215 * temp +(0.3965 * temp - 11.37) * pow(wind_kmph, 0.16);
+	} else {
+		wc = temp;
+	}
+
+	return wc;
+}
+
+/**
+ * Compute dew point temperature, using enhanced Bögel formula.
+ *
+ * The {@code temp} parameter is in Celsius, and {@code hr} parameter is the
+ * relative humidity, in percent.
+ *
+ * https://en.wikipedia.org/wiki/Dew_point
+ */
+DSO_EXPORT double
+ws_dewpoint(double temp, double hr)
+{
+	double b, c, d;
+	double lambda;
+
+	d = 234.5;
+
+	if (temp >= 0) {
+		b = 17.368;
+		c = 238.88;
+	} else {
+		b = 17.966;
+		c = 247.15;
+	}
+
+	lambda = log(hr/100.0 * exp((b - temp/d) * (temp / (c + temp))));
+
+	return (c * lambda) / (b - lambda);
+}
+
+DSO_EXPORT double
+ws_heat_index(double temp, double hr)
+{
+	double hi;
+	double temp_f = ws_fahrenheit(temp);
+
+	if (temp_f < 80.0 || hr < 40.0) {
+		return temp;
+	}
+
+	hi = -42.379 + 2.04901523*temp_f + 10.14333127*hr + -0.22475541*temp_f*hr
+			+ -6.83783e-3*temp_f*temp_f + -5.481717e-2*hr*hr + 1.22874e-3*temp_f*temp_f*hr
+			+ 8.5282e-4*temp_f*hr*hr + -1.99e-6*temp_f*temp_f*hr*hr;
+
+	return ws_celsius(hi);
+}
+
+/**
+ * Computes humidex.
+ *
+ * The {@code temp} parameter is in Celsius, and {@code hr} parameter is the
+ * relative humidity, in percent.
+ *
+ * https://en.wikipedia.org/wiki/Humidex
+ */
+DSO_EXPORT double
+ws_humidex(double temp, double hr)
+{
+	double dp_k = 273.16 + ws_dewpoint(temp, hr);
+
+	return temp + 0.5555 * (6.11 * exp(5417.7530 * (1 / 273.16 - 1 / (dp_k))) - 10);
 }
 
 /**
