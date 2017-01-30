@@ -252,7 +252,7 @@ ws23xx_get_loop(struct ws_loop *loop)
 	}
 
 	/* Unsupported fields */
-	loop->wl_mask &= ~(WF_BAROMETER|WF_WIND_GUST|WF_RAIN_RATE|WF_HEAD_INDEX);
+	loop->wl_mask &= ~(WF_BAROMETER|WF_WIND_GUST|WF_RAIN_RATE|WF_HEAT_INDEX);
 
 	return 0;
 

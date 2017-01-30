@@ -16,17 +16,6 @@
 #include "service/util.h"
 #include "service/sensor.h"
 
-static void
-sensor_derived(struct ws_loop *p)
-{
-//	if (sensor_updt(p, WF_WINDCHILL, WF_WIND|WF_TEMP)) {
-//		p->windchill = ws_windchill(p->wind_dir, p->temp);
-//	}
-//	if (sensor_updt(p, WF_DEW_POINT, WF_TEMP|WF_HUMIDITY)) {
-//		p->dew_point = ws_dewpoint(p->temp, p->humidity);
-//	}
-}
-
 static int
 sensor_push(const struct ws_loop *p)
 {
@@ -93,7 +82,7 @@ sensor_main(void)
 	}
 
 	/* Compute derived measures */
-	sensor_derived(&loop);
+	ws_compute(&loop);
 
 	/* Push loop event in board */
 	if (sensor_push(&loop) == -1) {

@@ -17,7 +17,7 @@
 #define WF_SAMPLE_RAIN		0x0200
 #define WF_DEW_POINT		0x0800
 #define WF_WINDCHILL		0x1000
-#define WF_HEAD_INDEX		0x2000
+#define WF_HEAT_INDEX		0x2000
 #define WF_TEMP_IN			0x4000
 #define WF_HUMIDITY_IN		0x8000
 #define WF_ALL				0xFFFF
@@ -85,7 +85,8 @@ extern "C" {
 #endif
 
 int ws_isset(const struct ws_loop *p, int flag);
-int ws_isset_ar(const struct ws_archive *p, int flag);
+
+void ws_compute(struct ws_loop *p);
 
 #ifdef __cplusplus
 }

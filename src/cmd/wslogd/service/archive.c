@@ -70,6 +70,8 @@ archive_main(void)
 		goto error;
 	}
 
+	ws_compute(&ar.data);
+
 	/* Update board */
 	if (board_lock() == -1) {
 		csyslog1(LOG_CRIT, "board_lock(): %m");
