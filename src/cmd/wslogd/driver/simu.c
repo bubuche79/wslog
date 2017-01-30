@@ -8,6 +8,7 @@
 #include "driver/driver.h"
 #include "driver/simu.h"
 
+#define IODELAY				250
 #define PI                  3.1415926535897932384626433832795
 #define RAD                 (PI/180.0)
 #define PERIOD_FACTOR       4
@@ -15,6 +16,7 @@
 #define ARCHIVE_INTERVAL	300
 #define LOOP_INTERVAL		10
 
+static struct timespec simu_delay;
 static volatile int simu_index;
 
 static double
@@ -42,12 +44,23 @@ simu_init(void)
 {
 	simu_index = 0;
 
+	simu_delay.tv_sec = IODELAY / 1000;
+	simu_delay.tv_nsec = IODELAY - simu_delay.tv_sec;
+
+	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
+		return -1;
+	}
+
 	return 0;
 }
 
 int
 simu_destroy(void)
 {
+	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -55,6 +68,10 @@ int
 simu_get_itimer(struct itimerspec *it, int type)
 {
 	int ret;
+
+	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
+		return -1;
+	}
 
 	switch (type)
 	{
@@ -84,6 +101,10 @@ simu_get_loop(struct ws_loop *p)
 {
 	int idx = simu_index;
 
+	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
+		return -1;
+	}
+
 	simu_make(p, idx);
 
 	/* Next simulator index */
@@ -98,6 +119,10 @@ simu_get_archive(struct ws_archive *p, size_t nel)
 	int idx = simu_index;
 
 	if (nel > 1) {
+		return -1;
+	}
+
+	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
 		return -1;
 	}
 
