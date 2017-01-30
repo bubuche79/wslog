@@ -52,6 +52,7 @@ sensor_init(struct itimerspec *it)
 	 */
 	if (confp->driver.freq == 0) {
 		if (drv_get_itimer(it, WS_ITIMER_LOOP) == -1) {
+			csyslog1(LOG_ERR, "drv_get_itimer(): %m");
 			goto error;
 		}
 	} else {
@@ -63,17 +64,17 @@ sensor_init(struct itimerspec *it)
 	printf("driver.delay: %ld\n", it->it_value.tv_sec);
 #endif
 
+	syslog(LOG_INFO, "%s: done", __func__);
+
 	return 0;
 
 error:
-	csyslog1(LOG_ERR, "sensor_init(): %m");
 	return 0;
 }
 
 int
 sensor_main(void)
 {
-	int ret;
 	struct ws_loop loop;
 
 #if DEBUG
@@ -81,13 +82,13 @@ sensor_main(void)
 #endif
 
 	if (clock_gettime(CLOCK_REALTIME, &loop.time) == -1) {
+		csyslog1(LOG_ERR, "clock_gettime(): %m");
 		goto error;
 	}
 
 	/* Read sensors */
-	ret = drv_get_loop(&loop);
-
-	if (ret == -1) {
+	if (drv_get_loop(&loop) == -1) {
+		csyslog1(LOG_ERR, "clock_gettime(): %m");
 		goto error;
 	}
 
@@ -96,6 +97,7 @@ sensor_main(void)
 
 	/* Push loop event in board */
 	if (sensor_push(&loop) == -1) {
+		csyslog1(LOG_ERR, "sensor_push(): %m");
 		goto error;
 	}
 

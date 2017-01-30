@@ -36,6 +36,7 @@ struct worker {
 
 	timer_t w_timer;
 	pthread_t w_thread;								/* thread id */
+	int status;										/* exit status */
 };
 
 static int startup = 1;
@@ -70,6 +71,8 @@ sigthread_main(void *arg)
 	struct itimerspec itimer;
 
 	dt = (struct worker *) arg;
+
+	dt->status = -1;
 
 	/* Initialize */
 	if (dt->w_init(&itimer) == -1) {
@@ -128,6 +131,8 @@ sigthread_main(void *arg)
 	if (dt->w_destroy() == -1) {
 		return NULL;
 	}
+
+	dt->status = 0;
 
 	return NULL;
 
@@ -334,6 +339,8 @@ worker_main(int *halt)
 		return -1;
 	}
 
+	syslog(LOG_INFO, "drv_init: done");
+
 	/* Startup initialization */
 	if (startup) {
 		if (pthread_sigmask(SIG_BLOCK, &set, NULL) == -1) {
@@ -346,7 +353,7 @@ worker_main(int *halt)
 			goto error;
 		}
 
-		syslog(LOG_INFO, "board_open(): success");
+		syslog(LOG_INFO, "board_open: done");
 		startup = 0;
 	}
 

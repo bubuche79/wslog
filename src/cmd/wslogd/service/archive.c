@@ -29,6 +29,7 @@ archive_init(struct itimerspec *it)
 	 */
 	if (confp->archive.freq == 0) {
 		if (drv_get_itimer(it, WS_ITIMER_ARCHIVE) == -1) {
+			csyslog1(LOG_ERR, "drv_get_itimer(): %m");
 			goto error;
 		}
 	} else {
@@ -47,10 +48,11 @@ archive_init(struct itimerspec *it)
 		}
 	}
 
+	syslog(LOG_INFO, "%s: done", __func__);
+
 	return 0;
 
 error:
-	csyslog1(LOG_ERR, "archive_init(): %m");
 	return -1;
 }
 
@@ -64,20 +66,21 @@ archive_main(void)
 #endif
 
 	if (drv_get_archive(&ar, 1) == -1) {
-		return -1;
+		csyslog1(LOG_ERR, "drv_get_archive(): %m");
+		goto error;
 	}
 
 	/* Update board */
 	if (board_lock() == -1) {
 		csyslog1(LOG_CRIT, "board_lock(): %m");
-		return -1;
+		goto error;
 	}
 
 	board_push_ar(&ar);
 
 	if (board_unlock() == -1) {
 		csyslog1(LOG_CRIT, "board_unlock(): %m");
-		return -1;
+		goto error;
 	}
 
 #ifdef DEBUG
@@ -87,11 +90,14 @@ archive_main(void)
 	/* Save to database */
 	if (confp->archive.sqlite.enabled) {
 		if (sqlite_insert(&ar) == -1) {
-			return -1;
+			goto error;
 		}
 	}
 
 	return 0;
+
+error:
+	return -1;
 }
 
 int
