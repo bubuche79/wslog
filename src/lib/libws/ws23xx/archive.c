@@ -14,8 +14,23 @@
 #include "libws/ws23xx/ws23xx.h"
 #include "libws/ws23xx/archive.h"
 
+#define HIST_SIZE	19
+
+static uint16_t
+hist_addr(size_t i, uint8_t last_idx, uint8_t nel) {
+	uint16_t addr;
+
+	if (i <= last_idx) {
+		addr = last_idx - i;
+	} else {
+		addr = nel - (i - last_idx);
+	}
+
+	return 0x6c6 + addr * HIST_SIZE;
+}
+
 static void
-conv_history(const uint8_t *buf, struct ws23xx_ar *h)
+hist_decode(const uint8_t *buf, struct ws23xx_ar *h)
 {
 	long v;
 
@@ -71,19 +86,16 @@ ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 		uint8_t nyb_data[10];
 		struct ws23xx_ar *p = &h[nel-i-1];
 
-		if (i <= last_record) {
-			addr = last_record - i;
-		} else {
-			addr = record_count - (i - last_record);
-		}
+		addr = hist_addr(i, last_record, record_count);
 
-		if (ws23xx_read_safe(fd, 0x6c6 + addr * 19, 19, nyb_data) == -1) {
+		if (ws23xx_read_safe(fd, addr, HIST_SIZE, nyb_data) == -1) {
 			goto error;
 		}
 
-		conv_history(nyb_data, p);
+		hist_decode(nyb_data, p);
 
-		/* Compute timestamp */
+		/* Other fields */
+		p->addr = addr;
 		p->tstamp = last_sample - i * save_int * 60;
 	}
 

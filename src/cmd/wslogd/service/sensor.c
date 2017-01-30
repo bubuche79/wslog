@@ -11,7 +11,7 @@
 #include "libws/log.h"
 
 #include "board.h"
-#include "wslogd.h"
+#include "conf.h"
 #include "driver/driver.h"
 #include "service/util.h"
 #include "service/sensor.h"

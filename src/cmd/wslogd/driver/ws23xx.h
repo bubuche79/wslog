@@ -15,10 +15,13 @@ extern "C" {
 #endif
 
 int ws23xx_init(void);
+int ws23xx_destroy(void);
+
 int ws23xx_get_itimer(struct itimerspec *p, int type);
 int ws23xx_get_loop(struct ws_loop *p);
 ssize_t ws23xx_get_archive(struct ws_archive *p, size_t nel);
-int ws23xx_destroy(void);
+
+int ws23xx_set_artimer(long itmin, long next);
 
 #ifdef __cplusplus
 }

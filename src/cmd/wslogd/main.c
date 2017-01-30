@@ -19,12 +19,8 @@
 #include "conf.h"
 #include "daemon.h"
 #include "worker.h"
-#include "wslogd.h"
 
-static struct ws_conf conf;
 static int one_process_mode = 0;
-
-const struct ws_conf *confp = &conf;
 
 static void
 usage(FILE *std, const char *bin)
@@ -39,8 +35,8 @@ loop_init(void)
 
 	option = LOG_PID | (one_process_mode ? LOG_PERROR : 0);
 
-	openlog("wslogd", option, conf.log_facility);
-	(void) setlogmask(conf.log_mask);
+	openlog("wslogd", option, confp->log_facility);
+	(void) setlogmask(confp->log_mask);
 
 	return 0;
 }
@@ -48,8 +44,8 @@ loop_init(void)
 static int
 loop_reinit(const char *config_file)
 {
-	conf_free(&conf);
-	if (conf_load(&conf, config_file) == -1) {
+	conf_free();
+	if (conf_load(config_file) == -1) {
 		goto error;
 	}
 
@@ -101,7 +97,7 @@ main(int argc, char *argv[])
 	}
 
 	/* Required stuff before fork() */
-	if (conf_load(&conf, conf_file) == -1) {
+	if (conf_load(conf_file) == -1) {
 		return 1;
 	}
 

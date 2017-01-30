@@ -50,6 +50,8 @@ struct ws_conf {
 	} wunder;
 };
 
+const struct ws_conf *confp;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,8 +60,8 @@ int ws_getuid(const char *str, uid_t *uid);
 int ws_getgid(const char *str, gid_t *gid);
 int ws_getdriver(const char *str, enum ws_driver *driver);
 
-int conf_load(struct ws_conf *cfg, const char *path);
-void conf_free(struct ws_conf *cfg);
+int conf_load(const char *path);
+void conf_free(void);
 
 #ifdef __cplusplus
 }

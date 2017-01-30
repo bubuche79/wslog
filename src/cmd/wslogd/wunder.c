@@ -15,7 +15,6 @@
 
 #include "conf.h"
 #include "board.h"
-#include "wslogd.h"
 #include "wunder.h"
 
 #define URL "weatherstation.wunderground.com/weatherstation/updateweatherstation.php"

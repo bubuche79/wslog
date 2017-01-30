@@ -19,6 +19,10 @@
 
 #include "conf.h"
 
+static struct ws_conf conf;
+
+const struct ws_conf *confp = &conf;
+
 int
 ws_getuid(const char *str, uid_t *uid)
 {
@@ -223,13 +227,13 @@ conf_decode(void *p, const char *key, const char *value)
 }
 
 int
-conf_load(struct ws_conf *cfg, const char *path)
+conf_load(const char *path)
 {
 	int lineno;
 
-	conf_init(cfg);
+	conf_init(&conf);
 
-	if (ws_parse_config(path, &lineno, conf_decode, cfg) == -1) {
+	if (ws_parse_config(path, &lineno, conf_decode, &conf) == -1) {
 		char buf[128];
 		strerror_r(errno, buf, sizeof(buf));
 
@@ -246,11 +250,13 @@ conf_load(struct ws_conf *cfg, const char *path)
 		return -1;
 	}
 
+	confp = &conf;
+
 	return 0;
 }
 
 void
-conf_free(struct ws_conf *cfg)
+conf_free(void)
 {
-	memset(cfg, 0, sizeof(*cfg));
+	memset(&conf, 0, sizeof(conf));
 }

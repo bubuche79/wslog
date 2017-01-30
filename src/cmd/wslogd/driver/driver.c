@@ -12,7 +12,7 @@
 #ifdef HAVE_SIMU
 #include "driver/simu.h"
 #endif
-#include "wslogd.h"
+#include "conf.h"
 #include "driver.h"
 
 static enum ws_driver driver;
@@ -34,6 +34,32 @@ drv_init(void)
 #ifdef HAVE_SIMU
 	case SIMU:
 		ret = simu_init();
+		break;
+#endif
+	default:
+		errno = ENOTSUP;
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
+int
+drv_destroy(void)
+{
+	int ret;
+
+	switch (driver)
+	{
+#ifdef HAVE_WS23XX
+	case WS23XX:
+		ret = ws23xx_destroy();
+		break;
+#endif
+#ifdef HAVE_SIMU
+	case SIMU:
+		ret = simu_destroy();
 		break;
 #endif
 	default:
@@ -123,21 +149,22 @@ drv_get_archive(struct ws_archive *ar, size_t nel)
 	return ret;
 }
 
+/**
+ * Set archive interval timer.
+ *
+ * The interval timer is set to {@code imin} minutes, and the next archive
+ * sample is set to {@code next} minutes.
+ */
 int
-drv_destroy(void)
+drv_set_artimer(long itmin, long next)
 {
-	int ret;
+	ssize_t ret;
 
 	switch (driver)
 	{
 #ifdef HAVE_WS23XX
 	case WS23XX:
-		ret = ws23xx_destroy();
-		break;
-#endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_destroy();
+		ret = ws23xx_set_artimer(itmin, next);
 		break;
 #endif
 	default:

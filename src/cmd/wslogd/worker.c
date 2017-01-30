@@ -24,7 +24,6 @@
 #include "conf.h"
 #include "db/sqlite.h"
 #include "wunder.h"
-#include "wslogd.h"
 #include "service/archive.h"
 #include "service/sensor.h"
 #include "worker.h"

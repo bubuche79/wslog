@@ -15,7 +15,7 @@
 #include "libws/log.h"
 
 #include "board.h"
-#include "wslogd.h"
+#include "conf.h"
 #include "db/sqlite.h"
 #include "service/util.h"
 #include "service/archive.h"

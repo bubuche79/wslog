@@ -18,6 +18,7 @@
 
 #include "libws/err.h"
 
+#include "conf.h"
 #include "wslogd.h"
 #include "daemon.h"
 
@@ -136,7 +137,7 @@ wait_startup(int fd)
 static int
 write_pid_file(void)
 {
-	int fd = open(confp->pid_file, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	int fd = open(confp->pid_file, O_WRONLY|O_CREAT|O_TRUNC, S_I644);
 	if (fd == -1) {
 		return -1;
 	}

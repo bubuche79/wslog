@@ -12,7 +12,7 @@
 #include "libws/log.h"
 
 #include "board.h"
-#include "wslogd.h"
+#include "conf.h"
 #include "sqlite.h"
 
 #define try_sqlite(fn, ...) \

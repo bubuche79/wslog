@@ -46,6 +46,12 @@ simu_init(void)
 }
 
 int
+simu_destroy(void)
+{
+	return 0;
+}
+
+int
 simu_get_itimer(struct itimerspec *it, int type)
 {
 	int ret;
@@ -103,10 +109,4 @@ simu_get_archive(struct ws_archive *p, size_t nel)
 	simu_make(&p->data, idx);
 
 	return nel;
-}
-
-int
-simu_destroy(void)
-{
-	return 0;
 }

@@ -7,7 +7,7 @@
  * Logging functions.
  */
 
-#define IDENT_MAX	32	/* max. size of ident */
+#define IDENT_MAX	32		/* max. size of ident */
 
 /* Log option */
 #define LOG_PID		0x01	/* include process id with each message */

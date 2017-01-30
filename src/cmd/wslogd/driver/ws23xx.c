@@ -5,12 +5,14 @@
 #include <syslog.h>
 
 #include "defs/std.h"
+#include "libws/nybble.h"
+
 #include "libws/serial.h"
 #include "libws/ws23xx/archive.h"
 #include "libws/ws23xx/decoder.h"
 #include "libws/ws23xx/ws23xx.h"
 
-#include "wslogd.h"
+#include "conf.h"
 #include "ws23xx.h"
 
 struct ws23xx_io
@@ -80,6 +82,20 @@ ws23xx_init(void)
 	}
 
 	return 0;
+}
+
+int
+ws23xx_destroy(void)
+{
+	int ret;
+
+	ret = pthread_mutex_destroy(&mutex);
+
+	if (ws_close(fd) == -1) {
+		ret = -1;
+	}
+
+	return ret;
 }
 
 int
@@ -300,15 +316,44 @@ error:
 }
 
 int
-ws23xx_destroy(void)
+ws23xx_set_artimer(long itmin, long next)
 {
-	int ret;
+	uint8_t buf[3];
 
-	ret = pthread_mutex_destroy(&mutex);
-
-	if (ws_close(fd) == -1) {
-		ret = -1;
+	if ((itmin < 1 && 0xFFF < itmin) || 0xFFF < next) {
+		errno = EINVAL;
+		return -1;
 	}
 
-	return ret;
+	itmin--;
+	if (next >= 1) {
+		next--;
+	}
+
+	if (pthread_mutex_lock(&mutex) == -1) {
+		return -1;
+	}
+
+	ultonyb(buf, 3, 0, itmin, 16);			/* history interval */
+	ultonyb(buf, 3, 3, next, 16);			/* history time till sample */
+
+	if (ws23xx_write_safe(fd, 0x6b2, 6, WRITENIB, buf) == -1) {
+		goto error;
+	}
+
+	ultonyb(buf, 2, 0, 0, 16);				/* history number of records */
+
+	if (ws23xx_write_safe(fd, 0x6c4, 2, WRITENIB, buf) == -1) {
+		goto error;
+	}
+
+	if (pthread_mutex_unlock(&mutex) == -1) {
+		return -1;
+	}
+
+	return 0;
+
+error:
+	(void) pthread_mutex_unlock(&mutex);
+	return -1;
 }

@@ -7,7 +7,8 @@
 
 struct ws23xx_ar
 {
-	time_t tstamp;
+	time_t tstamp;						/* history timestamp */
+	uint16_t addr;						/* history address */
 
 	float temp;
 	float temp_in;

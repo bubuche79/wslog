@@ -1,4 +1,4 @@
-#ifdef HAVE_CONFIG_H
+	#ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -10,11 +10,12 @@
 #include "libws/util.h"
 
 #include "board.h"
+#include "conf.h"
 
 static void
 usage(FILE *std, const char *bin)
 {
-	fprintf(std, "Usage: %s [-l cnt] [-S]\n", bin);
+	fprintf(std, "Usage: %s [-i min] [-l cnt] [-S]\n", bin);
 }
 
 static void
@@ -76,12 +77,20 @@ main(int argc, char *argv[])
 	/* Default parameters */
 	size_t nel = 10;
 	int use_sensors = 0;
+	long interval = 0;
+	const char *conf_file = "/etc/wslogd.conf";
 
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "l:S")) != -1) {
+	while ((c = getopt(argc, argv, "c:i:l:S")) != -1) {
 		switch (c) {
+		case 'c':
+			conf_file = optarg;
+			break;
+		case 'i':
+			interval = atol(optarg);
+			break;
 		case 'l':
 			nel = atoi(optarg);
 			break;
@@ -99,20 +108,36 @@ main(int argc, char *argv[])
 		return 2;
 	}
 
-	/* Open shared board */
-	if (board_open(0) == -1) {
+	if (conf_load(conf_file) == -1) {
 		goto error;
 	}
 
-	/* Display */
-	if (use_sensors) {
-		print_loop(nel);
+	if (interval > 0) {
+		if (drv_init() == -1) {
+			goto error;
+		}
+		if (drv_set_artimer(interval, 0) == -1) {
+			goto error;
+		}
+		if (drv_destroy() == -1) {
+			goto error;
+		}
 	} else {
-		print_ar(nel);
-	}
+		/* Open shared board */
+		if (board_open(0) == -1) {
+			goto error;
+		}
 
-	if (board_unlink() == -1) {
-		goto error;
+		/* Display */
+		if (use_sensors) {
+			print_loop(nel);
+		} else {
+			print_ar(nel);
+		}
+
+		if (board_unlink() == -1) {
+			goto error;
+		}
 	}
 
 	return 0;
