@@ -42,7 +42,7 @@ enum {
 extern "C" {
 #endif
 
-uint8_t ws23xx_bit(const uint8_t *buf, size_t offset, uint8_t bit);
+uint8_t ws23xx_bit(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit);
 
 float ws23xx_temp(const uint8_t *buf, float *v, size_t offset);
 float ws23xx_pressure(const uint8_t *buf, float *v, size_t offset);

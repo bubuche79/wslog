@@ -372,7 +372,7 @@ static char *
 decode_str_bit(const uint8_t *buf, int type, char *s, size_t len, size_t offset)
 {
 	const struct ws_type *t = &types[type];
-	uint8_t v = ws23xx_bit(buf, offset, t->bit.b);
+	uint8_t v = ws23xx_bit(buf, NULL, offset, t->bit.b);
 
 	strncpy(s, v ? t->bit.set : t->bit.unset, len);
 

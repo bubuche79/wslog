@@ -9,15 +9,16 @@
 #include "libws/nybble.h"
 #include "libws/ws23xx/decoder.h"
 
-static uint8_t
-bit2num(const uint8_t *buf, size_t offset, uint8_t bit) {
-	return nybget(buf, offset) & (1 << bit);
-}
-
 DSO_EXPORT uint8_t
-ws23xx_bit(const uint8_t *buf, size_t offset, uint8_t bit)
+ws23xx_bit(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit)
 {
-	return bit2num(buf, offset, bit);
+	uint8_t res = nybget(buf, offset) & (1 << bit);
+
+	if (v) {
+		*v = res;
+	}
+
+	return res;
 }
 
 DSO_EXPORT float
@@ -218,23 +219,11 @@ ws23xx_connection(const uint8_t *buf, uint8_t *v, size_t offset)
 DSO_EXPORT uint8_t
 ws23xx_alarm_set(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit)
 {
-	uint8_t res = bit2num(buf, offset, bit);
-
-	if (v) {
-		*v = res;
-	}
-
-	return res;
+	return ws23xx_bit(buf, v, offset, bit);
 }
 
 DSO_EXPORT uint8_t
 ws23xx_alarm_active(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit)
 {
-	uint8_t res = bit2num(buf, offset, bit);
-
-	if (v) {
-		*v = res;
-	}
-
-	return res;
+	return ws23xx_bit(buf, v, offset, bit);
 }
