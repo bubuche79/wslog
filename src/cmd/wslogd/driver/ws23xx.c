@@ -190,7 +190,7 @@ ws23xx_get_loop(struct ws_loop *loop)
 			{ 0x52c, WS23XX_WIND_DIR, 1, &loop->wind_dir },
 			{ 0x54d, WS23XX_CONNECTION, 1, &cnx_type },
 			{ 0x5d8, WS23XX_PRESSURE, 5, &loop->abs_pressure },
-			{ 0x5e2, WS23XX_PRESSURE, 5, &loop->barometer }
+//			{ 0x5e2, WS23XX_PRESSURE, 5, &loop->rel_pressure }
 	};
 
 	size_t nel = array_size(io);

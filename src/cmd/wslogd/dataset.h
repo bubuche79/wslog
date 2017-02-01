@@ -48,20 +48,22 @@ struct ws_loop
 	struct timespec time;		/* loop packet time (UTC) */
 	uint32_t wl_mask;			/* loop packet fields mask */
 
-	float barometer;			/* relative pressure (hPa) */
+	float barometer;			/* barometer (hPa) */
 	float abs_pressure;			/* absolute pressure (hPa) */
 	float temp;					/* temperature (°C) */
 	uint8_t humidity; 			/* humidity (%) */
 	float wind_speed;			/* wind speed (m/s) */
 	uint16_t wind_dir;			/* wind direction (°) */
+#if 0
 	float wind_gust;			/* wind gust (m/s) */
 	uint16_t wind_gust_dir;		/* wind gust direction (°) */
+#endif
 	float rain;					/* sample rain (mm) */
 	float rain_rate;			/* rain rate (mm/hr) */
 	float rain_1h;				/* accumulated rain in the past hour (mm) */
 	float rain_24h;				/* accumulated rain in the past 24 hours (mm) */
 #if 0
-	float sample_et;			/* evapotranspiration (mm) */
+	float sample_et;			/* sample evapotranspiration (mm) */
 	uint16_t radiation;			/* solar radiation (W/m³) */
 	float uv;					/* UV index */
 #endif

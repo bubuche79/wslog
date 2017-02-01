@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+double ws_barometer(double pressure, double temp, int elev);
+double ws_altimeter(double pressure, int elev);
+
 double ws_windchill(double speed, double temp);
 double ws_dewpoint(double temp, double humidity);
 double ws_heat_index(double temp, double hr);
@@ -16,7 +19,7 @@ double ws_humidex(double temp, double hr);
 double ws_inhg(double p);
 double ws_fahrenheit(double temp);
 double ws_mph(double speed);
-double ws_inch(double len);
+double ws_in(double len);
 
 const char *ws_dir(double dir);
 

@@ -9,6 +9,12 @@
 
 #include "util.h"
 
+#define ZERO_K 273.15
+#define M		0.0289644		/* molar mass of Earth's air: kg/mol */
+#define R		8.3144598		/* universal gas constant: J/mol/K */
+#define g 		9.80665			/* gravitational acceleration: m/s² */
+
+
 static const char *wind_dir[] =
 {
 	"N",
@@ -33,6 +39,42 @@ static double
 ws_celsius(double temp)
 {
 	return (temp - 32) / 1.8;
+}
+
+/**
+ * Compute sea level pressure from station pressure.
+ *
+ * The {@code pressure} is the pressure in hPa, the {@code temp} is the outdoor
+ * temperature in Celcius, and {@code elev} the station elevation in meters.
+ *
+ * https://en.wikipedia.org/wiki/Barometric_formula
+ *
+ * TODO: to be tested
+ */
+DSO_EXPORT double
+ws_barometer(double pressure, double temp, int elev)
+{
+	double temp_k = ZERO_K + temp;
+	double eterm = exp(-g * M * elev / (R * temp_k));
+
+	return (eterm != 0) ? pressure / eterm : 0;
+}
+
+/**
+ * Convert from (uncorrected) station pressure to altitude-corrected pressure.
+ *
+ * http://www.wrh.noaa.gov/slc/projects/wxcalc/formulas/altimeterSetting.pdf
+ *
+ * TODO: to be tested
+ */
+DSO_EXPORT double
+ws_altimeter(double pressure, int elev)
+{
+	double c = 0.190284;
+	double delta = pressure - 0.3;
+	double CONST = pow(1013.25, c) * 0.0065 / 288;
+
+	return delta * pow(1 + CONST * (elev / pow(delta, c)), 1 / c);
 }
 
 /**
@@ -115,25 +157,22 @@ ws_heat_index(double temp, double hr)
 DSO_EXPORT double
 ws_humidex(double temp, double hr)
 {
-	double dp_k = 273.16 + ws_dewpoint(temp, hr);
+	double dp_k = ZERO_K + ws_dewpoint(temp, hr);
 
 	return temp + 0.5555 * (6.11 * exp(5417.7530 * (1 / 273.16 - 1 / (dp_k))) - 10);
 }
 
 /**
- * Converts pressure from hPa to inHg.
+ * Convert pressure from hPa to inHg.
  */
 DSO_EXPORT double
 ws_inhg(double p)
 {
-	return p / (1013.25 / 29.92);
+	return p * 0.02953;
 }
 
 /**
- * Converts temperature from Celsius to Fahrenheit.
- *
- * @param temp temperature, celsius
- * @return temperature, fahrenheit
+ * Convert temperature from Celsius to Fahrenheit.
  */
 DSO_EXPORT double
 ws_fahrenheit(double temp)
@@ -142,10 +181,7 @@ ws_fahrenheit(double temp)
 }
 
 /**
- * Converts speed from m/s to miles/hour.
- *
- * @param speed speed, m/s
- * @return speed, miles/hour
+ * Convert speed from m/s to miles/hour.
  */
 DSO_EXPORT double
 ws_mph(double speed)
@@ -154,13 +190,10 @@ ws_mph(double speed)
 }
 
 /**
- * Converts length from mm to inches.
- *
- * @param len length, millimeter
- * @return length, inches
+ * Convert length from mm to inches.
  */
 DSO_EXPORT double
-ws_inch(double len)
+ws_in(double len)
 {
 	return len / 25.4;
 }
