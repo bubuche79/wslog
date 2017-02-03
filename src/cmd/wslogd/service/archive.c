@@ -70,14 +70,13 @@ archive_main(void)
 		goto error;
 	}
 
-	ws_compute(&ar.data);
-
 	/* Update board */
 	if (board_lock() == -1) {
 		csyslog1(LOG_CRIT, "board_lock(): %m");
 		goto error;
 	}
 
+	ws_compute(&ar.data);
 	board_push_ar(&ar);
 
 	if (board_unlock() == -1) {
@@ -91,7 +90,7 @@ archive_main(void)
 
 	/* Save to database */
 	if (confp->archive.sqlite.enabled) {
-		if (sqlite_insert(&ar) == -1) {
+		if (sqlite_insert(&ar, 1) == -1) {
 			goto error;
 		}
 	}

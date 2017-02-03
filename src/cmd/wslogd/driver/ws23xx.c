@@ -182,8 +182,10 @@ ws23xx_get_loop(struct ws_loop *loop)
 			{ 0x3ce, WS23XX_TEMP, 4, &loop->dew_point },
 			{ 0x3fb, WS23XX_HUMIDITY, 2, &loop->humidity_in },
 			{ 0x419, WS23XX_HUMIDITY, 2, &loop->humidity },
+#if 0
 			{ 0x497, WS23XX_RAIN, 6, &loop->rain_24h },
 			{ 0x4b4, WS23XX_RAIN, 6, &loop->rain_1h },
+#endif
 			{ 0x4d2, WS23XX_RAIN, 6, &total_rain_now },
 			{ 0x528, WS23XX_WIND_VALID, 1, &wind_valid },
 			{ 0x529, WS23XX_SPEED, 3, &loop->wind_speed },

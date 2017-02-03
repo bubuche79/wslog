@@ -160,19 +160,17 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 	curl_free(dateutc);
 	curl_free(password);
 
-#if 0
-	try_add_float(str, len, "baromin", ws_isset(p, WF_BAROMETER), ws_inhg(p->rel_pressure));
-#endif
+	try_add_float(str, len, "baromin", ws_isset(p, WF_BAROMETER), ws_inhg(p->barometer));
 	try_add_float(str, len, "tempf", ws_isset(p, WF_TEMP), ws_fahrenheit(p->temp));
 	try_add_int(str, len, "humidity", ws_isset(p, WF_HUMIDITY), p->humidity);
 	try_add_float(str, len, "windspeedmph",ws_isset(p, WF_WIND), ws_mph(p->wind_speed));
 	try_add_int(str, len, "winddir", ws_isset(p, WF_WIND), p->wind_dir);
-#if 0
 	try_add_float(str, len, "windgustmph", ws_isset(p, WF_WIND_GUST), ws_mph(p->wind_gust));
 	try_add_int(str, len, "windgustdir", ws_isset(p, WF_WIND_GUST), p->wind_gust_dir);
-#endif
+#if 0
 	try_add_float(str, len, "rainin", ws_isset(p, WF_RAIN_RATE), ws_in(p->rain_1h));
 	try_add_float(str, len, "dailyrainin", ws_isset(p, WF_SAMPLE_RAIN), ws_in(p->rain_24h));
+#endif
 	try_add_float(str, len, "dewptf", ws_isset(p, WF_DEW_POINT), ws_fahrenheit(p->dew_point));
 	try_add_float(str, len, "indoortempf", ws_isset(p, WF_TEMP_IN), ws_fahrenheit(p->temp_in));
 	try_add_int(str, len, "indoorhumidity", ws_isset(p, WF_HUMIDITY), p->humidity_in);

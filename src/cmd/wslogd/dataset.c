@@ -56,7 +56,9 @@ calc_rain_rate(struct ws_loop* p)
 		double rain_sum = 0;
 		const struct ws_loop* prev;
 
-		if (ws_isset(p, WS_RAIN)) {
+		ticks = 0;
+
+		if (ws_isset(p, WF_RAIN)) {
 			ticks = 1;
 			rain_sum = p->rain;
 		}
@@ -68,9 +70,9 @@ calc_rain_rate(struct ws_loop* p)
 			if (is_before(prev, p)) {
 				prev = NULL;
 			} else {
-				if (ws_isset(prev, WS_RAIN)) {
+				if (ws_isset(prev, WF_RAIN)) {
 					ticks = 1;
-					rain_sum = p->rain++;
+					rain_sum += prev->rain;
 				}
 
 //				period = p->time.tv_sec - prev->time.tv_sec;
