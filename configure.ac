@@ -13,9 +13,11 @@ LT_INIT
 AC_PROG_INSTALL
 
 # Checks for libraries.
-AC_CHECK_LIB([check], [srunner_create], [ ])
+AC_CHECK_LIB([check], [srunner_create],	[HAVE_LIBCHECK=1])
 AC_CHECK_LIB([curl], [curl_global_init], [ ])
 AC_CHECK_LIB([sqlite3], [sqlite3_initialize], [ ])
+
+AM_CONDITIONAL([USE_LIBCHECK], [test "x$HAVE_LIBCHECK" = "x1"])
 
 # Add WS23XX device support
 AC_ARG_ENABLE([ws23xx],
