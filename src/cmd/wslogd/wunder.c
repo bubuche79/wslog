@@ -277,20 +277,40 @@ error:
 int
 wunder_update(void)
 {
-	struct ws_archive *p = board_peek_ar(0);
+	struct ws_archive arbuf;
+	const struct ws_archive *p;
 
-	if (p == NULL) {
-		goto exit;
+	/* Peek last archive element */
+	if (board_lock() == -1) {
+		csyslog1(LOG_CRIT, "board_lock(): %m");
+		goto error;
 	}
 
-	if (wunder_perform(p) == -1) {
-		syslog(LOG_ERR, "wunder service error");
+	p = board_peek_ar(0);
 
-		/* Continue, not a fatal error */
+	if (p != NULL) {
+		memcpy(&arbuf, p, sizeof(*p));
 	}
 
-exit:
+	if (board_unlock() == -1) {
+		csyslog1(LOG_CRIT, "board_unlock(): %m");
+		goto error;
+	}
+
+
+	/* Process archive element */
+	if (p != NULL) {
+		if (wunder_perform(p) == -1) {
+			syslog(LOG_ERR, "wunder service error");
+
+			/* Continue, not a fatal error */
+		}
+	}
+
 	return 0;
+
+error:
+	return -1;
 }
 
 int

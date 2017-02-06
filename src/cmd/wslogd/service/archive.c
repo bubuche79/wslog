@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <stddef.h>
 #include <string.h>
-
+#include <errno.h>
 #include <time.h>
 #include <syslog.h>
 #ifdef DEBUG
@@ -19,6 +19,11 @@
 #include "db/sqlite.h"
 #include "service/util.h"
 #include "service/archive.h"
+
+#define ARCHIVE_INTERVAL 300			/* default archive interval */
+
+static enum ws_driver driver;			/* driver */
+static int hw_archive;					/* hardware archive */
 
 static int
 board_put(struct ws_archive *ar, size_t nel, int calc)
@@ -52,17 +57,42 @@ error:
 int
 archive_init(struct itimerspec *it)
 {
+	driver = confp->station.driver;
+	hw_archive = 1;
+
 	/*
-	 * Use configuration supplied frequency. When not set, use the station
+	 * Test hardware capabilities first.
+	 *
+	 * Then use configuration supplied frequency. When not set, use the station
 	 * archive time otherwise, when supported by the driver.
 	 */
-	if (confp->archive.freq == 0) {
-		if (drv_get_itimer(it, WS_ITIMER_ARCHIVE) == -1) {
+	if (drv_get_itimer(it, WS_ITIMER_ARCHIVE) == -1) {
+		if (errno == ENOTSUP) {
+			hw_archive = 0;
+			itimer_set(it, ARCHIVE_INTERVAL);
+		} else {
 			csyslog1(LOG_ERR, "drv_get_itimer(): %m");
 			goto error;
 		}
+	}
+	if (confp->archive.freq == 0) {
+		/* Set above */
 	} else {
 		itimer_set(it, confp->archive.freq);
+	}
+
+	/* Some devices are not reliable, prefer software */
+	if (hw_archive) {
+		switch (driver) {
+#ifdef HAVE_WS23XX
+		case WS23XX:
+			/* Device archives data at archive time, no aggregation */
+			hw_archive = 0;
+			break;
+#endif
+		default:
+			break;
+		}
 	}
 
 #ifdef DEBUG
@@ -122,9 +152,13 @@ archive_main(void)
 	printf("ARCHIVE: reading\n");
 #endif
 
-	if (drv_get_archive(&arbuf, 1) == -1) {
-		csyslog1(LOG_ERR, "drv_get_archive(): %m");
-		goto error;
+	if (hw_archive) {
+		if (drv_get_archive(&arbuf, 1) == -1) {
+			csyslog1(LOG_ERR, "drv_get_archive(): %m");
+			goto error;
+		}
+	} else {
+		syslog(LOG_WARNING, "TODO: software archive");
 	}
 
 	/* Update board */

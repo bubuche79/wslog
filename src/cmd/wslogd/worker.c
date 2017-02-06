@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #endif
+#include <stdio.h>
 
 #include "defs/std.h"
 #include "libws/log.h"
@@ -25,19 +26,22 @@
 #include "conf.h"
 #include "db/sqlite.h"
 #include "wunder.h"
+#include "service/util.h"
 #include "service/archive.h"
 #include "service/sensor.h"
 #include "worker.h"
 
-struct worker {
+struct worker
+{
 	int w_signo;									/* signal number */
-	int (*w_init) (struct itimerspec *);
+	struct itimerspec w_itimer;						/* interval timer */
 	int (*w_action) (void);							/* action on signal */
 	int (*w_destroy) (void);
 
 	timer_t w_timer;
 	pthread_t w_thread;								/* thread id */
-	int status;										/* exit status */
+	int w_failures;									/* number of failures */
+	int w_status;									/* exit status */
 };
 
 static int startup = 1;
@@ -47,6 +51,9 @@ static volatile sig_atomic_t hangup_pending;
 
 static struct worker threads[4];					/* daemon threads */
 static size_t threads_nel;							/* number of elements */
+
+static struct itimerspec *rt_itimer;				/* real time timer */
+static struct itimerspec *ar_itimer;				/* archive timer */
 
 static void
 sig_set(sigset_t *set)
@@ -59,52 +66,63 @@ sig_set(sigset_t *set)
 #endif
 }
 
-static void *
-sigthread_main(void *arg)
+static int
+sigtimer_create(int signo, struct itimerspec *it, timer_t *timer)
 {
 	int errsv;
-	struct worker *dt;
-
-	sigset_t set;
-
-	timer_t timer;
 	struct sigevent se;
-	struct itimerspec itimer;
 
-	dt = (struct worker *) arg;
-
-	dt->status = -1;
-
-	/* Initialize */
-	if (dt->w_init(&itimer) == -1) {
-		return NULL;
-	}
-
-	/* Change blocked signals */
-	(void) sigemptyset(&set);
-	(void) sigaddset(&set, dt->w_signo);
-
-	/* Create timer */
 #ifndef HAVE_SIGTHREADID
 	se.sigev_notify = SIGEV_SIGNAL;
 #else
 	se.sigev_notify = SIGEV_THREAD_ID;
 	se._sigev_un._tid = syscall(SYS_gettid);
 #endif
-	se.sigev_signo = dt->w_signo;
-	se.sigev_value.sival_ptr = &dt->w_timer;
+	se.sigev_signo = signo;
+	se.sigev_value.sival_ptr = timer;
 
-	/* Start ASAP */
-	if (itimer.it_value.tv_sec == 0 && itimer.it_value.tv_nsec == 0) {
-		itimer.it_value.tv_nsec = 100;
+	/* Adjust start value */
+	if (it->it_value.tv_sec == 0 && it->it_value.tv_nsec == 0) {
+		it->it_value.tv_nsec = 100;
 	}
 
-	if (timer_create(CLOCK_REALTIME, &se, &timer) == -1) {
+	if (timer_create(CLOCK_MONOTONIC, &se, timer) == -1) {
 		csyslog1(LOG_ERR, "timer_create(): %m");
+		return -1;
+	}
+	if (timer_settime(*timer, 0, it, NULL) == -1) {
+		csyslog1(LOG_ERR, "timer_settime(): %m");
 		goto error;
 	}
-	if (timer_settime(timer, 0, &itimer, NULL) == -1) {
-		csyslog1(LOG_ERR, "timer_settime(): %m");
+
+	return 0;
+
+error:
+	errsv = errno;
+	(void) timer_delete(&timer);
+
+	errno = errsv;
+	return -1;
+}
+
+static void *
+sigthread_main(void *arg)
+{
+	int errsv;
+	struct worker *dt;
+	sigset_t set;
+	timer_t timer;
+
+	dt = (struct worker *) arg;
+
+	dt->w_status = -1;
+
+	/* Blocked signals */
+	(void) sigemptyset(&set);
+	(void) sigaddset(&set, dt->w_signo);
+
+	/* Create timer */
+	if (sigtimer_create(dt->w_signo, &dt->w_itimer, &timer) == -1) {
 		goto error;
 	}
 
@@ -133,7 +151,7 @@ sigthread_main(void *arg)
 		return NULL;
 	}
 
-	dt->status = 0;
+	dt->w_status = 0;
 
 	return NULL;
 
@@ -220,8 +238,12 @@ threads_start(void)
 #endif
 
 	/* Configure sensor thread */
+	rt_itimer = &threads[i].w_itimer;
+
+	if (sensor_init(rt_itimer) == -1) {
+		return -1;
+	}
 	threads[i].w_signo = signo;
-	threads[i].w_init = sensor_init;
 	threads[i].w_action = sensor_main;
 	threads[i].w_destroy = sensor_destroy;
 
@@ -231,8 +253,12 @@ threads_start(void)
 #endif
 
 	/* Configure archive thread */
+	ar_itimer = &threads[i].w_itimer;
+
+	if (archive_init(ar_itimer) == -1) {
+		return -1;
+	}
 	threads[i].w_signo = signo;
-	threads[i].w_init = archive_init;
 	threads[i].w_action = archive_main;
 	threads[i].w_destroy = archive_destroy;
 
@@ -242,9 +268,17 @@ threads_start(void)
 #endif
 
 	/* Configure Wunder thread */
-	if (!confp->wunder.enabled) {
+	if (confp->wunder.enabled) {
+		if (wunder_init() == -1) {
+			return -1;
+		}
+
+		if (confp->wunder.freq == 0) {
+			itimer_add_delay(&threads[i].w_itimer, ar_itimer, 15);
+		} else {
+			itimer_set(&threads[i].w_itimer, confp->wunder.freq);
+		}
 		threads[i].w_signo = signo;
-		threads[i].w_init = NULL;//wunder_init;
 		threads[i].w_action = wunder_update;
 		threads[i].w_destroy = wunder_destroy;
 
