@@ -13,7 +13,6 @@
 #define RAD                 (PI/180.0)
 #define PERIOD_FACTOR       4
 
-#define ARCHIVE_INTERVAL	300
 #define LOOP_INTERVAL		10
 
 static struct timespec simu_delay;
@@ -25,6 +24,12 @@ simu_sin(double from, double to, int idx)
 	double range = (to - from) / 2;
 
 	return from + range + sin(idx * RAD / PERIOD_FACTOR) * range;
+}
+
+static int
+simu_io()
+{
+	return clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL);
 }
 
 static void
@@ -47,7 +52,7 @@ simu_init(void)
 	simu_delay.tv_sec = IODELAY / 1000;
 	simu_delay.tv_nsec = IODELAY - simu_delay.tv_sec;
 
-	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
+	if (simu_io() == -1) {
 		return -1;
 	}
 
@@ -57,7 +62,7 @@ simu_init(void)
 int
 simu_destroy(void)
 {
-	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
+	if (simu_io() == -1) {
 		return -1;
 	}
 
@@ -69,26 +74,25 @@ simu_get_itimer(struct itimerspec *it, int type)
 {
 	int ret;
 
-	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
+	if (simu_io() == -1) {
 		return -1;
 	}
 
 	switch (type)
 	{
 	case WS_ITIMER_LOOP:
-	case WS_ITIMER_ARCHIVE:
 		it->it_interval.tv_nsec = 0;
-		if (type == WS_ITIMER_LOOP) {
-			it->it_interval.tv_sec = LOOP_INTERVAL;
-		} else {
-			it->it_interval.tv_sec = ARCHIVE_INTERVAL;
-		}
+		it->it_interval.tv_sec = LOOP_INTERVAL;
 		it->it_value.tv_sec = 0;
 		it->it_value.tv_nsec = 0;
 		ret = 0;
 		break;
-	default:
+	case WS_ITIMER_ARCHIVE:
 		errno = ENOTSUP;
+		ret = -1;
+		break;
+	default:
+		errno = EINVAL;
 		ret = -1;
 		break;
 	}
@@ -101,9 +105,6 @@ simu_get_loop(struct ws_loop *p)
 {
 	int idx = simu_index;
 
-	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
-		return -1;
-	}
 
 	simu_make(p, idx);
 
@@ -116,22 +117,6 @@ simu_get_loop(struct ws_loop *p)
 ssize_t
 simu_get_archive(struct ws_archive *p, size_t nel)
 {
-	int idx = simu_index;
-
-	if (nel > 1) {
-		return -1;
-	}
-
-	if (clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL) == -1) {
-		return -1;
-	}
-
-	p->time = time(NULL);
-	p->interval = ARCHIVE_INTERVAL;
-
-	p->data.time.tv_sec = p->time;
-	p->data.time.tv_nsec = 0;
-	simu_make(&p->data, idx);
-
-	return nel;
+	errno = ENOTSUP;
+	return -1;
 }

@@ -150,7 +150,7 @@ ws23xx_get_itimer(struct itimerspec *it, int type)
 		it->it_interval.tv_sec = (save_int + 1) * 60;
 		it->it_value.tv_sec = last_sample + it->it_interval.tv_sec - time(NULL) + 10;
 	} else {
-		errno = ENOTSUP;
+		errno = EINVAL;
 		goto error;
 	}
 
