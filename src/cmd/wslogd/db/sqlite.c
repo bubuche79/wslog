@@ -43,6 +43,17 @@
 		} \
 	} while (0)
 
+#define sqlite_fetch(fn, stmt, index, loop, flag, field) \
+	do { \
+		sqlite3_stmt *_stmt = (stmt); \
+		int _index = (index); \
+		struct ws_loop *_loop = (loop); \
+		if (sqlite3_column_type(_stmt, _index) != SQLITE_NULL) { \
+			_loop->wl_mask |= (flag); \
+			_loop->field = fn(_stmt, _index); \
+		} \
+	} while (0)
+
 #define try_sqlite_bind_int(stmt, index, null, value) \
 	try_sqlite_bind(sqlite3_bind_int, (stmt), (index), (null), (value))
 
@@ -52,10 +63,16 @@
 #define try_sqlite_bind_double(stmt, index, null, value) \
 	try_sqlite_bind(sqlite3_bind_double, (stmt), (index), (null), (value))
 
-#define CREATE_TABLE \
+#define sqlite_fetch_int(stmt, index, loop, flag, field) \
+	sqlite_fetch(sqlite3_column_int, (stmt), (index), (loop), (flag), field)
+
+#define sqlite_fetch_double(stmt, index, loop, flag, field) \
+	sqlite_fetch(sqlite3_column_double, (stmt), (index), (loop), (flag), field)
+
+#define SQL_CREATE \
 	"CREATE TABLE ws_archive ( " \
 	"  time INTEGER NOT NULL, " \
-	"  interval INTEGER, " \
+	"  interval INTEGER NOT NULL, " \
 	"  barometer REAL, " \
 	"  abs_pressure REAL, " \
 	"  temp REAL, " \
@@ -74,10 +91,13 @@
 	"  PRIMARY KEY (time)" \
 	") "
 
-#define INSERT_INTO \
+#define SQL_INSERT \
 	"INSERT INTO ws_archive " \
 	"VALUES " \
 	"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+
+#define SQL_SELECT \
+	"SELECT * FROM ws_archive ORDER BY time DESC LIMIT ?"
 
 static sqlite3 *db;
 static sqlite3_stmt *stmt;
@@ -168,11 +188,11 @@ sqlite_init(void)
 
 	/* Create schema */
 	if (oflag & SQLITE_OPEN_CREATE) {
-		try_sqlite(sqlite3_exec, db, CREATE_TABLE, NULL, NULL, NULL);
+		try_sqlite(sqlite3_exec, db, SQL_CREATE, NULL, NULL, NULL);
 	}
 
 	/* Prepare statement */
-	try_sqlite(sqlite3_prepare_v2, db, INSERT_INTO, -1, &stmt, NULL);
+	try_sqlite(sqlite3_prepare_v2, db, SQL_INSERT, -1, &stmt, NULL);
 
 	return 0;
 
@@ -201,6 +221,61 @@ sqlite_insert(const struct ws_archive *p, size_t nel)
 ssize_t
 sqlite_select_last(struct ws_archive *p, size_t nel)
 {
+	int i;
+	sqlite3_stmt *query;
+
+	/* Prepare query */
+	try_sqlite(sqlite3_prepare_v2, db, SQL_SELECT, -1, &query, NULL);
+
+	/* Bind parameters */
+	try_sqlite_bind_int(query, 1, 0, nel);
+
+	/* Execute and process result set */
+	i = 0;
+
+	while(i < nel && sqlite3_step(query) == SQLITE_ROW) {
+		int col_idx = 0;
+		struct ws_loop *l = &p[i].data;
+
+		p[i].time = sqlite3_column_int64(query, col_idx++);
+		p[i].interval = sqlite3_column_int(query, col_idx++);
+
+		l->wl_mask = 0;
+		l->time.tv_sec = p[i].time;
+		l->time.tv_nsec = 0;
+
+		sqlite_fetch_double(query, col_idx++, l, WF_BAROMETER, barometer);
+		sqlite_fetch_double(query, col_idx++, l, WF_PRESSURE, abs_pressure);
+		sqlite_fetch_double(query, col_idx++, l, WF_TEMP, temp);
+		sqlite_fetch_int(query, col_idx++, l, WF_HUMIDITY, humidity);
+		sqlite_fetch_double(query, col_idx++, l, WF_WIND, wind_speed);
+		sqlite_fetch_int(query, col_idx++, l, WF_WIND, wind_dir);
+		sqlite_fetch_double(query, col_idx++, l, WF_WIND_GUST, wind_gust);
+		sqlite_fetch_int(query, col_idx++, l, WF_WIND_GUST, wind_gust_dir);
+		sqlite_fetch_double(query, col_idx++, l, WF_RAIN, rain);
+		sqlite_fetch_double(query, col_idx++, l, WF_RAIN_RATE, rain_rate);
+#if 0
+		sqlite_fetch_double(query, col_idx++, l, WF_RAIN_1H, rain_1h);
+		sqlite_fetch_double(query, col_idx++, l, WF_RAIN_24H, rain_24h);
+#endif
+		sqlite_fetch_double(query, col_idx++, l, WF_DEW_POINT, dew_point);
+		sqlite_fetch_double(query, col_idx++, l, WF_WINDCHILL, windchill);
+		sqlite_fetch_double(query, col_idx++, l, WF_HEAT_INDEX, heat_index);
+		sqlite_fetch_double(query, col_idx++, l, WF_TEMP_IN, temp_in);
+		sqlite_fetch_int(query, col_idx++, l, WF_HUMIDITY_IN, humidity_in);
+
+		i++;
+	}
+
+	try_sqlite(sqlite3_reset, query);
+	try_sqlite(sqlite3_finalize, query);
+
+	return i;
+
+error:
+	(void) sqlite3_reset(query);
+	(void) sqlite3_finalize(query);
+
 	return -1;
 }
 

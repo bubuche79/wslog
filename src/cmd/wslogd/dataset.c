@@ -94,8 +94,14 @@ ws_isset(const struct ws_loop *p, int flag)
 	return (p->wl_mask & flag) == flag;
 }
 
+/**
+ * Calculate missing fields from {@code p}.
+ *
+ * Some fields are computed with the content of {@code p} only, and some others
+ * are computed using LOOP history (rain rate, for example).
+ */
 void
-ws_compute(struct ws_loop *p)
+ws_calc(struct ws_loop *p)
 {
 	calc_windchill(p);
 	calc_dewpoint(p);

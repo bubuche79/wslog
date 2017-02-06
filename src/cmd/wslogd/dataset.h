@@ -89,7 +89,7 @@ extern "C" {
 
 int ws_isset(const struct ws_loop *p, int flag);
 
-void ws_compute(struct ws_loop *p);
+void ws_calc(struct ws_loop *p);
 
 #ifdef __cplusplus
 }

@@ -82,7 +82,7 @@ sensor_main(void)
 	}
 
 	/* Compute derived measures */
-	ws_compute(&loop);
+	ws_calc(&loop);
 
 	/* Push loop event in board */
 	if (sensor_push(&loop) == -1) {
