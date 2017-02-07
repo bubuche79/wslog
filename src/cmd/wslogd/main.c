@@ -22,10 +22,12 @@
 
 static int one_process_mode = 0;
 
+int dry_run = 0;
+
 static void
 usage(FILE *std, const char *bin)
 {
-	fprintf(std, "Usage: %s [-X] [-c conf_file]\n", bin);
+	fprintf(std, "Usage: %s [-D] [-X] [-c conf_file]\n", bin);
 }
 
 static int
@@ -73,13 +75,16 @@ main(int argc, char *argv[])
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "Xc:")) != -1) {
+	while ((c = getopt(argc, argv, "DXc:")) != -1) {
 		switch (c) {
 		case 'c':
 			conf_file = optarg;
 			if (conf_file[0] != '/') {
 				die(1, "%s: Not an absolute file\n", conf_file);
 			}
+			break;
+		case 'D':
+			dry_run = 1;
 			break;
 		case 'X':
 			one_process_mode = 1;

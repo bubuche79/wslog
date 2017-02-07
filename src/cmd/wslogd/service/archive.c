@@ -95,12 +95,10 @@ archive_init(struct itimerspec *it)
 		}
 	}
 
-	// TODO: temporary
-	hw_archive = 1;
-
 #ifdef DEBUG
 	printf("archive.freq: %ld\n", it->it_interval.tv_sec);
 	printf("archive.delay: %ld\n", it->it_value.tv_sec);
+	printf("archive.hardware: %d\n", hw_archive);
 #endif
 
 	if (confp->archive.sqlite.enabled) {
@@ -163,6 +161,7 @@ archive_main(void)
 			goto error;
 		}
 	} else {
+		memset(&arbuf, 0, sizeof(arbuf));
 		syslog(LOG_WARNING, "TODO: software archive");
 	}
 

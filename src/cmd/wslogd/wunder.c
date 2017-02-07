@@ -15,6 +15,7 @@
 
 #include "conf.h"
 #include "board.h"
+#include "wslogd.h"
 #include "wunder.h"
 
 #define URL "weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
@@ -224,10 +225,12 @@ wunder_perform(const struct ws_archive *p)
 #endif
 
 		/* Perform request */
-		code = curl_easy_perform(curl);
-		if (code != CURLE_OK) {
-			curl_log("curl_easy_perform", code);
-			goto error;
+		if (!dry_run) {
+			code = curl_easy_perform(curl);
+			if (code != CURLE_OK) {
+				curl_log("curl_easy_perform", code);
+				goto error;
+			}
 		}
 
 		/* Cleanup */
@@ -239,7 +242,7 @@ wunder_perform(const struct ws_archive *p)
 	}
 
 	/* Check response */
-	ret = (html.buf && !strncmp("success\n", html.buf, html.len)) ? 0 : -1;
+	ret = dry_run || (html.buf && !strncmp("success\n", html.buf, html.len)) ? 0 : -1;
 	if (ret == -1) {
 		syslog(LOG_ERR, "wunderground response: %*s", (int) html.len, html.buf);
 	}

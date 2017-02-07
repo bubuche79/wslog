@@ -147,11 +147,11 @@ conf_init(struct ws_conf *cfg)
 	cfg->archive.delay = 15;
 
 	/* SQLite */
-	cfg->archive.sqlite.enabled = 0;
+	cfg->archive.sqlite.enabled = 1;
 	cfg->archive.sqlite.db = "/var/lib/wslogd.db";
 
 	/* Wunderstation */
-	cfg->wunder.enabled = 1;
+	cfg->wunder.enabled = 0;
 	cfg->wunder.https = 1;
 	cfg->wunder.freq = 0;
 

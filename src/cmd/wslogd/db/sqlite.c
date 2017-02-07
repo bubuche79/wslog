@@ -13,6 +13,7 @@
 
 #include "board.h"
 #include "conf.h"
+#include "wslogd.h"
 #include "sqlite.h"
 
 #define try_sqlite(fn, ...) \
@@ -137,10 +138,12 @@ stmt_insert(const struct ws_archive *p)
 	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_HUMIDITY_IN), l->humidity_in);
 
 	/* Execute statement */
-	ret = sqlite3_step(stmt);
-	if (ret != SQLITE_DONE) {
-		syslog(LOG_ERR, "sqlite3_step: %s", sqlite3_errstr(ret));
-		goto error;
+	if (!dry_run) {
+		ret = sqlite3_step(stmt);
+		if (ret != SQLITE_DONE) {
+			syslog(LOG_ERR, "sqlite3_step: %s", sqlite3_errstr(ret));
+			goto error;
+		}
 	}
 
 	return 0;
