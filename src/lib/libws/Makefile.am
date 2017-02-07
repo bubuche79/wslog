@@ -1,3 +1,5 @@
+include ../../include.mk
+
 lib_LTLIBRARIES = libws.la
 
 libws_la_SOURCES = \
@@ -27,8 +29,11 @@ libws_la_SOURCES += \
 	ws23xx/ws23xx.h
 endif
 
+libws_la_CPPFLAGS = \
+	$(inc_CPPFLAGS) -I../../common -I..
+
 libws_la_CFLAGS = \
-	-std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I..
+	$(inc_CFLAGS)
 
 libws_la_LIBADD = \
 	-lm

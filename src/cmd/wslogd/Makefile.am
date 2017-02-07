@@ -1,3 +1,5 @@
+include ../../include.mk
+
 noinst_LIBRARIES = libwslog.a
 
 libwslog_a_SOURCES = \
@@ -21,7 +23,10 @@ libwslog_a_SOURCES += \
 endif
 
 libwslog_a_CPPFLAGS = \
-	-DDEBUG -std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I../../lib
+	$(inc_CPPFLAGS) -I../../common -I../../lib
+
+libwslog_a_CFLAGS = \
+	$(inc_CFLAGS) -I../../common -I../../lib
 
 bin_PROGRAMS = wslogd wslogc
 
@@ -29,7 +34,10 @@ wslogc_SOURCES = \
 	wslogc.c
 
 wslogc_CPPFLAGS = \
-	-DDEBUG -std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I../../lib
+	$(inc_CPPFLAGS) -I../../common -I../../lib
+
+wslogc_CFLAGS = \
+	$(inc_CFLAGS)
 
 wslogc_LDADD = \
 	-L. -lwslog -L../../lib/libws -lws -lrt -lpthread
@@ -56,7 +64,10 @@ wslogd_SOURCES = \
 	wunder.h
 
 wslogd_CPPFLAGS = \
-	-DDEBUG -std=c11 -pedantic -D_XOPEN_SOURCE=700 -Wall -Werror -I../../common -I../../lib
+	$(inc_CPPFLAGS) -I../../common -I../../lib
+
+wslogd_CFLAGS = \
+	$(inc_CFLAGS)
 
 wslogd_LDADD = \
 	-L. -lwslog -L../../lib/libws -lws -lsqlite3 -lcurl -lrt -lpthread
