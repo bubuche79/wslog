@@ -1,5 +1,11 @@
 include ../../include.mk
 
+AM_CPPFLAGS = \
+	$(inc_CPPFLAGS) -I../../common -I../../lib
+
+AM_CFLAGS = \
+	$(inc_CFLAGS)
+
 noinst_LIBRARIES = libwslog.a
 
 libwslog_a_SOURCES = \
@@ -22,25 +28,17 @@ libwslog_a_SOURCES += \
 	driver/simu.h
 endif
 
-libwslog_a_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../../common -I../../lib
-
-libwslog_a_CFLAGS = \
-	$(inc_CFLAGS) -I../../common -I../../lib
 
 bin_PROGRAMS = wslogd wslogc
 
 wslogc_SOURCES = \
 	wslogc.c
 
-wslogc_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../../common -I../../lib
-
-wslogc_CFLAGS = \
-	$(inc_CFLAGS)
-
 wslogc_LDADD = \
 	-L. -lwslog -L../../lib/libws -lws -lrt -lpthread
+
+EXTRA_wslogc_DEPENDENCIES = \
+	libwslog.a
 
 wslogd_SOURCES = \
 	daemon.c \
@@ -63,14 +61,11 @@ wslogd_SOURCES = \
 	wslogd.h \
 	wunder.h
 
-wslogd_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../../common -I../../lib
-
-wslogd_CFLAGS = \
-	$(inc_CFLAGS)
-
 wslogd_LDADD = \
 	-L. -lwslog -L../../lib/libws -lws -lsqlite3 -lcurl -lrt -lpthread
+
+EXTRA_wslogd_DEPENDENCIES = \
+	libwslog.a
 
 dist_sysconf_DATA = \
 	wslogd.conf
