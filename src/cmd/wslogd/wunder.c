@@ -239,9 +239,9 @@ wunder_perform(const struct ws_archive *p)
 	}
 
 	/* Check response */
-	ret = (html.buf && !strcmp("success\n", html.buf)) ? 0 : -1;
+	ret = (html.buf && !strncmp("success\n", html.buf, html.len)) ? 0 : -1;
 	if (ret == -1) {
-		syslog(LOG_ERR, "wunderground response: %s", html.buf);
+		syslog(LOG_ERR, "wunderground response: %*s", (int) html.len, html.buf);
 	}
 
 	html_cleanup(&html);

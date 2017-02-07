@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #endif
-#include <stdio.h>
 
 #include "defs/std.h"
 #include "libws/log.h"
