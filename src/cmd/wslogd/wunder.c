@@ -297,10 +297,9 @@ wunder_update(void)
 		goto error;
 	}
 
-
 	/* Process archive element */
 	if (p != NULL) {
-		if (wunder_perform(p) == -1) {
+		if (wunder_perform(&arbuf) == -1) {
 			syslog(LOG_ERR, "wunder service error");
 
 			/* Continue, not a fatal error */

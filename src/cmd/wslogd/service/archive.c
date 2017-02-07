@@ -95,6 +95,9 @@ archive_init(struct itimerspec *it)
 		}
 	}
 
+	// TODO: temporary
+	hw_archive = 1;
+
 #ifdef DEBUG
 	printf("archive.freq: %ld\n", it->it_interval.tv_sec);
 	printf("archive.delay: %ld\n", it->it_value.tv_sec);
@@ -129,9 +132,11 @@ archive_init(struct itimerspec *it)
 //				drv_archive_next(&arbuf);
 //			}
 
-			if (board_put(&arbuf, 1, 0) == -1) {
-				goto error;
-			}
+			// TODO: take care that this puts entries in shared map
+			// and that may trigger wunder updates
+//			if (board_put(&arbuf, 1, 0) == -1) {
+//				goto error;
+//			}
 		}
 	}
 
