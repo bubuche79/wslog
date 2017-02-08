@@ -132,7 +132,7 @@ ws_aggr(struct ws_archive *p, int freq)
 	} else {
 		time(&p->time);
 		p->interval = freq;
-		memcpy(&p->data, data, sizeof(*p));
+		memcpy(&p->data, data, sizeof(p->data));
 
 		/* Compute derived metrics */
 		ws_calc(&p->data);
