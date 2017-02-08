@@ -6,6 +6,7 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <locale.h>
@@ -25,9 +26,10 @@ static int one_process_mode = 0;
 int dry_run = 0;
 
 static void
-usage(FILE *std, const char *bin)
+usage(int status, FILE *std, const char *bin)
 {
-	fprintf(std, "Usage: %s [-D] [-X] [-c conf_file]\n", bin);
+	fprintf(std, "Usage: %s [-h] [-V] [-D] [-X] [-c conf_file]\n", bin);
+	exit(status);
 }
 
 static int
@@ -75,7 +77,7 @@ main(int argc, char *argv[])
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "DXc:")) != -1) {
+	while ((c = getopt(argc, argv, "hVDXc:")) != -1) {
 		switch (c) {
 		case 'c':
 			conf_file = optarg;
@@ -89,21 +91,26 @@ main(int argc, char *argv[])
 		case 'X':
 			one_process_mode = 1;
 			break;
-
+		case 'h':
+			usage(0, stdout, argv[0]);
+			break;
+		case 'V':
+			printf("%s (" PACKAGE ") " VERSION "\n", argv[0]);
+			exit(0);
+			break;
 		default:
-			usage(stderr, argv[0]);
-			return 2;
+			usage(2, stderr, argv[0]);
+			break;
 		}
 	}
 
 	if (argc != optind) {
-		usage(stderr, argv[0]);
-		return 2;
+		usage(2, stderr, argv[0]);
 	}
 
 	/* Required stuff before fork() */
 	if (conf_load(conf_file) == -1) {
-		return 1;
+		exit(1);
 	}
 
 	/* Detach, create new session */
@@ -143,5 +150,5 @@ exit:
 
 	closelog();
 
-	return ret;
+	exit(ret);
 }

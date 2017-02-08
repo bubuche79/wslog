@@ -47,8 +47,8 @@ wslogd_SOURCES = \
 	service/archive.c \
 	service/sensor.c \
 	service/util.c \
-	main.c \
 	worker.c \
+	wslogd.c \
 	wunder.c \
 	board.h \
 	daemon.h \

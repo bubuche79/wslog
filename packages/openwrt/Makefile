@@ -8,11 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wslog
-PKG_VERSION:=0.6
+PKG_VERSION:=0.7
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/ws2300
+PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/wslog
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
@@ -39,7 +39,7 @@ define Package/wslog/install
 	$(INSTALL_DIR) $(1)/etc
 	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/wslogd.conf $(1)/etc
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./wslogd $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/wslogd $(1)/etc/init.d
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libws.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/bin

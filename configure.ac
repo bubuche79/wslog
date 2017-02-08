@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([wslog], [0.6], [bubuche.pub@free.fr])
+AC_INIT([wslog], [0.7], [bubuche.pub@free.fr])
 AC_CONFIG_HEADERS([config.h])
 
 AC_USE_SYSTEM_EXTENSIONS
@@ -9,7 +9,6 @@ AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
 
 # Checks for programs.
 LT_INIT
-#AC_PROG_CC_STDC
 AC_PROG_INSTALL
 
 # Checks for libraries.
