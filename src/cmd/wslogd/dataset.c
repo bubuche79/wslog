@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#include <string.h>
+
 #include "libws/util.h"
 
 #include "board.h"
@@ -107,4 +109,36 @@ ws_calc(struct ws_loop *p)
 	calc_dewpoint(p);
 	calc_heat_index(p);
 	calc_rain_rate(p);
+}
+
+/**
+ * Compute software archive, with real-time sensor data.
+ *
+ * The structure pointed to by {@code p} is updated. This function returns the
+ * number of structures successfully computed. That is, 0 if there is no
+ * real-time sensors to aggregate, and 1 otherwise.
+ *
+ * The {@code freq} parameter specifies the interval, in seconds, of aggregated
+ * sensor data.
+ */
+ssize_t
+ws_aggr(struct ws_archive *p, int freq)
+{
+	ssize_t res;
+	struct ws_loop *data = board_peek(0);
+
+	if (data == NULL) {
+		res = 0;
+	} else {
+		time(&p->time);
+		p->interval = freq;
+		memcpy(&p->data, data, sizeof(*p));
+
+		/* Compute derived metrics */
+		ws_calc(&p->data);
+
+		res = 1;
+	}
+
+	return res;
 }

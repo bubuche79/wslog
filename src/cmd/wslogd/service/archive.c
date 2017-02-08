@@ -23,24 +23,28 @@
 #define ARCHIVE_INTERVAL 300			/* default archive interval */
 
 static enum ws_driver driver;			/* driver */
+static int freq;						/* archive frequency */
 static int hw_archive;					/* hardware archive */
 
-static int
-board_put(struct ws_archive *ar, size_t nel, int calc)
+static ssize_t
+board_put(struct ws_archive *ar)
 {
-	size_t i;
+	ssize_t ret;
 
 	if (board_lock() == -1) {
 		csyslog1(LOG_CRIT, "board_lock(): %m");
 		goto error;
 	}
 
-	for (i = 0; i < nel; i++) {
-		if (calc) {
-			ws_calc(&ar[i].data);
-		}
+	if (hw_archive) {
+		ret = 1;
+	} else {
+		ret = ws_aggr(ar, freq);
+	}
 
-		board_push_ar(&ar[i]);
+	if (ret) {
+		ws_calc(&ar->data);
+		board_push_ar(ar);
 	}
 
 	if (board_unlock() == -1) {
@@ -48,7 +52,7 @@ board_put(struct ws_archive *ar, size_t nel, int calc)
 		goto error;
 	}
 
-	return 0;
+	return ret;
 
 error:
 	return -1;
@@ -101,6 +105,8 @@ archive_init(struct itimerspec *it)
 	printf("archive.hardware: %d\n", hw_archive);
 #endif
 
+	freq = it->it_interval.tv_sec;
+
 	if (confp->archive.sqlite.enabled) {
 		ssize_t ret;
 		struct ws_archive arbuf;
@@ -149,6 +155,7 @@ error:
 int
 archive_main(void)
 {
+	ssize_t arsz;
 	struct ws_archive arbuf;
 
 #ifdef DEBUG
@@ -160,25 +167,27 @@ archive_main(void)
 			csyslog1(LOG_ERR, "drv_get_archive(): %m");
 			goto error;
 		}
-	} else {
-		memset(&arbuf, 0, sizeof(arbuf));
-		syslog(LOG_WARNING, "TODO: software archive");
 	}
 
 	/* Update board */
-	if (board_put(&arbuf, 1, 1) == -1) {
+	arsz = board_put(&arbuf);
+	if (arsz == -1) {
 		goto error;
-	}
-
+	} else if (arsz > 0) {
 #ifdef DEBUG
-	printf("ARCHIVE read: %.2f°C %hhu%%\n", arbuf.data.temp, arbuf.data.humidity);
+		printf("ARCHIVE read: %.2f°C %hhu%%\n", arbuf.data.temp, arbuf.data.humidity);
 #endif
 
-	/* Save to database */
-	if (confp->archive.sqlite.enabled) {
-		if (sqlite_insert(&arbuf, 1) == -1) {
-			goto error;
+		/* Save to database */
+		if (confp->archive.sqlite.enabled) {
+			if (sqlite_insert(&arbuf, 1) == -1) {
+				goto error;
+			}
 		}
+	} else {
+#ifdef DEBUG
+		printf("ARCHIVE no read\n");
+#endif
 	}
 
 	return 0;

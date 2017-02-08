@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #define WF_BAROMETER 		0x0001
 #define WF_PRESSURE 		0x0002
@@ -90,6 +91,7 @@ extern "C" {
 int ws_isset(const struct ws_loop *p, int flag);
 
 void ws_calc(struct ws_loop *p);
+ssize_t ws_aggr(struct ws_archive *p, int freq);
 
 #ifdef __cplusplus
 }
