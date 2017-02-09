@@ -12,7 +12,7 @@ struct ws23xx_ar
 
 	float temp;
 	float temp_in;
-	float abs_pressure;
+	float pressure;
 	uint8_t humidity;
 	uint8_t humidity_in;
 	float rain;

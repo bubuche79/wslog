@@ -39,9 +39,9 @@ hist_decode(const uint8_t *buf, struct ws23xx_ar *h)
 	h->temp = (v - (v % 1000)) / 10000.0 - 30.0;
 
 	v = nybtoul(buf, 5, 5, 16);
-	h->abs_pressure = 1000 + (v % 10000) / 10.0;
-	if (h->abs_pressure > 1500) {
-		h->abs_pressure -= 1000;
+	h->pressure = 1000 + (v % 10000) / 10.0;
+	if (h->pressure > 1500) {
+		h->pressure -= 1000;
 	}
 	h->humidity_in = (v - (v % 10000)) / 10000.0;
 
