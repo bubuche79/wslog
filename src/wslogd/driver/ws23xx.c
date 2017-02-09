@@ -83,8 +83,12 @@ ws23xx_val(const uint8_t *buf, int type, void *v, size_t offset)
  * out of range, based on hardware specification.
  */
 static void
-ws23xx_hw_limits(struct ws_loop *p)
+ws23xx_hw_limits(struct ws_loop *p, int log)
 {
+	uint32_t prev_mask;
+
+	prev_mask = p->wl_mask;
+
 	/* Outdoor sensors */
 	if (p->temp < -29.9 || 69.9 < p->temp) {
 		p->wl_mask &= ~WF_TEMP;
@@ -105,6 +109,13 @@ ws23xx_hw_limits(struct ws_loop *p)
 	}
 	if (p->pressure < 760 || 1099 < p->pressure) {
 		p->wl_mask &= ~WF_PRESSURE;
+	}
+
+	/* Compare against previous mask */
+	if (log && prev_mask != p->wl_mask) {
+		uint32_t diff_mask = prev_mask ^ p->wl_mask;
+
+		syslog(LOG_WARNING, "Unexpected sensor values (%x mask)", diff_mask);
 	}
 }
 
@@ -296,7 +307,7 @@ ws23xx_get_loop(struct ws_loop *p)
 		break;
 	}
 
-	ws23xx_hw_limits(p);
+	ws23xx_hw_limits(p, 1);
 
 	return 0;
 
@@ -340,7 +351,7 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel)
 		ar[i].data.wind_speed = arbuf[i].wind_speed;
 		ar[i].data.wind_dir = arbuf[i].wind_dir;
 
-		ws23xx_hw_limits(&ar[i].data);
+		ws23xx_hw_limits(&ar[i].data, 0);
 
 		/* History limits (seems to differ from hardware limits) */
 		if (69.7 < ar[i].data.temp) {
