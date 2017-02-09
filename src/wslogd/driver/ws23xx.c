@@ -19,8 +19,10 @@
 #include "conf.h"
 #include "ws23xx.h"
 
-struct ws23xx_io
-{
+#define WF_ALL_IN	(WF_TEMP_IN|WF_HUMIDITY_IN|WF_PRESSURE|WF_BAROMETER)
+#define WF_ALL_HIST	(WF_PRESSURE|WF_TEMP_IN|WF_HUMIDITY_IN|WF_TEMP|WF_HUMIDITY|WF_WIND)
+
+struct ws23xx_io {
 	uint16_t addr;
 	int type;
 	size_t nnyb;
@@ -74,15 +76,35 @@ ws23xx_val(const uint8_t *buf, int type, void *v, size_t offset)
 	return v;
 }
 
+/**
+ * Check hardware limits.
+ *
+ * This function clears flags of structure pointed to by {@code p} that are
+ * out of range, based on hardware specification.
+ */
 static void
 ws23xx_hw_limits(struct ws_loop *p)
 {
+	/* Outdoor sensors */
 	if (p->temp < -29.9 || 69.9 < p->temp) {
 		p->wl_mask &= ~WF_TEMP;
 	}
-
+	if (p->humidity < 10 || 99 < p->humidity) {
+		p->wl_mask &= ~WF_HUMIDITY;
+	}
 	if (p->wind_speed < 0.0 || 50 < p->wind_speed) {
 		p->wl_mask &= ~WF_WIND;
+	}
+
+	/* Indoor sensors */
+	if (p->temp_in < -9.9 || 59.9 < p->temp) {
+		p->wl_mask &= ~WF_TEMP_IN;
+	}
+	if (p->humidity < 1 || 99 < p->humidity) {
+		p->wl_mask &= ~WF_HUMIDITY_IN;
+	}
+	if (p->pressure < 760 || 1099 < p->pressure) {
+		p->wl_mask &= ~WF_PRESSURE;
 	}
 }
 
@@ -188,14 +210,13 @@ int
 ws23xx_get_loop(struct ws_loop *p)
 {
 	uint8_t cnx_type;
-	int wind_valid;
+	int wind_invalid;
 	int wind_overflow;
 	float total_rain_now;
 
 	uint8_t abuf[64];
 
-	struct ws23xx_io io[] =
-	{
+	struct ws23xx_io io[] = {
 			{ 0x346, WS23XX_TEMP, 4, &p->temp_in },
 			{ 0x373, WS23XX_TEMP, 4, &p->temp },
 			{ 0x3a0, WS23XX_TEMP, 4, &p->windchill },
@@ -208,12 +229,12 @@ ws23xx_get_loop(struct ws_loop *p)
 #endif
 			{ 0x4d2, WS23XX_RAIN, 6, &total_rain_now },
 			{ 0x527, WS23XX_WIND_OVERFLOW, 1, &wind_overflow },
-			{ 0x528, WS23XX_WIND_VALID, 1, &wind_valid },
+			{ 0x528, WS23XX_WIND_VALID, 1, &wind_invalid },
 			{ 0x529, WS23XX_SPEED, 3, &p->wind_speed },
 			{ 0x52c, WS23XX_WIND_DIR, 1, &p->wind_dir },
 			{ 0x54d, WS23XX_CONNECTION, 1, &cnx_type },
-			{ 0x5d8, WS23XX_PRESSURE, 5, &p->abs_pressure },
-//			{ 0x5e2, WS23XX_PRESSURE, 5, &loop->rel_pressure }
+			{ 0x5d8, WS23XX_PRESSURE, 5, &p->pressure },
+			{ 0x5e2, WS23XX_PRESSURE, 5, &p->barometer }
 	};
 
 	size_t nel = array_size(io);
@@ -247,6 +268,8 @@ ws23xx_get_loop(struct ws_loop *p)
 	}
 
 	/* Decode values */
+	p->wl_mask = WF_ALL_IN;
+
 	for (size_t i = 0; i < nel; i++) {
 		ws23xx_val(buf[i], io[i].type, io[i].p, 0);
 	}
@@ -255,10 +278,10 @@ ws23xx_get_loop(struct ws_loop *p)
 	switch (cnx_type) {
 	case 0:				/* cable */
 	case 15:			/* wireless */
-		if (wind_valid == 0 && wind_overflow == 0) {
-			p->wl_mask = WF_ALL & ~(WF_WIND|WF_WIND_GUST|WF_WINDCHILL);
-		} else {
-			p->wl_mask = WF_ALL;
+		p->wl_mask |= WF_TEMP|WF_HUMIDITY|WF_RAIN|WF_DEW_POINT;
+
+		if (!(wind_invalid || wind_overflow)) {
+			p->wl_mask |= WF_WIND|WF_WINDCHILL;
 		}
 
 		/* Compute values */
@@ -269,15 +292,10 @@ ws23xx_get_loop(struct ws_loop *p)
 		break;
 
 	default:
-		p->wl_mask = WF_TEMP_IN|WF_HUMIDITY_IN|WF_PRESSURE;
 		syslog(LOG_WARNING, "Connection: %x lost", cnx_type);
 		break;
 	}
 
-	/* Unsupported fields */
-	p->wl_mask &= ~(WF_BAROMETER|WF_WIND_GUST|WF_RAIN_RATE|WF_HEAT_INDEX);
-
-	/* Check sensor limits */
 	ws23xx_hw_limits(p);
 
 	return 0;
@@ -309,32 +327,25 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel)
 
 	/* Copy values */
 	for (i = 0; i < res; i++) {
-		uint32_t mask = WF_PRESSURE|WF_TEMP_IN|WF_HUMIDITY_IN;
-
 		ar[i].time = arbuf[i].tstamp;
 		ar[i].data.time.tv_sec = arbuf[i].tstamp;
 		ar[i].data.time.tv_nsec = 0;
 
-		ar[i].data.abs_pressure = arbuf[i].abs_pressure;
+		ar[i].data.wl_mask = WF_ALL_HIST;
+		ar[i].data.pressure = arbuf[i].pressure;
 		ar[i].data.temp_in = arbuf[i].temp_in;
 		ar[i].data.humidity_in = arbuf[i].humidity_in;
+		ar[i].data.temp = arbuf[i].temp;
+		ar[i].data.humidity = arbuf[i].humidity;
+		ar[i].data.wind_speed = arbuf[i].wind_speed;
+		ar[i].data.wind_dir = arbuf[i].wind_dir;
 
-		if (arbuf[i].temp != 0) {
-			mask |= WF_TEMP;
-			ar[i].data.temp = arbuf[i].temp;
-		}
-		if (arbuf[i].humidity != 0) {
-			mask |= WF_HUMIDITY;
-			ar[i].data.humidity = arbuf[i].humidity;
-		}
-		if (arbuf[i].wind_speed != 0) {
-			mask |= WF_WIND;
-			ar[i].data.wind_speed = arbuf[i].wind_speed;
-			ar[i].data.wind_dir = arbuf[i].wind_dir;
-		}
-
-		/* Check sensor limits */
 		ws23xx_hw_limits(&ar[i].data);
+
+		/* History limits (seems to differ from hardware limits) */
+		if (69.7 < ar[i].data.temp) {
+			ar[i].data.wl_mask &= ~WF_TEMP;
+		}
 	}
 
 	return res;

@@ -8,8 +8,8 @@
 extern "C" {
 #endif
 
-double ws_barometer(double pressure, double temp, int elev);
-double ws_altimeter(double pressure, int elev);
+double ws_barometer(double pressure, double temp, double elev);
+double ws_altimeter(double pressure, double elev);
 
 double ws_windchill(double speed, double temp);
 double ws_dewpoint(double temp, double humidity);

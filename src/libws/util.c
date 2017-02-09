@@ -10,10 +10,6 @@
 #include "util.h"
 
 #define ZERO_K 273.15
-#define M		0.0289644		/* molar mass of Earth's air: kg/mol */
-#define R		8.3144598		/* universal gas constant: J/mol/K */
-#define g 		9.80665			/* gravitational acceleration: m/s² */
-
 
 static const char *wind_dir[] =
 {
@@ -48,27 +44,28 @@ ws_celsius(double temp)
  * temperature in Celcius, and {@code elev} the station elevation in meters.
  *
  * https://en.wikipedia.org/wiki/Barometric_formula
+ * https://fr.wikipedia.org/wiki/Formule_du_nivellement_barom%C3%A9trique
  *
- * TODO: to be tested
+ * TODO: verify barometric formula.
  */
 DSO_EXPORT double
-ws_barometer(double pressure, double temp, int elev)
+ws_barometer(double pressure, double temp, double elev)
 {
 	double temp_k = ZERO_K + temp;
-	double eterm = exp(-g * M * elev / (R * temp_k));
 
-	return (eterm != 0) ? pressure / eterm : 0;
+	return pressure / exp(-elev / (temp_k * 29.271759));
 }
 
 /**
  * Convert from (uncorrected) station pressure to altitude-corrected pressure.
  *
- * http://www.wrh.noaa.gov/slc/projects/wxcalc/formulas/altimeterSetting.pdf
+ * The {@code pressure} is the absolute pressure in hPa, and {@code elev} the
+ * station elevation in meters.
  *
- * TODO: to be tested
+ * http://www.wrh.noaa.gov/slc/projects/wxcalc/formulas/altimeterSetting.pdf
  */
 DSO_EXPORT double
-ws_altimeter(double pressure, int elev)
+ws_altimeter(double pressure, double elev)
 {
 	double c = 0.190284;
 	double delta = pressure - 0.3;

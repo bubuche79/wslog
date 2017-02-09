@@ -5,23 +5,24 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#define WF_BAROMETER 		0x0001
-#define WF_PRESSURE 		0x0002
-#define WF_TEMP				0x0004
-#define WF_HUMIDITY			0x0008
-#define WF_WIND				0x0010
-#define WF_WIND_GUST		0x0020
-#define WF_RAIN				0x0040
-#define WF_RAIN_RATE		0x0080
+#define WF_PRESSURE 		0x0001
+#define WF_ALTIMETER 		0x0002
+#define WF_BAROMETER 		0x0004
+#define WF_TEMP				0x0008
+#define WF_HUMIDITY			0x0010
+#define WF_WIND				0x0020
+#define WF_WIND_GUST		0x0040
+#define WF_RAIN				0x0080
+#define WF_RAIN_RATE		0x0100
 #if 0
-#define WF_RAIN_1H			0x0100
-#define WF_RAIN_24H			0x0200
+#define WF_RAIN_1H			0x0200
+#define WF_RAIN_24H			0x0400
 #endif
-#define WF_DEW_POINT		0x0400
-#define WF_WINDCHILL		0x0800
-#define WF_HEAT_INDEX		0x1000
-#define WF_TEMP_IN			0x2000
-#define WF_HUMIDITY_IN		0x4000
+#define WF_DEW_POINT		0x0800
+#define WF_WINDCHILL		0x1000
+#define WF_HEAT_INDEX		0x2000
+#define WF_TEMP_IN			0x4000
+#define WF_HUMIDITY_IN		0x8000
 #define WF_ALL				0xFFFF
 
 #if 0
@@ -52,8 +53,9 @@ struct ws_loop
 	struct timespec time;		/* loop packet time (UTC) */
 	uint32_t wl_mask;			/* loop packet fields mask */
 
-	float barometer;			/* barometer (hPa) */
-	float abs_pressure;			/* absolute pressure (hPa) */
+	float pressure;				/* absolute pressure (hPa) */
+	float altimeter;			/* altimeter, altitude corrected pressure (hPa) */
+	float barometer;			/* barometer, sea level pressure (hPa) */
 	float temp;					/* temperature (°C) */
 	uint8_t humidity; 			/* humidity (%) */
 	float wind_speed;			/* wind speed (m/s) */

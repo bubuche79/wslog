@@ -7,6 +7,7 @@
 #include "libws/util.h"
 
 #include "board.h"
+#include "conf.h"
 #include "dataset.h"
 
 #define RAIN_PERIOD		900
@@ -21,6 +22,24 @@ static int
 is_before(const struct ws_loop *prev, const struct ws_loop *p)
 {
 	return prev->time.tv_sec + RAIN_PERIOD < p->time.tv_sec;
+}
+
+static void
+calc_barometer(struct ws_loop* p)
+{
+	if (is_settable(p, WF_BAROMETER, WF_PRESSURE | WF_TEMP)) {
+		p->wl_mask |= WF_BAROMETER;
+		p->barometer = ws_barometer(p->pressure, p->temp, confp->station.altitude);
+	}
+}
+
+static void
+calc_altimeter(struct ws_loop* p)
+{
+	if (is_settable(p, WF_ALTIMETER, WF_PRESSURE)) {
+		p->wl_mask |= WF_ALTIMETER;
+		p->altimeter = ws_altimeter(p->pressure, confp->station.altitude);
+	}
 }
 
 static void
@@ -105,6 +124,8 @@ ws_isset(const struct ws_loop *p, int flag)
 void
 ws_calc(struct ws_loop *p)
 {
+	calc_barometer(p);
+	calc_altimeter(p);
 	calc_windchill(p);
 	calc_dewpoint(p);
 	calc_heat_index(p);

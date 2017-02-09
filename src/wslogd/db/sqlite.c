@@ -75,8 +75,8 @@
 	"CREATE TABLE ws_archive ( " \
 	"  time INTEGER NOT NULL, " \
 	"  interval INTEGER NOT NULL, " \
+	"  pressure REAL, " \
 	"  barometer REAL, " \
-	"  abs_pressure REAL, " \
 	"  temp REAL, " \
 	"  humidity INTEGER, " \
 	"  wind_speed REAL, " \
@@ -129,8 +129,8 @@ stmt_insert(const struct ws_archive *p)
 	try_sqlite_bind_int64(stmt, bind_index++, 0, p->time);
 	try_sqlite_bind_int(stmt, bind_index++, 0, p->interval);
 
+	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_PRESSURE), l->pressure);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_BAROMETER), l->barometer);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_PRESSURE), l->abs_pressure);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_TEMP), l->temp);
 	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_HUMIDITY), l->humidity);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WIND), l->wind_speed);
@@ -260,7 +260,7 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 		l->time.tv_nsec = 0;
 
 		sqlite_fetch_double(query, col_idx++, l, WF_BAROMETER, barometer);
-		sqlite_fetch_double(query, col_idx++, l, WF_PRESSURE, abs_pressure);
+		sqlite_fetch_double(query, col_idx++, l, WF_PRESSURE, pressure);
 		sqlite_fetch_double(query, col_idx++, l, WF_TEMP, temp);
 		sqlite_fetch_int(query, col_idx++, l, WF_HUMIDITY, humidity);
 		sqlite_fetch_double(query, col_idx++, l, WF_WIND, wind_speed);
