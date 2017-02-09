@@ -21,6 +21,18 @@ ws23xx_bit(const uint8_t *buf, uint8_t *v, size_t offset, uint8_t bit)
 	return res;
 }
 
+DSO_EXPORT uint8_t
+ws23xx_byte(const uint8_t *buf, uint8_t *v, size_t offset)
+{
+	uint8_t res = nybget(buf, offset);
+
+	if (v) {
+		*v = res;
+	}
+
+	return res;
+}
+
 DSO_EXPORT float
 ws23xx_temp(const uint8_t *buf, float *v, size_t offset)
 {
@@ -110,13 +122,13 @@ ws23xx_wind_dir(const uint8_t *buf, uint16_t *v, size_t offset)
 DSO_EXPORT uint8_t
 ws23xx_wind_valid(const uint8_t *buf, uint8_t *v, size_t offset)
 {
-	uint8_t res = nybget(buf, offset);
+	return ws23xx_byte(buf, v, offset);
+}
 
-	if (v) {
-		*v = res;
-	}
-
-	return res;
+DSO_EXPORT uint8_t
+ws23xx_wind_overflow(const uint8_t *buf, uint8_t *v, size_t offset)
+{
+	return ws23xx_byte(buf, v, offset);
 }
 
 DSO_EXPORT float
@@ -207,13 +219,7 @@ ws23xx_timestamp(const uint8_t *buf, time_t *v, size_t offset)
 DSO_EXPORT uint8_t
 ws23xx_connection(const uint8_t *buf, uint8_t *v, size_t offset)
 {
-	uint8_t res = nybget(buf, offset);
-
-	if (v) {
-		*v = res;
-	}
-
-	return res;
+	return ws23xx_byte(buf, v, offset);
 }
 
 DSO_EXPORT uint8_t
