@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include <math.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <time.h>
@@ -62,7 +63,7 @@
 	try_sqlite_bind(sqlite3_bind_int64, (stmt), (index), (null), (value))
 
 #define try_sqlite_bind_double(stmt, index, null, value) \
-	try_sqlite_bind(sqlite3_bind_double, (stmt), (index), (null), (value))
+	try_sqlite_bind(sqlite3_bind_double, (stmt), (index), (null), round_100(value))
 
 #define sqlite_fetch_int(stmt, index, loop, flag, field) \
 	sqlite_fetch(sqlite3_column_int, (stmt), (index), (loop), (flag), field)
@@ -102,6 +103,17 @@
 
 static sqlite3 *db;
 static sqlite3_stmt *stmt;
+
+/**
+ * Avoid float > double conversion.
+ *
+ * For example 17.2 (float) maps to 17.2000007629395 (double).
+ */
+static double
+round_100(double v)
+{
+	return round(v * 100.0) / 100.0;
+}
 
 static int
 stmt_insert(const struct ws_archive *p)
