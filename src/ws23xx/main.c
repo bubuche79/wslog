@@ -20,14 +20,8 @@
 #include "util.h"
 
 #define CSV_DATE	"%Y-%m-%dT%H:%M"
-
-#ifndef PROGNAME
+#define TTY			"/dev/ttyUSB0"
 #define PROGNAME	"ws23xx"
-#endif
-
-#ifndef VERSION
-#define VERSION		"0.1"
-#endif
 
 struct ws_type {
 	int id;								/* internal id */
@@ -274,17 +268,17 @@ static const struct ws_measure mem_addr[] =
 static const struct ws_measure *mem_id[array_size(mem_addr)];
 
 static void
-usage(FILE *out, int code)
+usage(FILE *out, int status)
 {
-	fprintf(out, "Usage: %s [-h] [-D] [-d ms] <command> [<args>]\n", PROGNAME);
+	fprintf(out, "Usage: " PROGNAME " [-h] [-V] [-D] [-d ms] <command> [<args>]\n");
 	fprintf(out, "\n");
-	fprintf(out, "Available %s commands:\n", PROGNAME);
+	fprintf(out, "Available " PROGNAME " commands:\n");
 	fprintf(out, "    help [-A]\n");
-	fprintf(out, "    fetch [-s sep] device measure...\n");
-	fprintf(out, "    history [-l cnt] [-s sep] device\n");
-	fprintf(out, "    hex [-x] device offset len\n");
+	fprintf(out, "    fetch [-f dev] [-s sep] measure...\n");
+	fprintf(out, "    history [-f dev] [-l cnt] [-s sep]\n");
+	fprintf(out, "    hex [-f dev] [-x] offset len\n");
 
-	exit(code);
+	exit(status);
 }
 
 static void
@@ -550,6 +544,10 @@ main_help(int argc, char* const argv[])
 		}
 	}
 
+	if (optind < argc) {
+		usage(stderr, 1);
+	}
+
 	/* Process sub-command */
 	size_t nel = array_size(mem_id);
 
@@ -572,7 +570,8 @@ main_help(int argc, char* const argv[])
 }
 
 static void
-main_hex(int argc, char* const argv[]) {
+main_hex(int argc, char* const argv[])
+{
 	int c;
 
 	/* Default values */
@@ -608,10 +607,12 @@ main_hex(int argc, char* const argv[]) {
 	uint8_t buf[nnybles];
 
 	if ((fd = ws_open(device)) == -1) {
+		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 
 	if (ws23xx_read_safe(fd, addr, nnybles, buf) == -1) {
+		fprintf(stderr, "ws23xx_read_safe: %s\n", strerror(errno));
 		goto error;
 	}
 
@@ -630,6 +631,7 @@ static void
 main_set(int argc, char* const argv[])
 {
 	int c;
+	int fd;
 
 	/* Default values */
 	const char *device;
@@ -656,8 +658,8 @@ main_set(int argc, char* const argv[])
 	value = strtol(argv[optind++], NULL, 10);
 
 	/* Process sub-command */
-	int fd = ws_open(device);
-	if (fd == -1) {
+	if ((fd = ws_open(device)) == -1) {
+		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 
@@ -665,6 +667,7 @@ main_set(int argc, char* const argv[])
 	ultonyb(buf, nnyb, 0, value, 16);
 
 	if (ws23xx_write_safe(fd, addr, nnyb, WRITENIB, buf) == -1) {
+		fprintf(stderr, "ws23xx_write_safe: %s\n", strerror(errno));
 		goto error;
 	}
 
@@ -710,16 +713,21 @@ print_measures(const uint16_t *addr, uint8_t *buf[], size_t nel, const char *sep
 }
 
 static void
-main_fetch(int argc, char* const argv[]) {
+main_fetch(int argc, char* const argv[])
+{
 	int c;
+	int fd;
 
 	/* Default values */
 	const char *sep = NULL;
-	const char *device = NULL;
+	const char *device = TTY;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "s:")) != -1) {
+	while ((c = getopt(argc, argv, "f:s:")) != -1) {
 		switch (c) {
+		case 'f':
+			device = optarg;
+			break;
 		case 's':
 			sep = optarg;
 			break;
@@ -729,12 +737,6 @@ main_fetch(int argc, char* const argv[]) {
 			break;
 		}
 	}
-
-	if (argc - 1 < optind) {
-		usage(stderr, 1);
-	}
-
-	device = argv[optind++];
 
 	/* Parse measure arguments */
 	size_t nel = (optind < argc) ? (size_t) argc - optind : array_size(mem_id);
@@ -771,12 +773,13 @@ main_fetch(int argc, char* const argv[]) {
 	}
 
 	/* Process sub-command */
-	int fd = ws_open(device);
-	if (fd == -1) {
+	if ((fd = ws_open(device)) == -1) {
+		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 
 	if (ws23xx_read_batch(fd, addr, nnyb, nel, buf) == -1) {
+		fprintf(stderr, "ws23xx_read_batch: %s\n", strerror(errno));
 		goto error;
 	}
 
@@ -791,18 +794,22 @@ error:
 }
 
 static void
-main_history(int argc, char* const argv[]) {
+main_history(int argc, char* const argv[])
+{
 	int c;
 	struct ws23xx_ar arbuf[WS32XX_AR_SIZE];
 
 	/* Default values */
 	char sep = ',';
 	size_t hist_count = 0;
-	const char *device = NULL;
+	const char *device = TTY;
 
 	/* Parse sub-command arguments */
-	while ((c = getopt(argc, argv, "l:s:")) != -1) {
+	while ((c = getopt(argc, argv, "f:l:s:")) != -1) {
 		switch (c) {
+		case 'f':
+			device = optarg;
+			break;
 		case 'l':
 			hist_count = strtol(optarg, NULL, 10);
 			break;
@@ -817,12 +824,6 @@ main_history(int argc, char* const argv[]) {
 	}
 
 	if (optind < argc) {
-		device = argv[optind++];
-
-		if (optind < argc) {
-			usage(stderr, 1);
-		}
-	} else {
 		usage(stderr, 1);
 	}
 
@@ -830,11 +831,16 @@ main_history(int argc, char* const argv[]) {
 	int fd;
 
 	if ((fd = ws_open(device)) == -1) {
+		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 
 	/* Parse output file */
 	ssize_t nel = ws23xx_fetch_ar(fd, arbuf, hist_count);
+	if (nel < 0) {
+		fprintf(stderr, "ws23xx_fetch_ar: %s\n", strerror(errno));
+		goto error;
+	}
 
 	/* Display output */
 	char cbuf[32];
@@ -853,8 +859,11 @@ main_history(int argc, char* const argv[]) {
 	}
 
 	ws_close(fd);
-
 	return;
+
+error:
+	ws_close(fd);
+	exit(1);
 }
 
 int
@@ -867,13 +876,13 @@ main(int argc, char * const argv[])
 	init();
 
 	/* Parse arguments */
-	while ((c = getopt(argc, argv, "hvd:")) != -1) {
+	while ((c = getopt(argc, argv, "hVd:")) != -1) {
 		switch (c) {
 		case 'h':
 			usage(stdout, 0);
 			break;
-		case 'v':
-			printf("%s %s\n", PROGNAME, VERSION);
+		case 'V':
+			printf(PROGNAME " (" PACKAGE ") " VERSION "\n");
 			exit(0);
 			break;
 
