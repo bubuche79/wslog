@@ -1,7 +1,7 @@
-include ../../include.mk
+include ../include.mk
 
 AM_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../../common -I../../lib
+	$(inc_CPPFLAGS) -I../common -I..
 
 AM_CFLAGS = \
 	$(inc_CFLAGS)
@@ -35,7 +35,7 @@ wslogc_SOURCES = \
 	wslogc.c
 
 wslogc_LDADD = \
-	-L. -lwslog -L../../lib/libws -lws -lrt -lpthread
+	-L. -lwslog -L../libws -lws -lrt -lpthread
 
 EXTRA_wslogc_DEPENDENCIES = \
 	libwslog.a
@@ -62,7 +62,7 @@ wslogd_SOURCES = \
 	wunder.h
 
 wslogd_LDADD = \
-	-L. -lwslog -L../../lib/libws -lws -lsqlite3 -lcurl -lrt -lpthread
+	-L. -lwslog -L../libws -lws -lsqlite3 -lcurl -lrt -lpthread
 
 EXTRA_wslogd_DEPENDENCIES = \
 	libwslog.a

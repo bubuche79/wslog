@@ -1,4 +1,4 @@
-include ../../include.mk
+include ../include.mk
 
 lib_LTLIBRARIES = libws.la
 
@@ -30,7 +30,7 @@ libws_la_SOURCES += \
 endif
 
 libws_la_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../../common -I..
+	$(inc_CPPFLAGS) -I../common -I..
 
 libws_la_CFLAGS = \
 	$(inc_CFLAGS)

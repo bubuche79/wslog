@@ -1,4 +1,4 @@
-include ../../include.mk
+include ../include.mk
 
 bin_PROGRAMS = ws23xx
 
@@ -8,10 +8,10 @@ ws23xx_SOURCES = \
 	util.h
 
 ws23xx_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../../common -I../../lib
+	$(inc_CPPFLAGS) -I../common -I..
 
 ws23xx_CFLAGS = \
 	$(inc_CFLAGS)
 
 ws23xx_LDADD = \
-	-L../../lib/libws -lws
+	-L../libws -lws

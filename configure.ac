@@ -40,11 +40,9 @@ AM_CONDITIONAL([HAVE_SIMU], [test "x$enable_simu" = "xyes"])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 src/lib/Makefile
-                 src/lib/libws/Makefile
-                 src/cmd/Makefile
-                 src/cmd/ws23xx/Makefile
-                 src/cmd/wslogd/Makefile
+                 src/libws/Makefile
+                 src/ws23xx/Makefile
+                 src/wslogd/Makefile
                  tests/Makefile
                  ])
 AC_OUTPUT
