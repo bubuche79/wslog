@@ -1,7 +1,3 @@
-/*
- * Weather station daemon (main file).
- */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -23,12 +19,15 @@
 
 static int one_process_mode = 0;
 
+#define PROGNAME	"wslogd"
+
 int dry_run = 0;
 
 static void
-usage(int status, FILE *std, const char *bin)
+usage(FILE *std, int status)
 {
-	fprintf(std, "Usage: %s [-h] [-V] [-D] [-X] [-c conf_file]\n", bin);
+	fprintf(std, "Usage: " PROGNAME " [-h] [-V] [-D] [-X] [-c config]\n");
+
 	exit(status);
 }
 
@@ -39,7 +38,7 @@ loop_init(void)
 
 	option = LOG_PID | (one_process_mode ? LOG_PERROR : 0);
 
-	openlog("wslogd", option, confp->log_facility);
+	openlog(PROGNAME, option, confp->log_facility);
 	(void) setlogmask(confp->log_mask);
 
 	return 0;
@@ -92,20 +91,20 @@ main(int argc, char *argv[])
 			one_process_mode = 1;
 			break;
 		case 'h':
-			usage(0, stdout, argv[0]);
+			usage(stdout, 0);
 			break;
 		case 'V':
-			printf("%s (" PACKAGE ") " VERSION "\n", argv[0]);
+			printf(PROGNAME " (" PACKAGE ") " VERSION "\n");
 			exit(0);
 			break;
 		default:
-			usage(2, stderr, argv[0]);
+			usage(stderr, 2);
 			break;
 		}
 	}
 
 	if (argc != optind) {
-		usage(2, stderr, argv[0]);
+		usage(stderr, 2);
 	}
 
 	/* Required stuff before fork() */

@@ -1,4 +1,4 @@
-	#ifdef HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -12,10 +12,14 @@
 #include "board.h"
 #include "conf.h"
 
+#define PROGNAME	"wslogc"
+
 static void
-usage(FILE *std, const char *bin)
+usage(FILE *std, int status)
 {
-	fprintf(std, "Usage: %s [-i min] [-l cnt] [-S]\n", bin);
+	fprintf(std, "Usage: " PROGNAME " [-i min] [-l cnt] [-h] [-V] [-S] [-c config]\n");
+
+	exit(status);
 }
 
 static void
@@ -78,15 +82,15 @@ main(int argc, char *argv[])
 	size_t nel = 10;
 	int use_sensors = 0;
 	long interval = 0;
-	const char *conf_file = "/etc/wslogd.conf";
+	const char *config = "/etc/wslogd.conf";
 
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "c:i:l:S")) != -1) {
+	while ((c = getopt(argc, argv, "hVc:i:l:S")) != -1) {
 		switch (c) {
 		case 'c':
-			conf_file = optarg;
+			config = optarg;
 			break;
 		case 'i':
 			interval = atol(optarg);
@@ -97,18 +101,23 @@ main(int argc, char *argv[])
 		case 'S':
 			use_sensors = 1;
 			break;
+		case 'h':
+			usage(stdout, 0);
+			break;
+		case 'V':
+			printf(PROGNAME " (" PACKAGE ") " VERSION "\n");
+			exit(0);
+			break;
 		default:
-			usage(stderr, argv[0]);
-			return 2;
+			usage(stderr, 2);
 		}
 	}
 
 	if (argc != optind) {
-		usage(stderr, argv[0]);
-		return 2;
+		usage(stderr, 2);
 	}
 
-	if (conf_load(conf_file) == -1) {
+	if (conf_load(config) == -1) {
 		goto error;
 	}
 
