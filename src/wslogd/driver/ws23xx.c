@@ -221,8 +221,8 @@ int
 ws23xx_get_loop(struct ws_loop *p)
 {
 	uint8_t cnx_type;
-	int wind_invalid;
-	int wind_overflow;
+	uint8_t wind_invalid;
+	uint8_t wind_overflow;
 	float total_rain_now;
 
 	uint8_t abuf[64];
