@@ -22,7 +22,7 @@
 
 static struct ws_conf conf;
 
-const struct ws_conf *confp = &conf;
+struct ws_conf *confp = &conf;
 
 int
 ws_getuid(const char *str, uid_t *uid)

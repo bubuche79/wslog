@@ -17,18 +17,27 @@
 #include "daemon.h"
 #include "worker.h"
 
-static int one_process_mode = 0;
-
 #define PROGNAME	"wslogd"
+
+static int one_process_mode = 0;
+static int archive_freq = -1;
 
 int dry_run = 0;
 
 static void
 usage(FILE *std, int status)
 {
-	fprintf(std, "Usage: " PROGNAME " [-h] [-V] [-D] [-X] [-c config]\n");
+	fprintf(std, "Usage: " PROGNAME " [-h] [-V] [-D] [-X] [-c config] [-i freq]\n");
 
 	exit(status);
+}
+
+static void
+post_config(void)
+{
+	if (archive_freq != -1) {
+		confp->archive.freq = archive_freq;
+	}
 }
 
 static int
@@ -51,6 +60,8 @@ loop_reinit(const char *config_file)
 	if (conf_load(config_file) == -1) {
 		goto error;
 	}
+
+	post_config();
 
 	/* (Re)initialize */
 	if (loop_init() == -1) {
@@ -76,13 +87,16 @@ main(int argc, char *argv[])
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "hVDXc:")) != -1) {
+	while ((c = getopt(argc, argv, "hVDXc:i:")) != -1) {
 		switch (c) {
 		case 'c':
 			conf_file = optarg;
 			if (conf_file[0] != '/') {
 				die(1, "%s: Not an absolute file\n", conf_file);
 			}
+			break;
+		case 'i':
+			archive_freq = atoi(optarg);
 			break;
 		case 'D':
 			dry_run = 1;
@@ -111,6 +125,8 @@ main(int argc, char *argv[])
 	if (conf_load(conf_file) == -1) {
 		exit(1);
 	}
+
+	post_config();
 
 	/* Detach, create new session */
 	if (!one_process_mode) {

@@ -9,39 +9,46 @@
  * Weather station configuration.
  */
 
-struct ws_conf {
+struct ws_conf
+{
 	uid_t uid;							/* effective user id */
 	gid_t gid;							/* effective group id */
 	const char *pid_file;				/* the daemon PID file */
 	int log_facility;					/* syslog facility */
 	int log_mask;						/* syslog priority mask */
 
-	struct {
+	struct
+	{
 		float latitude;					/* latitude */
 		float longitude;				/* longitude */
 		int altitude;					/* altitude (m) */
 		enum ws_driver driver;			/* station type */
 	} station;
 
-	struct {
+	struct
+	{
 		int freq;						/* sensor frequency, in seconds */
 
-		struct {
+		struct
+		{
 			const char *tty;			/* tty device */
 		} ws23xx;
 	} driver;
 
-	struct {
+	struct
+	{
 		int freq;						/* archive frequency, in seconds */
 		int delay;						/* archive delay, in seconds */
 
-		struct {
+		struct
+		{
 			int enabled;				/* disabled flag */
 			const char *db;				/* database file */
 		} sqlite;
 	} archive;
 
-	struct {
+	struct
+	{
 		int enabled;					/* disabled flag */
 		int https;						/* https flag */
 		const char *station;			/* station id */
@@ -50,7 +57,7 @@ struct ws_conf {
 	} wunder;
 };
 
-const struct ws_conf *confp;
+struct ws_conf *confp;
 
 #ifdef __cplusplus
 extern "C" {
