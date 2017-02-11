@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <locale.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 #include "libws/util.h"
 
@@ -134,6 +136,7 @@ main(int argc, char *argv[])
 	} else {
 		/* Open shared board */
 		if (board_open(0) == -1) {
+			fprintf(stderr, "boad_open: %s\n", strerror(errno));
 			goto error;
 		}
 
@@ -145,13 +148,13 @@ main(int argc, char *argv[])
 		}
 
 		if (board_unlink() == -1) {
+			fprintf(stderr, "board_unlink: %s\n", strerror(errno));
 			goto error;
 		}
 	}
 
-	return 0;
+	exit(0);
 
 error:
-	perror("board\n");
-	return 1;
+	exit(1);
 }
