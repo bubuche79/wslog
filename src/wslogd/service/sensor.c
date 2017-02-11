@@ -8,8 +8,6 @@
 #include <stdio.h>
 #endif
 
-#include "libws/log.h"
-
 #include "board.h"
 #include "conf.h"
 #include "driver/driver.h"
@@ -41,7 +39,7 @@ sensor_init(struct itimerspec *it)
 	 */
 	if (confp->driver.freq == 0) {
 		if (drv_get_itimer(it, WS_ITIMER_LOOP) == -1) {
-			csyslog1(LOG_ERR, "drv_get_itimer(): %m");
+			syslog(LOG_ERR, "drv_get_itimer(): %m");
 			goto error;
 		}
 	} else {
@@ -71,13 +69,13 @@ sensor_main(void)
 #endif
 
 	if (clock_gettime(CLOCK_REALTIME, &loop.time) == -1) {
-		csyslog1(LOG_ERR, "clock_gettime(): %m");
+		syslog(LOG_ERR, "clock_gettime(): %m");
 		goto error;
 	}
 
 	/* Read sensors */
 	if (drv_get_loop(&loop) == -1) {
-		csyslog1(LOG_ERR, "clock_gettime(): %m");
+		syslog(LOG_ERR, "clock_gettime(): %m");
 		goto error;
 	}
 
@@ -86,7 +84,7 @@ sensor_main(void)
 
 	/* Push loop event in board */
 	if (sensor_push(&loop) == -1) {
-		csyslog1(LOG_ERR, "sensor_push(): %m");
+		syslog(LOG_ERR, "sensor_push(): %m");
 		goto error;
 	}
 

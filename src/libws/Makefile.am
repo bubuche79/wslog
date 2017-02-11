@@ -14,7 +14,6 @@ libws_la_SOURCES = \
 	bitfield.h \
 	conf.h \
 	err.h \
-	log.h \
 	nybble.h \
 	util.h \
 	serial.h

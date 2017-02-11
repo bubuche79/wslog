@@ -11,7 +11,6 @@
 #include <syslog.h>
 
 #include "libws/util.h"
-#include "libws/log.h"
 
 #include "conf.h"
 #include "board.h"
@@ -91,7 +90,7 @@ html_write(char *ptr, size_t size, size_t nmemb, struct html *s)
 		s->buf = realloc(s->buf, s->len);
 
 		if (s->buf == NULL) {
-			csyslog1(LOG_ERR, "realloc(): %m");
+			syslog(LOG_ERR, "realloc(): %m");
 			return 0;
 		}
 	}
@@ -117,7 +116,7 @@ url_add(char *str, size_t len, int isset, const char *fmt, ...)
 		va_end(ap);
 
 		if (ret == -1) {
-			csyslog1(LOG_ERR, "snprintf(): %m");
+			syslog(LOG_ERR, "snprintf(): %m");
 			goto error;
 		} else if (len <= (size_t) ret) {
 			syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
@@ -172,7 +171,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 			"PASSWORD", password,
 			"dateutc", dateutc, p->time.tv_nsec);
 	if (ret == -1) {
-		csyslog1(LOG_ERR, "snprintf(): %m");
+		syslog(LOG_ERR, "snprintf(): %m");
 		goto error;
 	} else if (len <= (size_t) ret) {
 		syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
@@ -308,7 +307,7 @@ wunder_update(void)
 
 	/* Peek last archive element */
 	if (board_lock() == -1) {
-		csyslog1(LOG_CRIT, "board_lock(): %m");
+		syslog(LOG_CRIT, "board_lock(): %m");
 		goto error;
 	}
 
@@ -319,7 +318,7 @@ wunder_update(void)
 	}
 
 	if (board_unlock() == -1) {
-		csyslog1(LOG_CRIT, "board_unlock(): %m");
+		syslog(LOG_CRIT, "board_unlock(): %m");
 		goto error;
 	}
 

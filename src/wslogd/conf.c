@@ -15,7 +15,6 @@
 #include <grp.h>
 #include <errno.h>
 
-#include "libws/log.h"
 #include "libws/conf.h"
 
 #include "conf.h"
@@ -236,9 +235,9 @@ conf_load(const char *path)
 
 	if (ws_parse_config(path, &lineno, conf_decode, &conf) == -1) {
 		if (errno == EINVAL) {
-			csyslog(LOG_ERR, "conf_load %s:%d: %m", path, lineno);
+			syslog(LOG_ERR, "conf_load %s:%d: %m", path, lineno);
 		} else {
-			csyslog(LOG_ERR, "conf_load %s: %m", path);
+			syslog(LOG_ERR, "conf_load %s: %m", path);
 		}
 		return -1;
 	}

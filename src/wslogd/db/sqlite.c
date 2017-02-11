@@ -10,8 +10,6 @@
 #include <syslog.h>
 #include <sqlite3.h>
 
-#include "libws/log.h"
-
 #include "board.h"
 #include "conf.h"
 #include "wslogd.h"
@@ -188,7 +186,7 @@ sqlite_init(void)
 		if (errno == ENOENT) {
 			oflag |= SQLITE_OPEN_CREATE;
 		} else {
-			csyslog(LOG_ERR, "stat(%s): %m", dbfile);
+			syslog(LOG_ERR, "stat(%s): %m", dbfile);
 			goto error;
 		}
 	}
