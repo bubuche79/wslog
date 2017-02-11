@@ -135,7 +135,7 @@ stmt_insert(const struct ws_archive *p)
 	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_HUMIDITY), l->humidity);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WIND), l->wind_speed);
 	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_WIND), l->wind_dir);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WIND_GUST), l->wind_gust);
+	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WIND_GUST), l->wind_gust_speed);
 	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_WIND_GUST), l->wind_gust_dir);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_RAIN), l->rain);
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_RAIN_RATE), l->rain_rate);
@@ -265,7 +265,7 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 		sqlite_fetch_int(query, col_idx++, l, WF_HUMIDITY, humidity);
 		sqlite_fetch_double(query, col_idx++, l, WF_WIND, wind_speed);
 		sqlite_fetch_int(query, col_idx++, l, WF_WIND, wind_dir);
-		sqlite_fetch_double(query, col_idx++, l, WF_WIND_GUST, wind_gust);
+		sqlite_fetch_double(query, col_idx++, l, WF_WIND_GUST, wind_gust_speed);
 		sqlite_fetch_int(query, col_idx++, l, WF_WIND_GUST, wind_gust_dir);
 		sqlite_fetch_double(query, col_idx++, l, WF_RAIN, rain);
 		sqlite_fetch_double(query, col_idx++, l, WF_RAIN_RATE, rain_rate);

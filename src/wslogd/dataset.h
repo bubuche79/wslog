@@ -25,20 +25,22 @@
 #define WF_HUMIDITY_IN		0x8000
 #define WF_ALL				0xFFFF
 
-#if 0
 enum {
-	WS_BAROMETER = 0,
-	WS_ABS_PRESSURE,
+	WS_PRESSURE = 0,
+	WS_ALTIMETER,
+	WS_BAROMETER,
 	WS_TEMP,
 	WS_HUMIDITY,
 	WS_WIND_SPEED,
 	WS_WIND_DIR,
-	WS_WIND_GUST,
+	WS_WIND_GUST_SPEED,
 	WS_WIND_GUST_DIR,
 	WS_RAIN,
 	WS_RAIN_RATE,
+#if 0
 	WS_RAIN_1H,
 	WS_RAIN_24H,
+#endif
 	WS_DEW_POINT,
 	WS_WINDCHILL,
 	WS_HEAT_INDEX,
@@ -46,7 +48,6 @@ enum {
 	WS_HUMIDITY_IN,
 	WS_MAX						/* do not use */
 };
-#endif
 
 struct ws_loop
 {
@@ -60,7 +61,7 @@ struct ws_loop
 	uint8_t humidity; 			/* humidity (%) */
 	float wind_speed;			/* wind speed (m/s) */
 	uint16_t wind_dir;			/* wind direction (°) */
-	float wind_gust;			/* wind gust (m/s) */
+	float wind_gust_speed;		/* wind gust (m/s) */
 	uint16_t wind_gust_dir;		/* wind gust direction (°) */
 	float rain;					/* sample rain (mm) */
 	float rain_rate;			/* rain rate (mm/hr) */
@@ -89,6 +90,43 @@ struct ws_archive
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int ws_get_pressure(const struct ws_loop *p, double *v);
+int ws_get_altimeter(const struct ws_loop *p, double *v);
+int ws_get_barometer(const struct ws_loop *p, double *v);
+int ws_get_temp(const struct ws_loop *p, double *v);
+int ws_get_humidity(const struct ws_loop *p, double *v);
+int ws_get_wind_speed(const struct ws_loop *p, double *v);
+int ws_get_wind_dir(const struct ws_loop *p, double *v);
+int ws_get_wind_gust_speed(const struct ws_loop *p, double *v);
+int ws_get_wind_gust_dir(const struct ws_loop *p, double *v);
+int ws_get_rain(const struct ws_loop *p, double *v);
+int ws_get_rain_rate(const struct ws_loop *p, double *v);
+int ws_get_dew_point(const struct ws_loop *p, double *v);
+int ws_get_windchill(const struct ws_loop *p, double *v);
+int ws_get_heat_index(const struct ws_loop *p, double *v);
+int ws_get_temp_in(const struct ws_loop *p, double *v);
+int ws_get_humidity_in(const struct ws_loop *p, double *v);
+
+int ws_set_pressure(struct ws_loop *p, double v);
+int ws_set_altimeter(struct ws_loop *p, double v);
+int ws_set_barometer(struct ws_loop *p, double v);
+int ws_set_temp(struct ws_loop *p, double v);
+int ws_set_humidity(struct ws_loop *p, double v);
+int ws_set_wind_speed(struct ws_loop *p, double v);
+int ws_set_wind_dir(struct ws_loop *p, double v);
+int ws_set_wind_gust_speed(struct ws_loop *p, double v);
+int ws_set_wind_gust_dir(struct ws_loop *p, double v);
+int ws_set_rain(struct ws_loop *p, double v);
+int ws_set_rain_rate(struct ws_loop *p, double v);
+int ws_set_dew_point(struct ws_loop *p, double v);
+int ws_set_windchill(struct ws_loop *p, double v);
+int ws_set_heat_index(struct ws_loop *p, double v);
+int ws_set_temp_in(struct ws_loop *p, double v);
+int ws_set_humidity_in(struct ws_loop *p, double v);
+
+int ws_get_value(const struct ws_loop *p, int flag, double *v);
+int ws_set_value(struct ws_loop *p, int flag, double v);
 
 int ws_isset(const struct ws_loop *p, int flag);
 
