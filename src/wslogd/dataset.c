@@ -101,25 +101,25 @@ ws_get_humidity(const struct ws_loop *p, double *v)
 int
 ws_get_wind_speed(const struct ws_loop *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND, p->wind_speed, v);
+	return ws_get(p->wl_mask, WF_WIND_SPEED, p->wind_speed, v);
 }
 
 int
 ws_get_wind_dir(const struct ws_loop *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND, p->wind_dir, v);
+	return ws_get(p->wl_mask, WF_WIND_DIR, p->wind_dir, v);
 }
 
 int
 ws_get_wind_gust_speed(const struct ws_loop *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND_GUST, p->wind_gust_speed, v);
+	return ws_get(p->wl_mask, WF_WIND_GUST_SPEED, p->wind_gust_speed, v);
 }
 
 int
 ws_get_wind_gust_dir(const struct ws_loop *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND_GUST, p->wind_gust_dir, v);
+	return ws_get(p->wl_mask, WF_WIND_GUST_DIR, p->wind_gust_dir, v);
 }
 
 int
@@ -197,25 +197,25 @@ ws_set_humidity(struct ws_loop *p, double v)
 int
 ws_set_wind_speed(struct ws_loop *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_WIND, &p->wind_speed, v);
+	return ws_set_float(&p->wl_mask, WF_WIND_SPEED, &p->wind_speed, v);
 }
 
 int
 ws_set_wind_dir(struct ws_loop *p, double v)
 {
-	return ws_set_uint16(&p->wl_mask, WF_WIND, &p->wind_dir, v);
+	return ws_set_uint16(&p->wl_mask, WF_WIND_DIR, &p->wind_dir, v);
 }
 
 int
 ws_set_wind_gust_speed(struct ws_loop *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_WIND_GUST, &p->wind_gust_speed, v);
+	return ws_set_float(&p->wl_mask, WF_WIND_GUST_SPEED, &p->wind_gust_speed, v);
 }
 
 int
 ws_set_wind_gust_dir(struct ws_loop *p, double v)
 {
-	return ws_set_uint16(&p->wl_mask, WF_WIND_GUST, &p->wind_gust_dir, v);
+	return ws_set_uint16(&p->wl_mask, WF_WIND_GUST_DIR, &p->wind_gust_dir, v);
 }
 
 int
@@ -287,7 +287,7 @@ calc_altimeter(struct ws_loop *p)
 static void
 calc_windchill(struct ws_loop *p)
 {
-	if (is_settable(p, WF_WINDCHILL, WF_WIND | WF_TEMP)) {
+	if (is_settable(p, WF_WINDCHILL, WF_WIND_SPEED | WF_TEMP)) {
 		p->wl_mask |= WF_WINDCHILL;
 		p->windchill = ws_windchill(p->temp, p->wind_speed);
 	}

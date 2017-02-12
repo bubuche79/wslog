@@ -20,7 +20,7 @@
 #include "ws23xx.h"
 
 #define WF_ALL_IN	(WF_TEMP_IN|WF_HUMIDITY_IN|WF_PRESSURE|WF_BAROMETER)
-#define WF_ALL_HIST	(WF_PRESSURE|WF_TEMP_IN|WF_HUMIDITY_IN|WF_TEMP|WF_HUMIDITY|WF_WIND)
+#define WF_ALL_HIST	(WF_PRESSURE|WF_TEMP_IN|WF_HUMIDITY_IN|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR)
 
 struct ws23xx_io {
 	uint16_t addr;
@@ -97,7 +97,7 @@ ws23xx_hw_limits(struct ws_loop *p, int log)
 		p->wl_mask &= ~WF_HUMIDITY;
 	}
 	if (p->wind_speed < 0.0 || 50 < p->wind_speed) {
-		p->wl_mask &= ~WF_WIND;
+		p->wl_mask &= ~WF_WIND_SPEED;
 	}
 
 	/* Indoor sensors */
@@ -293,7 +293,7 @@ ws23xx_get_loop(struct ws_loop *p)
 		p->wl_mask |= WF_TEMP|WF_HUMIDITY|WF_RAIN|WF_DEW_POINT;
 
 		if (!(wind_invalid || wind_overflow)) {
-			p->wl_mask |= WF_WIND|WF_WINDCHILL;
+			p->wl_mask |= WF_WIND_SPEED|WF_WIND_DIR|WF_WINDCHILL;
 		}
 
 		/* Compute values */

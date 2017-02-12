@@ -42,7 +42,7 @@ simu_make(struct ws_loop *p, int idx)
 	p->wind_dir = simu_sin(225, 315, idx);
 
 	/* Supported sensors */
-	p->wl_mask = WF_PRESSURE | WF_TEMP | WF_HUMIDITY | WF_WIND;
+	p->wl_mask = WF_PRESSURE|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
 }
 
 int

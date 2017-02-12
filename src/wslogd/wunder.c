@@ -186,10 +186,10 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 	try_add_float(str, len, "baromin", ws_isset(p, WF_BAROMETER), ws_inhg(p->barometer));
 	try_add_float(str, len, "tempf", ws_isset(p, WF_TEMP), ws_fahrenheit(p->temp));
 	try_add_int(str, len, "humidity", ws_isset(p, WF_HUMIDITY), p->humidity);
-	try_add_float(str, len, "windspeedmph",ws_isset(p, WF_WIND), ws_mph(p->wind_speed));
-	try_add_int(str, len, "winddir", ws_isset(p, WF_WIND), p->wind_dir);
-	try_add_float(str, len, "windgustmph", ws_isset(p, WF_WIND_GUST), ws_mph(p->wind_gust_speed));
-	try_add_int(str, len, "windgustdir", ws_isset(p, WF_WIND_GUST), p->wind_gust_dir);
+	try_add_float(str, len, "windspeedmph",ws_isset(p, WF_WIND_SPEED), ws_mph(p->wind_speed));
+	try_add_int(str, len, "winddir", ws_isset(p, WF_WIND_DIR), p->wind_dir);
+	try_add_float(str, len, "windgustmph", ws_isset(p, WF_WIND_GUST_SPEED), ws_mph(p->wind_gust_speed));
+	try_add_int(str, len, "windgustdir", ws_isset(p, WF_WIND_GUST_DIR), p->wind_gust_dir);
 #if 0
 	try_add_float(str, len, "rainin", ws_isset(p, WF_RAIN_RATE), ws_in(p->rain_1h));
 	try_add_float(str, len, "dailyrainin", ws_isset(p, WF_SAMPLE_RAIN), ws_in(p->rain_24h));
