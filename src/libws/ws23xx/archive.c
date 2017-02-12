@@ -17,7 +17,8 @@
 #define HIST_SIZE	19
 
 static uint16_t
-hist_addr(size_t i, uint8_t last_idx, uint8_t nel) {
+hist_addr(size_t i, uint8_t last_idx, uint8_t nel)
+{
 	uint16_t addr;
 
 	if (i <= last_idx) {

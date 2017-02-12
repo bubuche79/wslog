@@ -23,13 +23,15 @@
 #define TTY			"/dev/ttyUSB0"
 #define PROGNAME	"ws23xx"
 
-struct ws_type {
+struct ws_type
+{
 	int id;								/* internal id */
 	const char *units;					/* units name (eg hPa) */
 	uint8_t nybble;						/* nybble count */
 	const char *desc;					/* type description (eg pressure) */
 
-	union {
+	union
+	{
 		struct {
 			uint8_t scale;
 		} num;
@@ -47,7 +49,8 @@ struct ws_type {
 	};
 };
 
-struct ws_measure {
+struct ws_measure
+{
 	uint16_t addr;						/* nybble addr */
 	const char *id;						/* short name */
 	const struct ws_type *type;			/* data converter type */

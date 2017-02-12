@@ -69,7 +69,8 @@ http_write(char *ptr, size_t size, size_t nmemb, struct ws_http *s)
 }
 
 static void
-curl_log(const char *fn, CURLcode code) {
+curl_log(const char *fn, CURLcode code)
+{
 	syslog(LOG_ERR, "%s: %s (%d)", fn, curl_easy_strerror(code), code);
 }
 

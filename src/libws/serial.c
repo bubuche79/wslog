@@ -25,7 +25,8 @@ static struct termios oldio;
 long ws_io_delay = 50;
 
 static void
-msleep(long ms) {
+msleep(long ms)
+{
 	struct timespec ts;
 
 	ts.tv_sec = ms / 1000;
