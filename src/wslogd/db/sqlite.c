@@ -187,7 +187,7 @@ sqlite_init(void)
 
 	ret = sqlite3_open_v2(dbfile, &db, oflag, NULL);
 	if (ret != SQLITE_OK) {
-		syslog(LOG_ERR, "sqlite3_open_v2(%s): %s", dbfile, sqlite3_errstr(ret));
+		syslog(LOG_ERR, "sqlite3_open_v2 %s: %s", dbfile, sqlite3_errstr(ret));
 		goto error;
 	}
 

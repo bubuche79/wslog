@@ -214,7 +214,7 @@ wunder_perform(const struct ws_archive *p)
 		curl_easy_cleanup(curl);
 		curl = NULL;
 	} else {
-		syslog(LOG_ERR, "curl_easy_init() failed\n");
+		syslog(LOG_ERR, "curl_easy_init: failure\n");
 		goto error;
 	}
 
