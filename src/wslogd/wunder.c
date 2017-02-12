@@ -19,26 +19,28 @@
 
 #define URL "weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
-struct html {
+struct ws_http
+{
 	char *buf;
 	size_t len;							/* used size */
 };
 
-struct ws_wunder {
+struct ws_wunder
+{
 	const char *param;
 	int (*get) (const struct ws_loop *, double *);
 	double (*conv) (double);
 };
 
 static void
-html_init(struct html* s)
+http_init(struct ws_http *s)
 {
 	s->len = 0;
 	s->buf = NULL;
 }
 
 static void
-html_cleanup(struct html *s)
+http_cleanup(struct ws_http *s)
 {
 	if (s != NULL) {
 		free(s->buf);
@@ -46,7 +48,7 @@ html_cleanup(struct html *s)
 }
 
 static size_t
-html_write(char *ptr, size_t size, size_t nmemb, struct html *s)
+http_write(char *ptr, size_t size, size_t nmemb, struct ws_http *s)
 {
 	size_t sz = size * nmemb;
 	size_t new_len = s->len + sz;
@@ -165,9 +167,9 @@ wunder_perform(const struct ws_archive *p)
 {
 	int ret;
 	CURL *curl = NULL;
-	struct html html;
+	struct ws_http iobuf;
  
-	html_init(&html);
+	http_init(&iobuf);
 
 	curl = curl_easy_init();
 	if (curl) {
@@ -188,12 +190,12 @@ wunder_perform(const struct ws_archive *p)
 			curl_log("curl_easy_setopt", code);
 			goto error;
 		}
-		code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, html_write);
+		code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_write);
 		if (code != CURLE_OK) {
 			curl_log("curl_easy_setopt", code);
 			goto error;
 		}
-		code = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &html);
+		code = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &iobuf);
 		if (code != CURLE_OK) {
 			curl_log("curl_easy_setopt", code);
 			goto error;
@@ -217,12 +219,12 @@ wunder_perform(const struct ws_archive *p)
 	}
 
 	/* Check response */
-	ret = dry_run || (html.buf && !strncmp("success\n", html.buf, html.len)) ? 0 : -1;
+	ret = dry_run || (iobuf.buf && !strncmp("success\n", iobuf.buf, iobuf.len)) ? 0 : -1;
 	if (ret == -1) {
-		syslog(LOG_ERR, "wunderground response: %*s", (int) html.len, html.buf);
+		syslog(LOG_ERR, "wunderground response: %*s", (int) iobuf.len, iobuf.buf);
 	}
 
-	html_cleanup(&html);
+	http_cleanup(&iobuf);
 
 	return ret;
 
@@ -230,7 +232,7 @@ error:
 	if (curl) {
 		curl_easy_cleanup(curl);
 	}
-	html_cleanup(&html);
+	http_cleanup(&iobuf);
 
 	return -1;
 }
