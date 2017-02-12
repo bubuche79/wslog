@@ -22,7 +22,8 @@
 #define WF_ALL_IN	(WF_TEMP_IN|WF_HUMIDITY_IN|WF_PRESSURE|WF_BAROMETER)
 #define WF_ALL_HIST	(WF_PRESSURE|WF_TEMP_IN|WF_HUMIDITY_IN|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR)
 
-struct ws23xx_io {
+struct ws23xx_io
+{
 	uint16_t addr;
 	int type;
 	size_t nnyb;
@@ -122,7 +123,7 @@ ws23xx_hw_limits(struct ws_loop *p, int log)
 int
 ws23xx_init(void)
 {
-	total_rain = 0;
+	total_rain = -1;
 
 	fd = ws_open(confp->driver.ws23xx.tty);
 	if (fd == -1) {
@@ -296,10 +297,10 @@ ws23xx_get_loop(struct ws_loop *p)
 			p->wl_mask |= WF_WIND_SPEED|WF_WIND_DIR|WF_WINDCHILL;
 		}
 
-		/* Compute values */
-		p->rain = total_rain_now - total_rain;
-
-		/* Update state */
+		/* Skip first value */
+		if (total_rain != -1.0) {
+			p->rain = total_rain_now - total_rain;
+		}
 		total_rain = total_rain_now;
 		break;
 
