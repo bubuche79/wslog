@@ -19,23 +19,6 @@
 
 #define URL "weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
-#define try_add(fn, str, len, p, isset, value) \
-	do { \
-		int _ret; \
-		_ret = fn(str, len, (p), (isset), (value)); \
-		if (_ret == -1) { \
-			goto error; \
-		} \
-		str += _ret; \
-		len -= _ret; \
-	} while (0)
-
-#define try_add_int(str, len, p, isset, value) \
-	try_add(url_add_int, str, len, (p), (isset), (value))
-
-#define try_add_float(str, len, p, isset, value) \
-	try_add(url_add_float, str, len, (p), (isset), (value))
-
 struct html {
 	char *buf;
 	size_t len;							/* used size */
@@ -45,23 +28,6 @@ struct ws_wunder {
 	const char *param;
 	int (*get) (const struct ws_loop *, double *);
 	double (*conv) (double);
-};
-
-struct ws_wunder arr[] = {
-	{ "baromin", ws_get_barometer, ws_inhg },
-	{ "tempf", ws_get_temp, ws_fahrenheit },
-	{ "humidity", ws_get_humidity, NULL },
-	{ "windspeedmph", ws_get_wind_speed, ws_mph },
-	{ "winddir", ws_get_wind_dir, NULL },
-	{ "windgustmph", ws_get_wind_gust_speed, ws_mph },
-	{ "windgustdir", ws_get_wind_gust_dir, NULL },
-#if 0
-	{ "rainin", ws_get_rain_1h, ws_in },
-	{ "dailyrainin", ws_get_rain_24h, ws_in },
-#endif
-	{ "dewptf", ws_get_dew_point, ws_fahrenheit },
-	{ "indoortempf", ws_get_temp_in, ws_fahrenheit },
-	{ "indoorhumidity", ws_get_humidity_in, NULL },
 };
 
 static void
@@ -100,50 +66,6 @@ html_write(char *ptr, size_t size, size_t nmemb, struct html *s)
 	return sz;
 }
 
-#if __GNUC__ >= 4
-__attribute__ ((format (printf, 4, 5)))
-#endif
-static int
-url_add(char *str, size_t len, int isset, const char *fmt, ...)
-{
-	int ret;
-
-	if (isset) {
-		va_list ap;
-
-		va_start(ap, fmt);
-		ret = vsnprintf(str, len, fmt, ap);
-		va_end(ap);
-
-		if (ret == -1) {
-			syslog(LOG_ERR, "snprintf(): %m");
-			goto error;
-		} else if (len <= (size_t) ret) {
-			syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
-			goto error;
-		}
-	} else {
-		ret = 0;
-	}
-
-	return ret;
-
-error:
-	return -1;
-}
-
-static int
-url_add_int(char *str, size_t len, const char *p, int isset, int value)
-{
-	return url_add(str, len, isset, "&%s=%d", p, value);
-}
-
-static int
-url_add_float(char *str, size_t len, const char *p, int isset, float value)
-{
-	return url_add(str, len, isset, "&%s=%f", p, value);
-}
-
 static void
 curl_log(const char *fn, CURLcode code) {
 	syslog(LOG_ERR, "%s(): %s (%d)", fn, curl_easy_strerror(code), code);
@@ -154,6 +76,26 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 {
 	int ret;
 	char ctime[22];					/* date utc */
+	size_t i;
+
+	struct ws_wunder arr[] =
+	{
+		{ "baromin", ws_get_barometer, ws_inhg },
+		{ "tempf", ws_get_temp, ws_fahrenheit },
+		{ "humidity", ws_get_humidity, NULL },
+		{ "windspeedmph", ws_get_wind_speed, ws_mph },
+		{ "winddir", ws_get_wind_dir, NULL },
+		{ "windgustmph", ws_get_wind_gust_speed, ws_mph },
+		{ "windgustdir", ws_get_wind_gust_dir, NULL },
+#if 0
+		{ "rainin", ws_get_rain_1h, ws_in },
+		{ "dailyrainin", ws_get_rain_24h, ws_in },
+#endif
+		{ "dewptf", ws_get_dew_point, ws_fahrenheit },
+		{ "indoortempf", ws_get_temp_in, ws_fahrenheit },
+		{ "indoorhumidity", ws_get_humidity_in, NULL },
+		{ NULL, NULL, NULL }
+	};
 
 	/* Convert date */
 	gmftime(ctime, sizeof(ctime), &p->time, "%F %T");
@@ -183,20 +125,31 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 	curl_free(dateutc);
 	curl_free(password);
 
-	try_add_float(str, len, "baromin", ws_isset(p, WF_BAROMETER), ws_inhg(p->barometer));
-	try_add_float(str, len, "tempf", ws_isset(p, WF_TEMP), ws_fahrenheit(p->temp));
-	try_add_int(str, len, "humidity", ws_isset(p, WF_HUMIDITY), p->humidity);
-	try_add_float(str, len, "windspeedmph",ws_isset(p, WF_WIND_SPEED), ws_mph(p->wind_speed));
-	try_add_int(str, len, "winddir", ws_isset(p, WF_WIND_DIR), p->wind_dir);
-	try_add_float(str, len, "windgustmph", ws_isset(p, WF_WIND_GUST_SPEED), ws_mph(p->wind_gust_speed));
-	try_add_int(str, len, "windgustdir", ws_isset(p, WF_WIND_GUST_DIR), p->wind_gust_dir);
-#if 0
-	try_add_float(str, len, "rainin", ws_isset(p, WF_RAIN_RATE), ws_in(p->rain_1h));
-	try_add_float(str, len, "dailyrainin", ws_isset(p, WF_SAMPLE_RAIN), ws_in(p->rain_24h));
-#endif
-	try_add_float(str, len, "dewptf", ws_isset(p, WF_DEW_POINT), ws_fahrenheit(p->dew_point));
-	try_add_float(str, len, "indoortempf", ws_isset(p, WF_TEMP_IN), ws_fahrenheit(p->temp_in));
-	try_add_int(str, len, "indoorhumidity", ws_isset(p, WF_HUMIDITY), p->humidity_in);
+	for (i = 0; arr[i].param != NULL; i++) {
+		double value;
+
+		if (arr[i].get(p, &value) == 0) {
+			int ret;
+
+			if (arr[i].conv != NULL) {
+				value = arr[i].conv(value);
+			}
+
+			/* Add parameter */
+			ret = snprintf(str, len, "&%s=%f", arr[i].param, value);
+
+			if (ret == -1) {
+				syslog(LOG_ERR, "snprintf(): %m");
+				goto error;
+			} else if (len <= (size_t) ret) {
+				syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
+				goto error;
+			}
+
+			str += ret;
+			len -= ret;
+		}
+	}
 
 	return 0;
 
@@ -225,6 +178,10 @@ wunder_perform(const struct ws_archive *p)
 			goto error;
 		}
 
+#ifdef DEBUG
+		printf("WUNDER: %s\n", url);
+#endif
+
 		/* Set request option */
 		code = curl_easy_setopt(curl, CURLOPT_URL, url);
 		if (code != CURLE_OK) {
@@ -241,10 +198,6 @@ wunder_perform(const struct ws_archive *p)
 			curl_log("curl_easy_setopt", code);
 			goto error;
 		}
-
-#ifdef DEBUG
-		printf("WUNDER: %s\n", url);
-#endif
 
 		/* Perform request */
 		if (!dry_run) {
