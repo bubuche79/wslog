@@ -156,7 +156,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 	char ctime[22];					/* date utc */
 
 	/* Convert date */
-	gmftime(ctime, sizeof(ctime), &p->time.tv_sec, "%F %T");
+	gmftime(ctime, sizeof(ctime), &p->time, "%F %T");
 
 	/* URL encode parameters */
 	char *dateutc = curl_easy_escape(h, ctime, 0);
@@ -169,7 +169,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 			"action", "updateraw",
 			"ID", confp->wunder.station,
 			"PASSWORD", password,
-			"dateutc", dateutc, p->time.tv_nsec);
+			"dateutc", dateutc, p->time);
 	if (ret == -1) {
 		syslog(LOG_ERR, "snprintf(): %m");
 		goto error;

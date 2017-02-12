@@ -124,7 +124,7 @@ stmt_insert(const struct ws_archive *p)
 
 	/* Bind variables */
 	bind_index = 1;
-	try_sqlite_bind_int64(stmt, bind_index++, 0, p->time);
+	try_sqlite_bind_int64(stmt, bind_index++, 0, p->data.time);
 	try_sqlite_bind_int(stmt, bind_index++, 0, p->interval);
 
 	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_PRESSURE), l->pressure);
@@ -250,12 +250,10 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 		int col_idx = 0;
 		struct ws_loop *l = &p[i].data;
 
-		p[i].time = sqlite3_column_int64(query, col_idx++);
+		p[i].data.time = sqlite3_column_int64(query, col_idx++);
 		p[i].interval = sqlite3_column_int(query, col_idx++);
 
 		l->wl_mask = 0;
-		l->time.tv_sec = p[i].time;
-		l->time.tv_nsec = 0;
 
 		sqlite_fetch_double(query, col_idx++, l, WF_BAROMETER, barometer);
 		sqlite_fetch_double(query, col_idx++, l, WF_PRESSURE, pressure);

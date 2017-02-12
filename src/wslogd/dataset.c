@@ -17,7 +17,8 @@
 #define RAIN_PERIOD 900
 #define WF_ISSET(mask, flag) (((mask) & (flag)) == (flag))
 
-struct ws_aggr {
+struct ws_aggr
+{
 	struct aggr_data aggr;
 	int (*get) (const struct ws_loop *, double *);
 	int (*set) (struct ws_loop *, double);
@@ -265,14 +266,8 @@ is_settable(const struct ws_loop *p, int mask, int flag)
 	return (p->wl_mask & (mask | flag)) == flag;
 }
 
-static int
-is_before(const struct ws_loop *prev, const struct ws_loop *p)
-{
-	return prev->time.tv_sec + RAIN_PERIOD < p->time.tv_sec;
-}
-
 static void
-calc_barometer(struct ws_loop* p)
+calc_barometer(struct ws_loop *p)
 {
 	if (is_settable(p, WF_BAROMETER, WF_PRESSURE | WF_TEMP)) {
 		p->wl_mask |= WF_BAROMETER;
@@ -281,7 +276,7 @@ calc_barometer(struct ws_loop* p)
 }
 
 static void
-calc_altimeter(struct ws_loop* p)
+calc_altimeter(struct ws_loop *p)
 {
 	if (is_settable(p, WF_ALTIMETER, WF_PRESSURE)) {
 		p->wl_mask |= WF_ALTIMETER;
@@ -290,7 +285,7 @@ calc_altimeter(struct ws_loop* p)
 }
 
 static void
-calc_windchill(struct ws_loop* p)
+calc_windchill(struct ws_loop *p)
 {
 	if (is_settable(p, WF_WINDCHILL, WF_WIND | WF_TEMP)) {
 		p->wl_mask |= WF_WINDCHILL;
@@ -299,7 +294,7 @@ calc_windchill(struct ws_loop* p)
 }
 
 static void
-calc_dewpoint(struct ws_loop* p)
+calc_dewpoint(struct ws_loop *p)
 {
 	if (is_settable(p, WF_DEW_POINT, WF_TEMP | WF_HUMIDITY)) {
 		p->wl_mask |= WF_DEW_POINT;
@@ -308,7 +303,7 @@ calc_dewpoint(struct ws_loop* p)
 }
 
 static void
-calc_heat_index(struct ws_loop* p)
+calc_heat_index(struct ws_loop *p)
 {
 	if (is_settable(p, WF_HEAT_INDEX, WF_TEMP | WF_HUMIDITY)) {
 		p->wl_mask |= WF_HEAT_INDEX;
@@ -335,7 +330,7 @@ calc_rain_rate(struct ws_loop *p)
 		prev = board_peek(i++);
 
 		while (prev != NULL) {
-			if (is_before(prev, p)) {
+			if (prev->time + RAIN_PERIOD < p->time) {
 				prev = NULL;
 			} else {
 				if (ws_isset(prev, WF_RAIN)) {
@@ -422,7 +417,8 @@ ws_aggr(struct ws_archive *p, int freq)
 	const struct ws_loop *prev;
 	time_t now;
 
-	struct ws_aggr aggr_arr[] = {
+	struct ws_aggr aggr_arr[] =
+	{
 		{ AGGR_AVG_INIT, ws_get_pressure, ws_set_pressure },
 		{ AGGR_AVG_INIT, ws_get_altimeter, ws_set_altimeter },
 		{ AGGR_AVG_INIT, ws_get_barometer, ws_set_barometer },
@@ -448,7 +444,7 @@ ws_aggr(struct ws_archive *p, int freq)
 	prev = board_peek(i);
 
 	while (prev != NULL) {
-		if (prev->time.tv_sec + freq < now) {
+		if (prev->time + freq < now) {
 			prev = NULL;
 		} else {
 			aggr_update_all(aggr_arr, nel, prev);
@@ -461,11 +457,10 @@ ws_aggr(struct ws_archive *p, int freq)
 
 	/* Compute derived metrics */
 	if (i > 0) {
-		p->time = now;
 		p->interval = freq;
+		p->data.time = now;
 
 		aggr_finalize_all(aggr_arr, nel, &p->data);
-		ws_calc(&p->data);
 	}
 
 	return (i == 0) ? 0 : 1;

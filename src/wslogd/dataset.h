@@ -49,14 +49,19 @@ enum {
 	WS_MAX						/* do not use */
 };
 
+/**
+ * Sensor data.
+ *
+ * The {@code wl_mask} field is used to indicate valid fields in the structure.
+ */
 struct ws_loop
 {
-	struct timespec time;		/* loop packet time (UTC) */
-	uint32_t wl_mask;			/* loop packet fields mask */
+	time_t time;				/* data time */
+	uint32_t wl_mask;			/* fields mask */
 
 	float pressure;				/* absolute pressure (hPa) */
-	float altimeter;			/* altimeter, altitude corrected pressure (hPa) */
 	float barometer;			/* barometer, sea level pressure (hPa) */
+	float altimeter;			/* altimeter, altitude corrected pressure (hPa) */
 	float temp;					/* temperature (°C) */
 	uint8_t humidity; 			/* humidity (%) */
 	float wind_speed;			/* wind speed (m/s) */
@@ -82,7 +87,6 @@ struct ws_loop
 
 struct ws_archive
 {
-	time_t time;				/* record time */
 	time_t interval;			/* archive interval, in seconds */
 	struct ws_loop data;		/* aggregated data */
 };

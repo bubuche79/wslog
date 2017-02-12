@@ -210,6 +210,15 @@ gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 	return strftime(s, max, fmt, &tm);
 }
 
+DSO_EXPORT size_t
+localftime(char *s, size_t max, const time_t *timep, const char *fmt)
+{
+	struct tm tm;
+
+	localtime_r(timep, &tm);
+	return strftime(s, max, fmt, &tm);
+}
+
 DSO_EXPORT ssize_t
 strftimespec(char *s, size_t len, const struct timespec *ts, int width)
 {

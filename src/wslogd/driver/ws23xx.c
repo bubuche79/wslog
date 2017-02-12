@@ -227,25 +227,26 @@ ws23xx_get_loop(struct ws_loop *p)
 
 	uint8_t abuf[64];
 
-	struct ws23xx_io io[] = {
-			{ 0x346, WS23XX_TEMP, 4, &p->temp_in },
-			{ 0x373, WS23XX_TEMP, 4, &p->temp },
-			{ 0x3a0, WS23XX_TEMP, 4, &p->windchill },
-			{ 0x3ce, WS23XX_TEMP, 4, &p->dew_point },
-			{ 0x3fb, WS23XX_HUMIDITY, 2, &p->humidity_in },
-			{ 0x419, WS23XX_HUMIDITY, 2, &p->humidity },
+	struct ws23xx_io io[] =
+	{
+		{ 0x346, WS23XX_TEMP, 4, &p->temp_in },
+		{ 0x373, WS23XX_TEMP, 4, &p->temp },
+		{ 0x3a0, WS23XX_TEMP, 4, &p->windchill },
+		{ 0x3ce, WS23XX_TEMP, 4, &p->dew_point },
+		{ 0x3fb, WS23XX_HUMIDITY, 2, &p->humidity_in },
+		{ 0x419, WS23XX_HUMIDITY, 2, &p->humidity },
 #if 0
-			{ 0x497, WS23XX_RAIN, 6, &p->rain_24h },
-			{ 0x4b4, WS23XX_RAIN, 6, &p->rain_1h },
+		{ 0x497, WS23XX_RAIN, 6, &p->rain_24h },
+		{ 0x4b4, WS23XX_RAIN, 6, &p->rain_1h },
 #endif
-			{ 0x4d2, WS23XX_RAIN, 6, &total_rain_now },
-			{ 0x527, WS23XX_WIND_OVERFLOW, 1, &wind_overflow },
-			{ 0x528, WS23XX_WIND_VALID, 1, &wind_invalid },
-			{ 0x529, WS23XX_SPEED, 3, &p->wind_speed },
-			{ 0x52c, WS23XX_WIND_DIR, 1, &p->wind_dir },
-			{ 0x54d, WS23XX_CONNECTION, 1, &cnx_type },
-			{ 0x5d8, WS23XX_PRESSURE, 5, &p->pressure },
-			{ 0x5e2, WS23XX_PRESSURE, 5, &p->barometer }
+		{ 0x4d2, WS23XX_RAIN, 6, &total_rain_now },
+		{ 0x527, WS23XX_WIND_OVERFLOW, 1, &wind_overflow },
+		{ 0x528, WS23XX_WIND_VALID, 1, &wind_invalid },
+		{ 0x529, WS23XX_SPEED, 3, &p->wind_speed },
+		{ 0x52c, WS23XX_WIND_DIR, 1, &p->wind_dir },
+		{ 0x54d, WS23XX_CONNECTION, 1, &cnx_type },
+		{ 0x5d8, WS23XX_PRESSURE, 5, &p->pressure },
+		{ 0x5e2, WS23XX_PRESSURE, 5, &p->barometer }
 	};
 
 	size_t nel = array_size(io);
@@ -338,9 +339,7 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel)
 
 	/* Copy values */
 	for (i = 0; i < res; i++) {
-		ar[i].time = arbuf[i].tstamp;
-		ar[i].data.time.tv_sec = arbuf[i].tstamp;
-		ar[i].data.time.tv_nsec = 0;
+		ar[i].data.time = arbuf[i].tstamp;
 
 		ar[i].data.wl_mask = WF_ALL_HIST;
 		ar[i].data.pressure = arbuf[i].pressure;

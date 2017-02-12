@@ -33,7 +33,8 @@ simu_io()
 }
 
 static void
-simu_make(struct ws_loop* p, int idx) {
+simu_make(struct ws_loop *p, int idx)
+{
 	p->pressure = simu_sin(950, 1020, idx);
 	p->temp = simu_sin(15, 25, idx);
 	p->humidity = simu_sin(60, 80, idx);

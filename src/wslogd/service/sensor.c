@@ -62,34 +62,31 @@ error:
 int
 sensor_main(void)
 {
-	struct ws_loop loop;
+	struct ws_loop buf;
 
 #if DEBUG
 	printf("SENSOR: reading\n");
 #endif
 
-	if (clock_gettime(CLOCK_REALTIME, &loop.time) == -1) {
-		syslog(LOG_ERR, "clock_gettime(): %m");
-		goto error;
-	}
+	time(&buf.time);
 
 	/* Read sensors */
-	if (drv_get_loop(&loop) == -1) {
+	if (drv_get_loop(&buf) == -1) {
 		syslog(LOG_ERR, "clock_gettime(): %m");
 		goto error;
 	}
 
 	/* Compute derived measures */
-	ws_calc(&loop);
+	ws_calc(&buf);
 
 	/* Push loop event in board */
-	if (sensor_push(&loop) == -1) {
+	if (sensor_push(&buf) == -1) {
 		syslog(LOG_ERR, "sensor_push(): %m");
 		goto error;
 	}
 
 #if DEBUG
-	printf("SENSOR read: %.2f°C %hhu%%\n", loop.temp, loop.humidity);
+	printf("SENSOR read: %.2f°C %hhu%%\n", buf.temp, buf.humidity);
 #endif
 
 	return 0;
