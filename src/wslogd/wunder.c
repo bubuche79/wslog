@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <syslog.h>
 
+#include "defs/std.h"
 #include "libws/util.h"
 
 #include "conf.h"
@@ -79,7 +80,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 {
 	int ret;
 	char ctime[22];					/* date utc */
-	size_t i;
+	size_t i, arr_nel;
 
 	struct ws_wunder arr[] =
 	{
@@ -96,9 +97,10 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 #endif
 		{ "dewptf", ws_get_dew_point, ws_fahrenheit },
 		{ "indoortempf", ws_get_temp_in, ws_fahrenheit },
-		{ "indoorhumidity", ws_get_humidity_in, NULL },
-		{ NULL, NULL, NULL }
+		{ "indoorhumidity", ws_get_humidity_in, NULL }
 	};
+
+	arr_nel = array_size(arr);
 
 	/* Convert date */
 	gmftime(ctime, sizeof(ctime), &p->time, "%F %T");
@@ -122,13 +124,14 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 		syslog(LOG_ERR, "snprintf: Buffer overflow (%d bytes required)", ret);
 		goto error;
 	}
+
 	str += ret;
 	len -= ret;
 
 	curl_free(dateutc);
 	curl_free(password);
 
-	for (i = 0; arr[i].param != NULL; i++) {
+	for (i = 0; i < arr_nel; i++) {
 		double value;
 
 		if (arr[i].get(p, &value) == 0) {
@@ -140,7 +143,6 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 
 			/* Add parameter */
 			ret = snprintf(str, len, "&%s=%f", arr[i].param, value);
-
 			if (ret == -1) {
 				syslog(LOG_ERR, "snprintf: %m");
 				goto error;

@@ -10,6 +10,8 @@
 #include <syslog.h>
 #include <sqlite3.h>
 
+#include "defs/std.h"
+
 #include "board.h"
 #include "conf.h"
 #include "wslogd.h"
@@ -83,9 +85,10 @@ static struct ws_db columns[] =
 	{ "windchill", SQLITE_FLOAT, ws_get_windchill, ws_set_windchill },
 	{ "heat_index", SQLITE_FLOAT, ws_get_heat_index, ws_set_heat_index },
 	{ "temp_in", SQLITE_FLOAT, ws_get_temp_in, ws_set_temp_in },
-	{ "humidity_in", SQLITE_INTEGER, ws_get_humidity_in, ws_set_humidity_in },
-	{ NULL, SQLITE_NULL, NULL, NULL }
+	{ "humidity_in", SQLITE_INTEGER, ws_get_humidity_in, ws_set_humidity_in }
 };
+
+static size_t columns_nel = array_size(columns);
 
 /**
  * Avoid float > double conversion.
@@ -112,7 +115,7 @@ stmt_insert(const struct ws_archive *p)
 	sqlite3_bind_int64(stmt, bind_index++, p->data.time); // TODO check error
 	sqlite3_bind_int(stmt, bind_index++, p->interval); // TODO check error
 
-	for (i = 0; columns[i].col_name != NULL; i++) {
+	for (i = 0; i < columns_nel; i++) {
 		double value;
 		int sq_ret;
 
@@ -230,7 +233,7 @@ fetch_loop_columns(struct ws_loop *p, sqlite3_stmt *stmt, int col_index)
 
 	p->wl_mask = 0;
 
-	for (i = 0; columns[i].col_name != NULL; i++) {
+	for (i = 0; i < columns_nel; i++) {
 		int type;
 		double value;
 
