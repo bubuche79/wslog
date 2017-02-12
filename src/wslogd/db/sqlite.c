@@ -91,6 +91,12 @@ round_100(double v)
 	return round(v * 100.0) / 100.0;
 }
 
+static void
+sqlite_log(const char *fn, int code)
+{
+	syslog(LOG_ERR, "%s: %s", fn, sqlite3_errstr(code));
+}
+
 static int
 stmt_insert(const struct ws_archive *p)
 {
@@ -99,7 +105,7 @@ stmt_insert(const struct ws_archive *p)
 
 	ret = sqlite3_reset(stmt);
 	if (SQLITE_OK != ret) {
-		syslog(LOG_ERR, "sqlite3_reset: %s", sqlite3_errstr(ret));
+		sqlite_log("sqlite3_reset", ret);
 		goto error;
 	}
 
@@ -108,12 +114,12 @@ stmt_insert(const struct ws_archive *p)
 
 	ret = sqlite3_bind_int64(stmt, bind_index++, p->data.time);
 	if (SQLITE_OK != ret) {
-		syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(ret));
+		sqlite_log("sqlite3_bind_int64", ret);
 		goto error;
 	}
 	ret = sqlite3_bind_int(stmt, bind_index++, p->interval);
 	if (SQLITE_OK != ret) {
-		syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(ret));
+		sqlite_log("sqlite3_bind_int", ret);
 		goto error;
 	}
 
@@ -136,7 +142,7 @@ stmt_insert(const struct ws_archive *p)
 		}
 
 		if (SQLITE_OK != ret) {
-			syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(ret));
+			sqlite_log("sqlite3_bind_xx", ret);
 			goto error;
 		}
 
@@ -147,7 +153,7 @@ stmt_insert(const struct ws_archive *p)
 	if (!dry_run) {
 		ret = sqlite3_step(stmt);
 		if (ret != SQLITE_DONE) {
-			syslog(LOG_ERR, "sqlite3_step: %s", sqlite3_errstr(ret));
+			sqlite_log("sqlite3_step", ret);
 			goto error;
 		}
 	}
@@ -172,7 +178,7 @@ sqlite_init(void)
 
 	ret = sqlite3_initialize();
 	if (ret != SQLITE_OK) {
-		syslog(LOG_ERR, "sqlite3_initialize: %s", sqlite3_errstr(ret));
+		sqlite_log("sqlite3_initialize", ret);
 		goto error;
 	}
 
@@ -199,7 +205,7 @@ sqlite_init(void)
 	if (oflag & SQLITE_OPEN_CREATE) {
 		ret = sqlite3_exec(db, SQL_CREATE, NULL, NULL, NULL);
 		if (ret != SQLITE_OK) {
-			syslog(LOG_ERR, "sqlite3_exec: %s", sqlite3_errstr(ret));
+			sqlite_log("sqlite3_exec", ret);
 			goto error;
 		}
 	}
@@ -207,7 +213,7 @@ sqlite_init(void)
 	/* Prepare statement */
 	ret = sqlite3_prepare_v2(db, SQL_INSERT, -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
-		syslog(LOG_ERR, "sqlite3_prepare_v2: %s", sqlite3_errstr(ret));
+		sqlite_log("sqlite3_prepare_v2", ret);
 		goto error;
 	}
 
@@ -274,12 +280,14 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 	/* Prepare query */
 	ret = sqlite3_prepare_v2(db, SQL_SELECT, -1, &query, NULL);
 	if (ret != SQLITE_OK) {
+		sqlite_log("sqlite3_prepare_v2", ret);
 		goto error;
 	}
 
 	/* Bind parameters */
 	ret = sqlite3_bind_int(query, 1, nel);
 	if (ret != SQLITE_OK) {
+		sqlite_log("sqlite3_bind_int", ret);
 		goto error;
 	}
 
@@ -299,18 +307,18 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 
 	ret = sqlite3_reset(query);
 	if (ret != SQLITE_OK) {
+		sqlite_log("sqlite3_reset", ret);
 		goto error;
 	}
 	ret = sqlite3_finalize(query);
 	if (ret != SQLITE_OK) {
+		sqlite_log("sqlite3_finalize", ret);
 		goto error;
 	}
 
 	return i;
 
 error:
-	syslog(LOG_ERR, "sqlite_select_last: %s", sqlite3_errstr(ret));
-
 	(void) sqlite3_reset(query);
 	(void) sqlite3_finalize(query);
 
@@ -321,29 +329,29 @@ int
 sqlite_destroy(void)
 {
 	int ret;
-	int exit;
+	int status;
 
-	exit = 0;
+	status = 0;
 
 	ret = sqlite3_finalize(stmt);
 	if (ret != SQLITE_OK) {
-		exit = -1;
-		syslog(LOG_ERR, "sqlite3_finalize: %s", sqlite3_errstr(ret));
+		status = -1;
+		sqlite_log("sqlite3_finalize", ret);
 	}
 
 	if (db != NULL) {
 		ret = sqlite3_close_v2(db);
 		if (ret != SQLITE_OK) {
-			exit = -1;
-			syslog(LOG_ERR, "sqlite3_close_v2: %s", sqlite3_errstr(ret));
+			status = -1;
+			sqlite_log("sqlite3_close_v2", ret);
 		}
 	}
 
 	ret = sqlite3_shutdown();
 	if (ret != SQLITE_OK) {
-		exit = -1;
-		syslog(LOG_ERR, "sqlite3_shutdown: %s", sqlite3_errstr(ret));
+		status = -1;
+		sqlite_log("sqlite3_shutdown", ret);
 	}
 
-	return exit;
+	return status;
 }
