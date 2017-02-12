@@ -25,50 +25,6 @@
 		} \
 	} while (0)
 
-#define try_sqlite_bind(fn, stmt, index, null, value) \
-	do { \
-		int _ret; \
-		sqlite3_stmt *_stmt = (stmt); \
-		int _index = (index); \
-		int _null = (null); \
-		__typeof__(value) _value = (value); \
-		if (_null) { \
-			_ret = sqlite3_bind_null(_stmt, _index); \
-		} else { \
-			_ret = fn(_stmt, _index, _value); \
-		} \
-		if (SQLITE_OK != _ret) { \
-			syslog(LOG_ERR, "%s: %s", #fn, sqlite3_errstr(_ret)); \
-			goto error; \
-		} \
-	} while (0)
-
-#define sqlite_fetch(fn, stmt, index, loop, flag, field) \
-	do { \
-		sqlite3_stmt *_stmt = (stmt); \
-		int _index = (index); \
-		struct ws_loop *_loop = (loop); \
-		if (sqlite3_column_type(_stmt, _index) != SQLITE_NULL) { \
-			_loop->wl_mask |= (flag); \
-			_loop->field = fn(_stmt, _index); \
-		} \
-	} while (0)
-
-#define try_sqlite_bind_int(stmt, index, null, value) \
-	try_sqlite_bind(sqlite3_bind_int, (stmt), (index), (null), (value))
-
-#define try_sqlite_bind_int64(stmt, index, null, value) \
-	try_sqlite_bind(sqlite3_bind_int64, (stmt), (index), (null), (value))
-
-#define try_sqlite_bind_double(stmt, index, null, value) \
-	try_sqlite_bind(sqlite3_bind_double, (stmt), (index), (null), round_100(value))
-
-#define sqlite_fetch_int(stmt, index, loop, flag, field) \
-	sqlite_fetch(sqlite3_column_int, (stmt), (index), (loop), (flag), field)
-
-#define sqlite_fetch_double(stmt, index, loop, flag, field) \
-	sqlite_fetch(sqlite3_column_double, (stmt), (index), (loop), (flag), field)
-
 #define SQL_CREATE \
 	"CREATE TABLE ws_archive ( " \
 	"  time INTEGER NOT NULL, " \
@@ -99,8 +55,37 @@
 #define SQL_SELECT \
 	"SELECT * FROM ws_archive ORDER BY time DESC LIMIT ?"
 
+struct ws_db
+{
+	const char *col_name;
+	int col_type;
+	int (*get) (const struct ws_loop *, double *);
+	int (*set) (struct ws_loop *, double);
+};
+
 static sqlite3 *db;
 static sqlite3_stmt *stmt;
+
+static struct ws_db columns[] =
+{
+	{ "pressure", SQLITE_FLOAT, ws_get_pressure, ws_set_pressure },
+//	{ "altimeter", SQLITE_FLOAT, ws_get_altimeter, ws_set_altimeter },
+	{ "barometer", SQLITE_FLOAT, ws_get_barometer, ws_set_barometer },
+	{ "temp", SQLITE_FLOAT, ws_get_temp, ws_set_temp },
+	{ "humidity", SQLITE_INTEGER, ws_get_humidity, ws_set_humidity },
+	{ "wind_speed", SQLITE_FLOAT, ws_get_wind_speed, ws_set_wind_speed },
+	{ "wind_dir", SQLITE_INTEGER, ws_get_wind_dir, ws_set_wind_dir },
+	{ "wind_gust_speed", SQLITE_FLOAT, ws_get_wind_gust_speed, ws_set_wind_gust_speed },
+	{ "wind_gust_dir", SQLITE_INTEGER, ws_get_wind_gust_dir, ws_set_wind_gust_dir },
+	{ "rain", SQLITE_FLOAT, ws_get_rain, ws_set_rain },
+	{ "rain_rate", SQLITE_FLOAT, ws_get_rain_rate, ws_set_rain_rate },
+	{ "dew_point", SQLITE_FLOAT, ws_get_dew_point, ws_set_dew_point },
+	{ "windchill", SQLITE_FLOAT, ws_get_windchill, ws_set_windchill },
+	{ "heat_index", SQLITE_FLOAT, ws_get_heat_index, ws_set_heat_index },
+	{ "temp_in", SQLITE_FLOAT, ws_get_temp_in, ws_set_temp_in },
+	{ "humidity_in", SQLITE_INTEGER, ws_get_humidity_in, ws_set_humidity_in },
+	{ NULL, SQLITE_NULL, NULL, NULL }
+};
 
 /**
  * Avoid float > double conversion.
@@ -117,35 +102,42 @@ static int
 stmt_insert(const struct ws_archive *p)
 {
 	int ret;
-	int bind_index;
-	const struct ws_loop *l = &p->data;
+	int i, bind_index;
 
 	try_sqlite(sqlite3_reset, stmt);
 
 	/* Bind variables */
 	bind_index = 1;
-	try_sqlite_bind_int64(stmt, bind_index++, 0, p->data.time);
-	try_sqlite_bind_int(stmt, bind_index++, 0, p->interval);
 
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_PRESSURE), l->pressure);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_BAROMETER), l->barometer);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_TEMP), l->temp);
-	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_HUMIDITY), l->humidity);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WIND_SPEED), l->wind_speed);
-	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_WIND_DIR), l->wind_dir);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WIND_GUST_SPEED), l->wind_gust_speed);
-	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_WIND_GUST_DIR), l->wind_gust_dir);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_RAIN), l->rain);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_RAIN_RATE), l->rain_rate);
-#if 0
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_RAIN_1H), l->rain_1h);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_RAIN_24H), l->rain_24h);
-#endif
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_DEW_POINT), l->dew_point);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_WINDCHILL), l->windchill);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_HEAT_INDEX), l->heat_index);
-	try_sqlite_bind_double(stmt, bind_index++, !ws_isset(l, WF_TEMP_IN), l->temp_in);
-	try_sqlite_bind_int(stmt, bind_index++, !ws_isset(l, WF_HUMIDITY_IN), l->humidity_in);
+	sqlite3_bind_int64(stmt, bind_index++, p->data.time); // TODO check error
+	sqlite3_bind_int(stmt, bind_index++, p->interval); // TODO check error
+
+	for (i = 0; columns[i].col_name != NULL; i++) {
+		double value;
+		int sq_ret;
+
+		if (columns[i].get(&p->data, &value) == 0) {
+			switch (columns[i].col_type) {
+			case SQLITE_INTEGER:
+				sq_ret = sqlite3_bind_int(stmt, bind_index, value);
+				break;
+			case SQLITE_FLOAT:
+				sq_ret = sqlite3_bind_double(stmt, bind_index, round_100(value));
+				break;
+			default:
+				break;
+			}
+		} else {
+			sq_ret = sqlite3_bind_null(stmt, bind_index);
+		}
+
+		if (SQLITE_OK != sq_ret) {
+			syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(sq_ret));
+			goto error;
+		}
+
+		bind_index++;
+	}
 
 	/* Execute statement */
 	if (!dry_run) {
@@ -231,6 +223,38 @@ sqlite_insert(const struct ws_archive *p, size_t nel)
 	return nel;
 }
 
+static int
+fetch_loop_columns(struct ws_loop *p, sqlite3_stmt *stmt, int col_index)
+{
+	int i;
+
+	p->wl_mask = 0;
+
+	for (i = 0; columns[i].col_name != NULL; i++) {
+		int type;
+		double value;
+
+		type = sqlite3_column_type(stmt, col_index);
+
+		switch (type) {
+		case SQLITE_INTEGER:
+			value = sqlite3_column_int(stmt, col_index);
+			columns[i].set(p, value);
+			break;
+		case SQLITE_FLOAT:
+			value = sqlite3_column_double(stmt, col_index);
+			columns[i].set(p, value);
+			break;
+		case SQLITE_NULL:
+			break;
+		}
+
+		col_index++;
+	}
+
+	return 0;
+}
+
 ssize_t
 sqlite_select_last(struct ws_archive *p, size_t nel)
 {
@@ -241,39 +265,20 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 	try_sqlite(sqlite3_prepare_v2, db, SQL_SELECT, -1, &query, NULL);
 
 	/* Bind parameters */
-	try_sqlite_bind_int(query, 1, 0, nel);
+	sqlite3_bind_int(query, 1, nel); // TODO check error
 
 	/* Execute and process result set */
 	i = 0;
 
 	while(i < nel && sqlite3_step(query) == SQLITE_ROW) {
 		int col_idx = 0;
-		struct ws_loop *l = &p[i].data;
 
 		p[i].data.time = sqlite3_column_int64(query, col_idx++);
 		p[i].interval = sqlite3_column_int(query, col_idx++);
 
-		l->wl_mask = 0;
-
-		sqlite_fetch_double(query, col_idx++, l, WF_BAROMETER, barometer);
-		sqlite_fetch_double(query, col_idx++, l, WF_PRESSURE, pressure);
-		sqlite_fetch_double(query, col_idx++, l, WF_TEMP, temp);
-		sqlite_fetch_int(query, col_idx++, l, WF_HUMIDITY, humidity);
-		sqlite_fetch_double(query, col_idx++, l, WF_WIND_SPEED, wind_speed);
-		sqlite_fetch_int(query, col_idx++, l, WF_WIND_DIR, wind_dir);
-		sqlite_fetch_double(query, col_idx++, l, WF_WIND_GUST_SPEED, wind_gust_speed);
-		sqlite_fetch_int(query, col_idx++, l, WF_WIND_GUST_DIR, wind_gust_dir);
-		sqlite_fetch_double(query, col_idx++, l, WF_RAIN, rain);
-		sqlite_fetch_double(query, col_idx++, l, WF_RAIN_RATE, rain_rate);
-#if 0
-		sqlite_fetch_double(query, col_idx++, l, WF_RAIN_1H, rain_1h);
-		sqlite_fetch_double(query, col_idx++, l, WF_RAIN_24H, rain_24h);
-#endif
-		sqlite_fetch_double(query, col_idx++, l, WF_DEW_POINT, dew_point);
-		sqlite_fetch_double(query, col_idx++, l, WF_WINDCHILL, windchill);
-		sqlite_fetch_double(query, col_idx++, l, WF_HEAT_INDEX, heat_index);
-		sqlite_fetch_double(query, col_idx++, l, WF_TEMP_IN, temp_in);
-		sqlite_fetch_int(query, col_idx++, l, WF_HUMIDITY_IN, humidity_in);
+		if (fetch_loop_columns(&p->data, query, col_idx) == -1) {
+			goto error;
+		}
 
 		i++;
 	}
