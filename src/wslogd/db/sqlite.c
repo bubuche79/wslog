@@ -17,16 +17,6 @@
 #include "wslogd.h"
 #include "sqlite.h"
 
-#define try_sqlite(fn, ...) \
-	do { \
-		int _ret; \
-		_ret = fn(__VA_ARGS__); \
-		if (SQLITE_OK != _ret) { \
-			syslog(LOG_ERR, "%s: %s", #fn, sqlite3_errstr(_ret)); \
-			goto error; \
-		} \
-	} while (0)
-
 #define SQL_CREATE \
 	"CREATE TABLE ws_archive ( " \
 	"  time INTEGER NOT NULL, " \
@@ -107,35 +97,46 @@ stmt_insert(const struct ws_archive *p)
 	int ret;
 	int i, bind_index;
 
-	try_sqlite(sqlite3_reset, stmt);
+	ret = sqlite3_reset(stmt);
+	if (SQLITE_OK != ret) {
+		syslog(LOG_ERR, "sqlite3_reset: %s", sqlite3_errstr(ret));
+		goto error;
+	}
 
 	/* Bind variables */
 	bind_index = 1;
 
-	sqlite3_bind_int64(stmt, bind_index++, p->data.time); // TODO check error
-	sqlite3_bind_int(stmt, bind_index++, p->interval); // TODO check error
+	ret = sqlite3_bind_int64(stmt, bind_index++, p->data.time);
+	if (SQLITE_OK != ret) {
+		syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(ret));
+		goto error;
+	}
+	ret = sqlite3_bind_int(stmt, bind_index++, p->interval);
+	if (SQLITE_OK != ret) {
+		syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(ret));
+		goto error;
+	}
 
 	for (i = 0; i < columns_nel; i++) {
 		double value;
-		int sq_ret;
 
 		if (columns[i].get(&p->data, &value) == 0) {
 			switch (columns[i].col_type) {
 			case SQLITE_INTEGER:
-				sq_ret = sqlite3_bind_int(stmt, bind_index, value);
+				ret = sqlite3_bind_int(stmt, bind_index, value);
 				break;
 			case SQLITE_FLOAT:
-				sq_ret = sqlite3_bind_double(stmt, bind_index, round_100(value));
+				ret = sqlite3_bind_double(stmt, bind_index, round_100(value));
 				break;
 			default:
 				break;
 			}
 		} else {
-			sq_ret = sqlite3_bind_null(stmt, bind_index);
+			ret = sqlite3_bind_null(stmt, bind_index);
 		}
 
-		if (SQLITE_OK != sq_ret) {
-			syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(sq_ret));
+		if (SQLITE_OK != ret) {
+			syslog(LOG_ERR, "sqlite3_bind_xx: %s", sqlite3_errstr(ret));
 			goto error;
 		}
 
@@ -196,11 +197,19 @@ sqlite_init(void)
 
 	/* Create schema */
 	if (oflag & SQLITE_OPEN_CREATE) {
-		try_sqlite(sqlite3_exec, db, SQL_CREATE, NULL, NULL, NULL);
+		ret = sqlite3_exec(db, SQL_CREATE, NULL, NULL, NULL);
+		if (ret != SQLITE_OK) {
+			syslog(LOG_ERR, "sqlite3_exec: %s", sqlite3_errstr(ret));
+			goto error;
+		}
 	}
 
 	/* Prepare statement */
-	try_sqlite(sqlite3_prepare_v2, db, SQL_INSERT, -1, &stmt, NULL);
+	ret = sqlite3_prepare_v2(db, SQL_INSERT, -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		syslog(LOG_ERR, "sqlite3_prepare_v2: %s", sqlite3_errstr(ret));
+		goto error;
+	}
 
 	return 0;
 
@@ -226,7 +235,7 @@ sqlite_insert(const struct ws_archive *p, size_t nel)
 	return nel;
 }
 
-static int
+static void
 fetch_loop_columns(struct ws_loop *p, sqlite3_stmt *stmt, int col_index)
 {
 	int i;
@@ -254,21 +263,25 @@ fetch_loop_columns(struct ws_loop *p, sqlite3_stmt *stmt, int col_index)
 
 		col_index++;
 	}
-
-	return 0;
 }
 
 ssize_t
 sqlite_select_last(struct ws_archive *p, size_t nel)
 {
-	int i;
+	int i, ret;
 	sqlite3_stmt *query;
 
 	/* Prepare query */
-	try_sqlite(sqlite3_prepare_v2, db, SQL_SELECT, -1, &query, NULL);
+	ret = sqlite3_prepare_v2(db, SQL_SELECT, -1, &query, NULL);
+	if (ret != SQLITE_OK) {
+		goto error;
+	}
 
 	/* Bind parameters */
-	sqlite3_bind_int(query, 1, nel); // TODO check error
+	ret = sqlite3_bind_int(query, 1, nel);
+	if (ret != SQLITE_OK) {
+		goto error;
+	}
 
 	/* Execute and process result set */
 	i = 0;
@@ -279,19 +292,25 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 		p[i].data.time = sqlite3_column_int64(query, col_idx++);
 		p[i].interval = sqlite3_column_int(query, col_idx++);
 
-		if (fetch_loop_columns(&p->data, query, col_idx) == -1) {
-			goto error;
-		}
+		fetch_loop_columns(&p->data, query, col_idx);
 
 		i++;
 	}
 
-	try_sqlite(sqlite3_reset, query);
-	try_sqlite(sqlite3_finalize, query);
+	ret = sqlite3_reset(query);
+	if (ret != SQLITE_OK) {
+		goto error;
+	}
+	ret = sqlite3_finalize(query);
+	if (ret != SQLITE_OK) {
+		goto error;
+	}
 
 	return i;
 
 error:
+	syslog(LOG_ERR, "sqlite_select_last: %s", sqlite3_errstr(ret));
+
 	(void) sqlite3_reset(query);
 	(void) sqlite3_finalize(query);
 
