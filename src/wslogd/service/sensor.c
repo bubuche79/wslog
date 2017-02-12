@@ -39,7 +39,7 @@ sensor_init(struct itimerspec *it)
 	 */
 	if (confp->driver.freq == 0) {
 		if (drv_get_itimer(it, WS_ITIMER_LOOP) == -1) {
-			syslog(LOG_ERR, "drv_get_itimer(): %m");
+			syslog(LOG_ERR, "drv_get_itimer: %m");
 			goto error;
 		}
 	} else {
@@ -72,7 +72,7 @@ sensor_main(void)
 
 	/* Read sensors */
 	if (drv_get_loop(&buf) == -1) {
-		syslog(LOG_ERR, "clock_gettime(): %m");
+		syslog(LOG_ERR, "clock_gettime: %m");
 		goto error;
 	}
 
@@ -81,7 +81,7 @@ sensor_main(void)
 
 	/* Push loop event in board */
 	if (sensor_push(&buf) == -1) {
-		syslog(LOG_ERR, "sensor_push(): %m");
+		syslog(LOG_ERR, "sensor_push: %m");
 		goto error;
 	}
 

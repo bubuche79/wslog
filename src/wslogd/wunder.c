@@ -58,7 +58,7 @@ http_write(char *ptr, size_t size, size_t nmemb, struct ws_http *s)
 		s->buf = realloc(s->buf, s->len);
 
 		if (s->buf == NULL) {
-			syslog(LOG_ERR, "realloc(): %m");
+			syslog(LOG_ERR, "realloc: %m");
 			return 0;
 		}
 	}
@@ -70,7 +70,7 @@ http_write(char *ptr, size_t size, size_t nmemb, struct ws_http *s)
 
 static void
 curl_log(const char *fn, CURLcode code) {
-	syslog(LOG_ERR, "%s(): %s (%d)", fn, curl_easy_strerror(code), code);
+	syslog(LOG_ERR, "%s: %s (%d)", fn, curl_easy_strerror(code), code);
 }
 
 static int
@@ -115,10 +115,10 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 			"PASSWORD", password,
 			"dateutc", dateutc, p->time);
 	if (ret == -1) {
-		syslog(LOG_ERR, "snprintf(): %m");
+		syslog(LOG_ERR, "snprintf: %m");
 		goto error;
 	} else if (len <= (size_t) ret) {
-		syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
+		syslog(LOG_ERR, "snprintf: Buffer overflow (%d bytes required)", ret);
 		goto error;
 	}
 	str += ret;
@@ -141,10 +141,10 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 			ret = snprintf(str, len, "&%s=%f", arr[i].param, value);
 
 			if (ret == -1) {
-				syslog(LOG_ERR, "snprintf(): %m");
+				syslog(LOG_ERR, "snprintf: %m");
 				goto error;
 			} else if (len <= (size_t) ret) {
-				syslog(LOG_ERR, "snprintf(): Buffer overflow (%d bytes required)", ret);
+				syslog(LOG_ERR, "snprintf: Buffer overflow (%d bytes required)", ret);
 				goto error;
 			}
 
@@ -262,7 +262,7 @@ wunder_update(void)
 
 	/* Peek last archive element */
 	if (board_lock() == -1) {
-		syslog(LOG_CRIT, "board_lock(): %m");
+		syslog(LOG_CRIT, "board_lock: %m");
 		goto error;
 	}
 
@@ -273,7 +273,7 @@ wunder_update(void)
 	}
 
 	if (board_unlock() == -1) {
-		syslog(LOG_CRIT, "board_unlock(): %m");
+		syslog(LOG_CRIT, "board_unlock: %m");
 		goto error;
 	}
 

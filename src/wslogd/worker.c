@@ -85,11 +85,11 @@ sigtimer_create(int signo, struct itimerspec *it, timer_t *timer)
 	}
 
 	if (timer_create(CLOCK_MONOTONIC, &se, timer) == -1) {
-		syslog(LOG_ERR, "timer_create(): %m");
+		syslog(LOG_ERR, "timer_create: %m");
 		return -1;
 	}
 	if (timer_settime(*timer, 0, it, NULL) == -1) {
-		syslog(LOG_ERR, "timer_settime(): %m");
+		syslog(LOG_ERR, "timer_settime: %m");
 		goto error;
 	}
 
@@ -131,7 +131,7 @@ sigthread_main(void *arg)
 
 		ret = sigwaitinfo(&set, &info);
 		if (ret == -1) {
-			syslog(LOG_ERR, "sigwaitinfo(): %m");
+			syslog(LOG_ERR, "sigwaitinfo: %m");
 			goto error;
 		} else {
 			if (hangup_pending || shutdown_pending) {
@@ -166,7 +166,7 @@ static int
 sigthread_create(struct worker *dt)
 {
 	if (pthread_create(&dt->w_thread, NULL, sigthread_main, dt) == -1) {
-		syslog(LOG_EMERG, "pthread_create(): %m");
+		syslog(LOG_EMERG, "pthread_create: %m");
 		return -1;
 	}
 
@@ -304,7 +304,7 @@ threads_start(void)
 		struct worker *dt = &threads[i];
 
 		if (sigthread_create(dt) == -1) {
-			syslog(LOG_EMERG, "pthread_create(): %m");
+			syslog(LOG_EMERG, "pthread_create: %m");
 			return -1;
 		}
 	}
@@ -382,7 +382,7 @@ worker_main(int *halt)
 		}
 
 		if (board_open(O_CREAT) == -1) {
-			syslog(LOG_EMERG, "board_open(): %m");
+			syslog(LOG_EMERG, "board_open: %m");
 			goto error;
 		}
 
@@ -392,7 +392,7 @@ worker_main(int *halt)
 
 	/* Start all workers */
 	if (threads_start() == -1) {
-		syslog(LOG_EMERG, "threads_start(): %m");
+		syslog(LOG_EMERG, "threads_start: %m");
 		goto error;
 	}
 
@@ -404,7 +404,7 @@ worker_main(int *halt)
 		/* Signals to wait for */
 		ret = sigwaitinfo(&set, &info);
 		if (ret == -1) {
-			syslog(LOG_ERR, "sigwaitinfo(): %m");
+			syslog(LOG_ERR, "sigwaitinfo: %m");
 		} else {
 			switch (ret) {
 			case SIGHUP:
@@ -426,7 +426,7 @@ worker_main(int *halt)
 	*halt = shutdown_pending;
 
 	if (worker_destroy() == -1) {
-		syslog(LOG_ERR, "worker_destroy(): %m");
+		syslog(LOG_ERR, "worker_destroy: %m");
 	}
 
 	return 0;

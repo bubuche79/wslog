@@ -30,7 +30,7 @@ board_put(struct ws_archive *ar)
 	ssize_t ret;
 
 	if (board_lock() == -1) {
-		syslog(LOG_CRIT, "board_lock(): %m");
+		syslog(LOG_CRIT, "board_lock: %m");
 		goto error;
 	}
 
@@ -46,7 +46,7 @@ board_put(struct ws_archive *ar)
 	}
 
 	if (board_unlock() == -1) {
-		syslog(LOG_CRIT, "board_unlock(): %m");
+		syslog(LOG_CRIT, "board_unlock: %m");
 		goto error;
 	}
 
@@ -73,7 +73,7 @@ archive_init(struct itimerspec *it)
 			hw_archive = 0;
 			itimer_set(it, ARCHIVE_INTERVAL);
 		} else {
-			syslog(LOG_ERR, "drv_get_itimer(): %m");
+			syslog(LOG_ERR, "drv_get_itimer: %m");
 			goto error;
 		}
 	}
@@ -162,7 +162,7 @@ archive_main(void)
 
 	if (hw_archive) {
 		if (drv_get_archive(&arbuf, 1) == -1) {
-			syslog(LOG_ERR, "drv_get_archive(): %m");
+			syslog(LOG_ERR, "drv_get_archive: %m");
 			goto error;
 		}
 	}

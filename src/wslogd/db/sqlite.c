@@ -168,7 +168,7 @@ sqlite_init(void)
 
 	ret = sqlite3_initialize();
 	if (ret != SQLITE_OK) {
-		syslog(LOG_ERR, "sqlite3_initialize(): %s", sqlite3_errstr(ret));
+		syslog(LOG_ERR, "sqlite3_initialize: %s", sqlite3_errstr(ret));
 		goto error;
 	}
 
@@ -178,7 +178,7 @@ sqlite_init(void)
 		if (errno == ENOENT) {
 			oflag |= SQLITE_OPEN_CREATE;
 		} else {
-			syslog(LOG_ERR, "stat(%s): %m", dbfile);
+			syslog(LOG_ERR, "stat %s: %m", dbfile);
 			goto error;
 		}
 	}
