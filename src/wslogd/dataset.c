@@ -3,6 +3,7 @@
 #endif
 
 #include <math.h>
+#include <string.h>
 #include <errno.h>
 
 #include "defs/std.h"
@@ -357,6 +358,84 @@ ws_isset(const struct ws_loop *p, int flag)
 	return (p->wl_mask & flag) == flag;
 }
 
+#if 0
+int
+ws_get_value(const struct ws_loop *p, int flag, double *v)
+{
+	int ret;
+
+	if (WF_ISSET(p->wl_mask, flag)) {
+		switch (flag) {
+		case WS_PRESSURE:
+			*v = p->pressure;
+			break;
+		case WS_BAROMETER:
+			*v = p->barometer;
+			break;
+		case WS_ALTIMETER:
+			*v = p->altimeter;
+			break;
+		case WS_TEMP:
+			*v = p->temp;
+			break;
+		case WS_HUMIDITY:
+			*v = p->humidity;
+			break;
+		case WS_WIND_SPEED:
+			*v = p->wind_speed;
+			break;
+		case WS_WIND_DIR:
+			*v = p->wind_dir;
+			break;
+		case WS_WIND_GUST_SPEED:
+			*v = p->wind_gust_speed;
+			break;
+		case WS_WIND_GUST_DIR:
+			*v = p->wind_gust_dir;
+			break;
+		case WS_RAIN:
+			*v = p->rain;
+			break;
+		case WS_RAIN_RATE:
+			*v = p->rain_rate;
+			break;
+#if 0
+		case WS_RAIN_1H:
+			*v = p->rain_1h;
+			break;
+		case WS_RAIN_24H:
+			*v = p->rain_24h;
+			break;
+#endif
+		case WS_DEW_POINT:
+			*v = p->dew_point;
+			break;
+		case WS_WINDCHILL:
+			*v = p->windchill;
+			break;
+		case WS_HEAT_INDEX:
+			*v = p->heat_index;
+			break;
+		case WS_TEMP_IN:
+			*v = p->temp_in;
+			break;
+		case WS_HUMIDITY_IN:
+			*v = p->humidity_in;
+			break;
+		default:
+			errno = EINVAL;
+			ret = -1;
+			break;
+		}
+	} else {
+		errno = ENODATA;
+		ret = -1;
+	}
+
+	return ret;
+}
+#endif
+
 /**
  * Calculate missing fields from {@code p}.
  *
@@ -419,48 +498,61 @@ ws_aggr(struct ws_archive *p, int freq)
 
 	struct ws_aggr aggr_arr[] =
 	{
-		{ AGGR_AVG_INIT, ws_get_pressure, ws_set_pressure },
-		{ AGGR_AVG_INIT, ws_get_altimeter, ws_set_altimeter },
-		{ AGGR_AVG_INIT, ws_get_barometer, ws_set_barometer },
-		{ AGGR_AVG_INIT, ws_get_temp, ws_set_temp },
-		{ AGGR_AVG_INIT, ws_get_humidity, ws_set_humidity },
+//		{ AGGR_AVG_INIT, ws_get_pressure, ws_set_pressure },
+//		{ AGGR_AVG_INIT, ws_get_altimeter, ws_set_altimeter },
+//		{ AGGR_AVG_INIT, ws_get_barometer, ws_set_barometer },
+//		{ AGGR_AVG_INIT, ws_get_temp, ws_set_temp },
+//		{ AGGR_AVG_INIT, ws_get_humidity, ws_set_humidity },
 		{ AGGR_AVG_INIT, ws_get_wind_speed, ws_set_wind_speed },
 		{ AGGR_AVG_INIT, ws_get_wind_dir, ws_set_wind_dir },
-//		{ AGGR_MAX_INIT, ws_get_wind_gust_speed, ws_set_wind_gust_speed },
-//		{ AGGR_AVG_INIT, ws_get_wind_gust_dir, ws_set_wind_gust_dir },
 		{ AGGR_SUM_INIT, ws_get_rain, ws_set_rain },
-		{ AGGR_AVG_INIT, ws_get_rain_rate, ws_set_rain_rate },
-		{ AGGR_AVG_INIT, ws_get_dew_point, ws_set_dew_point },
-		{ AGGR_AVG_INIT, ws_get_windchill, ws_set_windchill },
-		{ AGGR_AVG_INIT, ws_get_heat_index, ws_set_heat_index },
-		{ AGGR_AVG_INIT, ws_get_temp_in, ws_set_temp_in },
-		{ AGGR_AVG_INIT, ws_get_humidity_in, ws_set_humidity_in }
+		{ AGGR_MAX_INIT, ws_get_rain_rate, ws_set_rain_rate },
+//		{ AGGR_AVG_INIT, ws_get_dew_point, ws_set_dew_point },
+//		{ AGGR_AVG_INIT, ws_get_windchill, ws_set_windchill },
+//		{ AGGR_AVG_INIT, ws_get_heat_index, ws_set_heat_index },
+//		{ AGGR_AVG_INIT, ws_get_temp_in, ws_set_temp_in },
+//		{ AGGR_AVG_INIT, ws_get_humidity_in, ws_set_humidity_in }
 	};
-
-	now = time(NULL);
-	nel = array_size(aggr_arr);
 
 	/* Walk through sensor readings */
 	i = 0;
 	prev = board_peek(i);
 
-	while (prev != NULL) {
-		if (prev->time + freq < now) {
-			prev = NULL;
-		} else {
-			aggr_update_all(aggr_arr, nel, prev);
+	if (prev != NULL) {
+		now = time(NULL);
+		nel = array_size(aggr_arr);
 
-			/* Next entry */
-			i++;
-			prev = board_peek(i);
-		}
-	}
+		memcpy(&p->data, prev, sizeof(*prev));
 
-	/* Compute derived metrics */
-	if (i > 0) {
 		p->interval = freq;
 		p->data.time = now;
 
+		p->data.wind_gust_dir = 0;
+		p->data.wind_gust_speed = 0;
+
+		do {
+			if (prev->time + freq < now) {
+				prev = NULL;
+			} else {
+				/* Wind gust */
+				if (WF_ISSET(prev->wl_mask, WF_WIND)) {
+					if (p->data.wind_gust_speed < prev->wind_speed) {
+						p->data.wl_mask |= WF_WIND_GUST;
+						p->data.wind_gust_speed = prev->wind_speed;
+						p->data.wind_gust_dir = prev->wind_dir;
+					}
+				}
+
+				/* Other metrics */
+				aggr_update_all(aggr_arr, nel, prev);
+
+				/* Next entry */
+				i++;
+				prev = board_peek(i);
+			}
+		} while (prev != NULL);
+
+		/* Compute derived metrics */
 		aggr_finalize_all(aggr_arr, nel, &p->data);
 	}
 

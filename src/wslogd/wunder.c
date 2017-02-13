@@ -91,10 +91,6 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 		{ "winddir", ws_get_wind_dir, NULL },
 		{ "windgustmph", ws_get_wind_gust_speed, ws_mph },
 		{ "windgustdir", ws_get_wind_gust_dir, NULL },
-#if 0
-		{ "rainin", ws_get_rain_1h, ws_in },
-		{ "dailyrainin", ws_get_rain_24h, ws_in },
-#endif
 		{ "dewptf", ws_get_dew_point, ws_fahrenheit },
 		{ "indoortempf", ws_get_temp_in, ws_fahrenheit },
 		{ "indoorhumidity", ws_get_humidity_in, NULL }

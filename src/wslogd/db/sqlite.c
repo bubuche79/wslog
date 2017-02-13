@@ -27,7 +27,7 @@
 	"  humidity INTEGER, " \
 	"  wind_speed REAL, " \
 	"  wind_dir INTEGER, " \
-	"  wind_gust REAL, " \
+	"  wind_gust_speed REAL, " \
 	"  wind_gust_dir INTEGER, " \
 	"  rain REAL, " \
 	"  rain_rate REAL, " \

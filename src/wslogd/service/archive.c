@@ -83,12 +83,15 @@ archive_init(struct itimerspec *it)
 		itimer_set(it, confp->archive.freq);
 	}
 
-	/* Some devices are not reliable, prefer software */
+	/* Some devices are not reliable, use software archive */
 	if (hw_archive) {
 		switch (driver) {
 #ifdef HAVE_WS23XX
 		case WS23XX:
-			/* Device archives data at archive time, no aggregation */
+			/*
+			 * All fields are picked at the final archive period. There is no
+			 * aggregation to compute average wind speed, for example.
+			 */
 			hw_archive = 0;
 			break;
 #endif
