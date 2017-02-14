@@ -18,12 +18,42 @@
 #define RAIN_PERIOD 900
 #define WF_ISSET(mask, flag) (((mask) & (flag)) == (flag))
 
+#if 0
+struct ws_func
+{
+	int (*get) (const struct ws_loop *, double *);
+	int (*set) (struct ws_loop *, double);
+};
+#endif
+
 struct ws_aggr
 {
 	struct aggr_data aggr;
 	int (*get) (const struct ws_loop *, double *);
 	int (*set) (struct ws_loop *, double);
 };
+
+#if 0
+static struct ws_func fn[] =
+{
+	{ ws_get_pressure, ws_set_pressure },
+	{ ws_get_altimeter, ws_set_altimeter },
+	{ ws_get_barometer, ws_set_barometer },
+	{ ws_get_temp, ws_set_temp },
+	{ ws_get_humidity, ws_set_humidity },
+	{ ws_get_wind_speed, ws_set_wind_speed },
+	{ ws_get_wind_dir, ws_set_wind_dir },
+	{ ws_get_wind_gust_speed, ws_set_wind_gust_speed },
+	{ ws_get_wind_gust_dir, ws_set_wind_gust_dir },
+	{ ws_get_rain, ws_set_rain },
+	{ ws_get_rain_rate, ws_set_rain_rate },
+	{ ws_get_dew_point, ws_set_dew_point },
+	{ ws_get_windchill, ws_set_windchill },
+	{ ws_get_heat_index, ws_set_heat_index },
+	{ ws_get_temp_in, ws_set_temp_in },
+	{ ws_get_humidity_in, ws_set_humidity_in }
+};
+#endif
 
 static int
 ws_get(uint32_t mask, int flag, double value, double *v)
@@ -312,6 +342,40 @@ calc_heat_index(struct ws_loop *p)
 	}
 }
 
+#if 0
+static int
+calc_aggr(int field, int algo, time_t ref, double *v)
+{
+	size_t i;
+	const struct ws_loop *prev;
+	struct aggr_data adbuf;
+
+	aggr_init(&adbuf, algo);
+
+	/* Walk through sensor readings */
+	i = 0;
+	prev = board_peek(i);
+
+	while (prev != NULL) {
+		if (prev->time < ref) {
+			prev = NULL;
+		} else {
+			double value;
+
+			if (fn[field].get(prev, &value) == 0) {
+				aggr_update(&adbuf, value);
+			}
+
+			/* Next entry */
+			i++;
+			prev = board_peek(i);
+		}
+	}
+
+	return aggr_finalize(&adbuf, v);
+}
+#endif
+
 static void
 calc_rain_rate(struct ws_loop *p)
 {
@@ -324,7 +388,7 @@ calc_rain_rate(struct ws_loop *p)
 
 		if (ws_isset(p, WF_RAIN)) {
 			ticks = 1;
-			rain_sum = p->rain;
+			rain_sum += p->rain;
 		}
 
 		i = 0;
@@ -339,7 +403,6 @@ calc_rain_rate(struct ws_loop *p)
 					rain_sum += prev->rain;
 				}
 
-//				period = p->time.tv_sec - prev->time.tv_sec;
 				prev = board_peek(i++);
 			}
 		}
@@ -357,84 +420,6 @@ ws_isset(const struct ws_loop *p, int flag)
 {
 	return (p->wl_mask & flag) == flag;
 }
-
-#if 0
-int
-ws_get_value(const struct ws_loop *p, int flag, double *v)
-{
-	int ret;
-
-	if (WF_ISSET(p->wl_mask, flag)) {
-		switch (flag) {
-		case WS_PRESSURE:
-			*v = p->pressure;
-			break;
-		case WS_BAROMETER:
-			*v = p->barometer;
-			break;
-		case WS_ALTIMETER:
-			*v = p->altimeter;
-			break;
-		case WS_TEMP:
-			*v = p->temp;
-			break;
-		case WS_HUMIDITY:
-			*v = p->humidity;
-			break;
-		case WS_WIND_SPEED:
-			*v = p->wind_speed;
-			break;
-		case WS_WIND_DIR:
-			*v = p->wind_dir;
-			break;
-		case WS_WIND_GUST_SPEED:
-			*v = p->wind_gust_speed;
-			break;
-		case WS_WIND_GUST_DIR:
-			*v = p->wind_gust_dir;
-			break;
-		case WS_RAIN:
-			*v = p->rain;
-			break;
-		case WS_RAIN_RATE:
-			*v = p->rain_rate;
-			break;
-#if 0
-		case WS_RAIN_1H:
-			*v = p->rain_1h;
-			break;
-		case WS_RAIN_24H:
-			*v = p->rain_24h;
-			break;
-#endif
-		case WS_DEW_POINT:
-			*v = p->dew_point;
-			break;
-		case WS_WINDCHILL:
-			*v = p->windchill;
-			break;
-		case WS_HEAT_INDEX:
-			*v = p->heat_index;
-			break;
-		case WS_TEMP_IN:
-			*v = p->temp_in;
-			break;
-		case WS_HUMIDITY_IN:
-			*v = p->humidity_in;
-			break;
-		default:
-			errno = EINVAL;
-			ret = -1;
-			break;
-		}
-	} else {
-		errno = ENODATA;
-		ret = -1;
-	}
-
-	return ret;
-}
-#endif
 
 /**
  * Calculate missing fields from {@code p}.
