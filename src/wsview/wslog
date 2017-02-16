@@ -1,0 +1,152 @@
+#!/usr/bin/lua
+
+i18n = {
+	en = {
+		temp = "Temperature",
+		dew_point = "Dew point",
+		humidity = "Humidity",
+		rain = "Precipitation"
+	},
+	fr = {
+		temp = "Température",
+		dew_point = "Point de rosée",
+		humidity = "Humidité",
+		rain = "Précipitation"
+	}
+}
+
+function getlang()
+	local lang = "en"
+	local aclang = os.getenv("HTTP_ACCEPT_LANGUAGE") or ""
+
+	for lpat in aclang:gmatch("[%w-]+") do
+		lpat = lpat and lpat:gsub("-", "_")
+		if i18n[lpat]~= nil then
+			lang = lpat
+			break
+		end
+	end
+
+	return lang
+end
+
+function getparams()
+	local qstring = os.getenv('QUERY_STRING') or ""
+
+	return protocol.urldecode_params(qstring)
+end
+
+function translate(k)
+	return i18n[lang][k] or k
+end
+
+function print_value(v, metric, unit)
+	print(string.format("<td class='data-%s'>", metric))
+	if (v == nil) then
+		print('--')
+	else
+		print(string.format("%.1f <span>%s</span>", v, unit))
+	end
+	print("</td>")
+end
+
+function print_line(metric, unit, row)
+	print("<tr>")
+	print(string.format("<td>%s</td>", translate(metric)))
+	print_value(row[metric .. "_min"], metric, unit)
+	print_value(row[metric .. "_max"], metric, unit)
+	print_value(row[metric .. "_avg"], metric, unit)
+	print("</tr>")
+end
+
+function ws_current()
+	print("<h2 class='current'>Current Conditions</h2>")
+	print("<div id='current'>")
+
+	print("</div>")
+end
+
+function ws_summary(s, e)
+	local fields = { "temp", "dew_point", "humidity", "rain", "wind_speed", "wind_gust", "wind_dir", "barometer" }
+
+	local sql = "SELECT "
+	for i, v in pairs(fields) do
+		sql = sql .. string.format("MIN(%s) AS %s_min, ", v, v)
+		sql = sql .. string.format("MAX(%s) AS %s_max, ", v, v)
+		sql = sql .. string.format("AVG(%s) AS %s_avg, ", v, v)
+	end
+	sql = sql .. "NULL "
+	sql = sql .. "FROM ws_archive "
+	sql = sql .. string.format("WHERE %d < time AND time < %d", s, e)
+
+	cur = cnx:execute(sql)
+	row = cur:fetch({}, "a")
+	cur:close()
+
+	print("<div id='summary'>")
+	print("<h2 class='summary'>Summary</h2>")
+
+	local table_start = [[<table class='weather-summary'>
+<thead>
+<tr>
+<td></td>
+<td>Low</td>
+<td>High</td>
+<td>Average</td>
+</tr>
+</thead>]]
+
+	local table_end = [[</table>]]
+
+	print(table_start)
+	print_line("temp", "°C", row)
+	print_line("dew_point", "°C", row)
+	print_line("humidity", "%", row)
+	print_line("rain", "mm", row)
+	print(table_end)
+
+	print(table_start)
+	print_line("wind_speed", "m/s", row)
+	print_line("wind_gust", "m/s", row)
+	print_line("wind_dir", "°", row)
+	print_line("barometer", "hPa", row)
+	print(table_end)
+
+	print("</div>")
+end
+
+function ws_table
+end
+
+--require "nixio"
+driver = require "luasql.sqlite3"
+--protocol = require "luci.http.protocol"
+
+env = driver.sqlite3()
+cnx = env:connect("wslogd.db")
+
+lang = getlang()
+--params = getparams()
+
+print("Content-type: text/html; charset=utf-8\n")
+
+print("<html>")
+print("<head>")
+print("<meta charset='utf-8'>")
+print("</head>")
+
+print("<body>")
+
+-- parameters
+s = os.time{year=2016, month=12, day=1}
+e = os.time{year=2017, month=12, day=1}
+
+ws_current()
+ws_summary(s, e)
+
+print("</body>")
+print("</html>")
+
+cnx:close()
+env:close()
+
