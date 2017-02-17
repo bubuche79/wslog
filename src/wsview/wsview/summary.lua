@@ -1,4 +1,4 @@
-require "wslog.util"
+require "wsview.util"
 
 function print_value(v, metric, unit)
 	print(string.format("<td class='data-%s'>", metric))
@@ -12,14 +12,14 @@ end
 
 function print_line(metric, unit, row)
 	print("<tr>")
-	print(string.format("<td>%s</td>", translate(metric)))
+	print(string.format("<td>%s</td>", i18n_fmt(metric)))
 	print_value(row[metric .. "_min"], metric, unit)
 	print_value(row[metric .. "_max"], metric, unit)
 	print_value(row[metric .. "_avg"], metric, unit)
 	print("</tr>")
 end
 
-function display_date(s, e)
+function summary(s, e)
 	local fields = { "temp", "dew_point", "humidity", "rain", "wind_speed", "wind_gust", "wind_dir", "barometer" }
 
 	local sql = "SELECT "
@@ -39,7 +39,7 @@ function display_date(s, e)
 	print("<div id='summary'>")
 	print("<h2 class='summary'>Summary</h2>")
 
-	local table_start = [[<table class='weather-summary'>
+	local table_start = [[<table class="weather-summary">
 <thead>
 <tr>
 <td></td>
@@ -68,16 +68,20 @@ function display_date(s, e)
 	print("</div>")
 end
 
-function display()
-	local s = os.time{year=2016, month=12, day=1}
-	local e = os.time{year=2017, month=12, day=1}
+function summary_today()
+	local now = os.time()
+	local e = os.date("*t", now)
+	local s = os.time({ year = e.year, month = e.month, day = e.day, hour = 0, isdst = e.isdst })
+
+	print("<span class='date'>" .. i18n_date(s) .. "</span>")
 
 	driver = require "luasql.sqlite3"
 	env = driver.sqlite3()
-	cnx = env:connect("/u12/wslogd.db")
+	cnx = env:connect("/u12/wslog.db")
 
-	display_date(s, e)
+	summary(s, now)
 
 	cnx:close()
 	env:close()
 end
+

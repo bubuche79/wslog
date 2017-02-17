@@ -5,7 +5,8 @@ i18n = {
 		temp = "Temperature",
 		dew_point = "Dew point",
 		humidity = "Humidity",
-		rain = "Precipitation"
+		rain = "Precipitation",
+		date_fmt = "%B %d, %Y"
 	},
 	fr = {
 		temp = "Température",
@@ -15,7 +16,9 @@ i18n = {
 		wind_speed = "Vitesse du vent",
 		wind_gust = "Rafale de vent",
 		wind_dir = "Direction du vent",
-		barometer = "Pression"
+		barometer = "Pression",
+		current = "Observations",
+		date_fmt = "%d %B %Y"
 	}
 }
 
@@ -40,7 +43,10 @@ function getparams()
 	return luci.http.protocol.urldecode_params(qstring)
 end
 
-function translate(k)
+function i18n_fmt(k)
 	return i18n[lang][k] or string.format("???%s???", k)
 end
 
+function i18n_date(date)
+	return os.date(i18n[lang]['date_fmt'], date)
+end

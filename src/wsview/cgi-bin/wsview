@@ -1,0 +1,44 @@
+#!/usr/bin/lua
+
+require "wsview.util"
+
+lang = getlang()
+path = os.getenv("PATH_INFO") or "/"
+
+print("Content-type: text/html; charset=utf-8\n")
+
+print([[<html>
+<head>
+  <meta charset="utf-8">
+  <link type="text/css" rel="stylesheet" href="/wsview-static/wsview.css"/>
+</head>
+<body>
+<div id="header">
+<div id="menu">
+  <nav id="menu-nav">
+    <ul>
+      <li><a href="/cgi-bin/wsview/" title="Current"/>Current</a></li>
+      <li><a href="/cgi-bin/wsview/summary/" title="Summary"/>Summary</a></li>
+    </ul>
+  </nav>
+</div>
+</div>]])
+
+--require "nixio"
+--for i,v in pairs(nixio.getenv()) do
+--	print(string.format("%s=%s", i, v))
+--end
+
+if path == "/summary/" then
+	require "wsview.summary"
+	summary_today()
+elseif path == "/" then
+	require "wsview.current"
+	require "wsview.summary"
+	current()
+	summary_today()
+end
+
+print([[</body>
+</html>]])
+
