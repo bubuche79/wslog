@@ -6,28 +6,41 @@ AM_CPPFLAGS = \
 AM_CFLAGS = \
 	$(inc_CFLAGS)
 
-noinst_LIBRARIES = libwslog.a
+lib_LTLIBRARIES = libwslog.la
 
-libwslog_a_SOURCES = \
+libwslog_la_SOURCES = \
 	board.c \
 	conf.c \
+	dataset.c \
 	driver/driver.c \
 	conf.h \
 	board.h \
+	dataset.h \
 	driver/driver.h
 
-if HAVE_WS23XX
-libwslog_a_SOURCES += \
+libwslog_la_LIBADD = \
+	-L../libws -lws -lrt -lpthread
+
+if USE_WS23XX
+libwslog_la_SOURCES += \
 	driver/ws23xx.c \
 	driver/ws23xx.h
 endif
 
-if HAVE_SIMU
-libwslog_a_SOURCES += \
+if USE_SIMU
+libwslog_la_SOURCES += \
 	driver/simu.c \
 	driver/simu.h
 endif
 
+if USE_WSVIEW
+libwslog_la_SOURCES += \
+	wsview.c \
+	wsview.h
+
+libwslog_la_LIBADD += \
+	-llua
+endif
 
 bin_PROGRAMS = wslogd wslogc
 
@@ -35,14 +48,13 @@ wslogc_SOURCES = \
 	wslogc.c
 
 wslogc_LDADD = \
-	-L. -lwslog -L../libws -lws -lrt -lpthread
+	-L. -lwslog -lrt -lpthread
 
 EXTRA_wslogc_DEPENDENCIES = \
-	libwslog.a
+	libwslog.la
 
 wslogd_SOURCES = \
 	daemon.c \
-	dataset.c \
 	db/sqlite.c \
 	service/archive.c \
 	service/sensor.c \
@@ -52,7 +64,6 @@ wslogd_SOURCES = \
 	wunder.c \
 	board.h \
 	daemon.h \
-	dataset.h \
 	db/sqlite.h \
 	service/archive.h \
 	service/sensor.h \
@@ -62,10 +73,10 @@ wslogd_SOURCES = \
 	wunder.h
 
 wslogd_LDADD = \
-	-L. -lwslog -L../libws -lws -lsqlite3 -lcurl -lrt -lpthread
+	-L. -lwslog -lsqlite3 -lcurl -lrt -lpthread
 
 EXTRA_wslogd_DEPENDENCIES = \
-	libwslog.a
+	libwslog.la
 
 dist_sysconf_DATA = \
 	wslogd.conf

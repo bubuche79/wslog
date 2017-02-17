@@ -18,7 +18,7 @@ libws_la_SOURCES = \
 	util.h \
 	serial.h
 
-if HAVE_WS23XX
+if USE_WS23XX
 libws_la_SOURCES += \
 	ws23xx/archive.c \
 	ws23xx/decoder.c \
