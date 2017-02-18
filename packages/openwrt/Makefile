@@ -69,7 +69,7 @@ define Package/wslog-cgi
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Weather station CGI viewer
-  DEPENDS:=+wslog +uhttp +liblua +luci-base
+  DEPENDS:=+wslog +uhttpd +liblua +luasql-sqlite3 +luci-base
 endef
 
 define Package/wslog-cgi/description
@@ -83,7 +83,8 @@ define Package/wslog-cgi/install
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/wsview/wsview-static/* $(1)/www/wsview-static
 	$(INSTALL_DIR) $(1)/usr/lib/lua/wsview
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wsview/wsview/* $(1)/usr/lib/lua/wsview
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libwsview.so $(1)/usr/lib/lua/wsview
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libwsview.so $(1)/usr/lib/lua/wsview.so
 endef
 
 $(eval $(call BuildPackage,wslog))
+$(eval $(call BuildPackage,wslog-cgi))

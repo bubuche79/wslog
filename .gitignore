@@ -37,7 +37,6 @@ Makefile.in
 *.lo
 *.so*
 
-ws23xx
 check_aggregate
 check_nybble
 

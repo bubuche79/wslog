@@ -53,6 +53,7 @@ AC_CONFIG_FILES([Makefile
                  src/libws/Makefile
                  src/ws23xx/Makefile
                  src/wslogd/Makefile
+                 src/wsview/Makefile
                  tests/Makefile
                  ])
 AC_OUTPUT
