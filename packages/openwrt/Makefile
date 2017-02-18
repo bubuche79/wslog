@@ -22,7 +22,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/wslog
   SECTION:=utils
   CATEGORY:=Utilities
-  TITLE:=Weather station utility
+  TITLE:=Weather station logger
   DEPENDS:=+libcurl +libsqlite3 +librt +libpthread
 endef
 
@@ -63,6 +63,27 @@ if [ -z "$${IPKG_INSTROOT}" ]; then
   /etc/init.d/wslogd disable
 fi
 exit 0
+endef
+
+define Package/wslog-cgi
+  SECTION:=utils
+  CATEGORY:=Utilities
+  TITLE:=Weather station CGI viewer
+  DEPENDS:=+wslog +uhttp +liblua +luci-base
+endef
+
+define Package/wslog-cgi/description
+  This is the cgi-bin script for the weather station logger.
+endef
+
+define Package/wslog-cgi/install
+	$(INSTALL_DIR) $(1)/www/cgi-bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wsview/cgi-bin/wsview $(1)/www/cgi-bin
+	$(INSTALL_DIR) $(1)/www/wsview-static
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/wsview/wsview-static/* $(1)/www/wsview-static
+	$(INSTALL_DIR) $(1)/usr/lib/lua/wsview
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wsview/wsview/* $(1)/usr/lib/lua/wsview
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libwsview.so $(1)/usr/lib/lua/wsview
 endef
 
 $(eval $(call BuildPackage,wslog))
