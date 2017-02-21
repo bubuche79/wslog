@@ -18,6 +18,8 @@ i18n = {
 		wind_dir = "Direction du vent",
 		barometer = "Pression",
 		current = "Observations",
+		rain_rate = "Précipitations",
+		feels = "Paraît",
 		date_fmt = "%d %B %Y"
 	}
 }

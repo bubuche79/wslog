@@ -20,7 +20,7 @@ function print_line(metric, unit, row)
 end
 
 function summary(s, e)
-	local fields = { "temp", "dew_point", "humidity", "rain", "wind_speed", "wind_gust", "wind_dir", "barometer" }
+	local fields = { "temp", "dew_point", "humidity", "rain", "wind_speed", "wind_gust_speed", "wind_dir", "barometer" }
 
 	local sql = "SELECT "
 	for i, v in pairs(fields) do
@@ -77,7 +77,7 @@ function summary_today()
 
 	driver = require "luasql.sqlite3"
 	env = driver.sqlite3()
-	cnx = env:connect("/u12/wslog.db")
+	cnx = env:connect("/var/run/wslogd.db")
 
 	summary(s, now)
 

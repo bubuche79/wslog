@@ -1,0 +1,56 @@
+body {
+	color: black;
+	font-family: Helvetica, sans-serif;
+	font-style: normal;
+	font-weight: 400;
+}
+
+div {
+	display: block;
+}
+
+.table {
+	display: table;
+}
+
+.row {
+	display: table-row;
+	clear: both;
+}
+
+.col {
+	display: table-cell;
+	padding-right: 10px;
+}
+
+.ws-data {
+	font-size: 15px;
+	white-space: nowrap;
+}
+
+.ws-value {
+	font-weight: 600;
+}
+
+.ws-unit {
+	font-weight: 100;
+}
+
+#cur-temp .ws-data {
+	font-size: 72px;
+}
+
+#cur-temp .ws-value {
+	font-weight: 400;
+}
+
+#cur-temp .ws-unit {
+	font-size: 36px;
+	text-align: left;
+	vertical-align: super;
+}
+
+#cur-windchill {
+	font-size: 18px;
+}
+
