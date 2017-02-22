@@ -18,7 +18,7 @@ i18n = {
 		wind_dir = "Direction du vent",
 		barometer = "Pression",
 		current = "Observations",
-		rain_rate = "Précipitations",
+		rain_rate = "Précipitation",
 		feels = "Paraît",
 		date_fmt = "%d %B %Y"
 	}
@@ -51,4 +51,12 @@ end
 
 function i18n_date(date)
 	return os.date(i18n[lang]['date_fmt'], date)
+end
+
+function printf(s,...)
+	return print(s:format(...))
+end
+
+function io_printf(s, ...)
+	return io.write(s:format(...))
 end

@@ -10,17 +10,15 @@ print("Content-type: text/html; charset=utf-8\n")
 print([[<html>
 <head>
   <meta charset="utf-8">
-  <link type="text/css" rel="stylesheet" href="/wsview-static/wsview.css"/>
+  <link type="text/css" rel="stylesheet" href="/wsview-static/wsview.css">
 </head>
 <body>
 <div id="header">
 <div id="menu">
-  <nav id="menu-nav">
-    <ul>
-      <li><a href="/cgi-bin/wsview/" title="Current"/>Current</a></li>
-      <li><a href="/cgi-bin/wsview/summary/" title="Summary"/>Summary</a></li>
-    </ul>
-  </nav>
+<nav id="menu-nav">
+  <a href="/cgi-bin/wsview/" title="Current">Current</a></li>
+  <a href="/cgi-bin/wsview/summary/" title="Summary">Summary</a></li>
+</nav>
 </div>
 </div>]])
 

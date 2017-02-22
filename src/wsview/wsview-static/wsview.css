@@ -1,8 +1,9 @@
 body {
-	color: black;
+	color: rgb(51, 51, 51);
 	font-family: Helvetica, sans-serif;
 	font-style: normal;
 	font-weight: 400;
+	box-sizing: border-box;
 }
 
 div {
@@ -20,11 +21,27 @@ div {
 
 .col {
 	display: table-cell;
+	padding-left: 10px;
 	padding-right: 10px;
 }
 
+.circle {
+	border: 5px solid rgb(129, 130, 130);
+	border-radius: 50%;
+	height: 85px;
+	width: 85px;
+}
+
+.arrow {
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+	border-top: 21px solid rgb(51, 51, 51);
+	position: absolute;
+	left: 41px;
+	top: -7px;
+}
+
 .ws-data {
-	font-size: 15px;
 	white-space: nowrap;
 }
 
@@ -36,21 +53,46 @@ div {
 	font-weight: 100;
 }
 
-#cur-temp .ws-data {
-	font-size: 72px;
+#rt-tbody {
+	padding-top: 20px;
+	width: 100%;
 }
 
-#cur-temp .ws-value {
+#rt-temp .ws-data {
+	font-size: 80px;
+}
+
+#rt-temp .ws-value {
 	font-weight: 400;
 }
 
-#cur-temp .ws-unit {
-	font-size: 36px;
+#rt-temp .ws-unit {
+	font-size: 42px;
 	text-align: left;
 	vertical-align: super;
 }
 
-#cur-windchill {
+#rt-wind {
+	position: relative;
+}
+
+#rt-wind-speed {
+	position: absolute;
+	top: 25px;
+	width: 95px;
+	text-align: center;
+}
+
+#rt-wind-speed .col {
+	width: 95px;
+	margin: 0;
+}
+
+#rt-wind-speed .ws-data {
+	font-size: 22px;
+}
+
+#rt-windchill * {
 	font-size: 18px;
 }
 

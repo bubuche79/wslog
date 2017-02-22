@@ -73,7 +73,7 @@ function summary_today()
 	local e = os.date("*t", now)
 	local s = os.time({ year = e.year, month = e.month, day = e.day, hour = 0, isdst = e.isdst })
 
-	print("<span class='date'>" .. i18n_date(s) .. "</span>")
+	--print("<span class='date'>" .. i18n_date(s) .. "</span>")
 
 	driver = require "luasql.sqlite3"
 	env = driver.sqlite3()
