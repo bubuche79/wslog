@@ -1,42 +1,40 @@
 require "wsview"
 require "wsview.util"
 
-local conv = {
-	temp = { unit = "°C", fmt = "%.1f" },
-	humidity = { unit = "%", fmt = "%d" },
-	rain_rate = { unit = "mm/h", fmt = "%.1f" },
-	pressure = { unit = "hPa", fmt = "%.1f" },
-	speed = { unit = "m/s", fmt = "%.1f" }
-}
-
-function div_row(metric, unit, tbl, label, split, el)
-	local v = tbl[metric]
+function div_row1(id, v, unit, label, split, el)
 	local fmt = conv[unit]
 
 	el = el or "span"
 	split = split or 1
 
-	print("<div id='rt-" .. string.gsub(metric, "_", "-") .. "' class='row'>")
+	print("<div id='rt-" .. id .. "' class='row'>")
 
 	print("<div class='col'>")
 	if (label ~= nil) then
 		print("<span class='ws-label'>" .. i18n_fmt(label) .. "</span>")
 		if (split == 1) then
-			print("</div>")
-			print("<div class='col'>")
+			print("</div><div class='col'>")
 		end
 	end
 	printf("<%s class='ws-data'>", el)
 	if (v ~= nil) then
 		printf("<%s class='ws-value'>" .. fmt.fmt .. "</%s>", el, v, el)
-		printf("<%s class='ws-unit'>%s</%s>", el, fmt.unit, el)
+		if (fmt.unit ~= nil) then
+			printf("<%s class='ws-unit'>%s</%s>", el, fmt.unit, el)
+		end
 	else
 		printf("<%s class='ws-value'>--</%s>", el, el)
 	end
-	printf("</%s>", el)
-	print("</div>")
+	printf("</%s></div>", el)
 
 	print("</div>")
+end
+
+function div_row(metric, unit, tbl, label, split, el)
+	local id = string.gsub(metric, "_", "-")
+	local v = tbl[metric]
+
+	div_row1(id, v, unit, label, split, el)
 end
 
 function curr_hrow(metric, unit, tbl, label)
@@ -44,10 +42,12 @@ function curr_hrow(metric, unit, tbl, label)
 end
 
 function curr_row(metric, unit, tbl)
-	div_row(metric, unit, tbl, metric, 1)
+	div_row(metric, unit, tbl, metric)
 end
 
 function current_header(tbl)
+	local dir
+
 	-- temp
 	print("<div class='col'>")
 	print("<div class='table'>")
@@ -58,13 +58,25 @@ function current_header(tbl)
 
 	-- wind
 	print("<div class='col'>")
-	print("<div id='rt-wind' class='table'>")
+	print("<div class='table'>")
+
+	print("<div id='rt-wind' class='row'>")
+	print("<div class='col'>")
 	if (tbl.wind_dir ~= nil) then
+		dir = ws_wind_dir(tbl.wind_dir)
+
 		printf("<div style='transform: rotate(%ddeg); '>", tbl.wind_dir)
 		print("<div class='circle'><div class='arrow'></div></div>")
 		print("</div>")
+	else
+		dir = "--"
 	end
 	div_row("wind_speed", "speed", tbl, nil, 0, "div")
+	print("</div>")
+	print("</div>")
+
+	div_row1("wind-dir", dir, "dir", "wind_from", 0)
+
 	print("</div>")
 	print("</div>")
 end

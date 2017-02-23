@@ -72,7 +72,11 @@ div {
 	vertical-align: super;
 }
 
-#rt-wind {
+#rt-windchill * {
+	font-size: 18px;
+}
+
+#rt-wind .col {
 	position: relative;
 }
 
@@ -90,9 +94,5 @@ div {
 
 #rt-wind-speed .ws-data {
 	font-size: 22px;
-}
-
-#rt-windchill * {
-	font-size: 18px;
 }
 

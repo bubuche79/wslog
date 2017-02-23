@@ -8,6 +8,8 @@
 #include "defs/dso.h"
 #include "defs/std.h"
 
+#include "libws/util.h"
+
 #include "board.h"
 #include "dataset.h"
 #include "wsview.h"
@@ -19,7 +21,7 @@ struct lua_table
 };
 
 static int
-ws_current(lua_State *L)
+get_current(lua_State *L)
 {
 	int res;
 	size_t i, nel;
@@ -92,10 +94,25 @@ error:
 	return lua_error(L);
 }
 
+static int
+get_wind_dir(lua_State *L)
+{
+	double dir;
+	const char *res;
+
+	dir = lua_tonumber(L, 1);
+	res = ws_dir(dir);
+
+	lua_pushstring(L, res);
+
+	return 1;
+}
+
 DSO_EXPORT int
 luaopen_wsview(lua_State *L)
 {
-	lua_register(L, "ws_current", ws_current);
+	lua_register(L, "ws_current", get_current);
+	lua_register(L, "ws_wind_dir", get_wind_dir);
 
 	if (board_open(0) == -1) {
         lua_pushfstring(L, "board_open: %s", strerror(errno));

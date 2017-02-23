@@ -1,5 +1,14 @@
 require "luci.http.protocol"
 
+conv = {
+	temp = { unit = "°C", fmt = "%.1f" },
+	humidity = { unit = "%", fmt = "%d" },
+	rain_rate = { unit = "mm/h", fmt = "%.1f" },
+	pressure = { unit = "hPa", fmt = "%.1f" },
+	speed = { unit = "m/s", fmt = "%.1f" },
+	dir = { fmt = "%s" }
+}
+
 i18n = {
 	en = {
 		temp = "Temperature",
@@ -16,6 +25,7 @@ i18n = {
 		wind_speed = "Vitesse du vent",
 		wind_gust = "Rafale de vent",
 		wind_dir = "Direction du vent",
+		wind_from = "Vent de",
 		barometer = "Pression",
 		current = "Observations",
 		rain_rate = "Précipitation",
@@ -57,6 +67,3 @@ function printf(s,...)
 	return print(s:format(...))
 end
 
-function io_printf(s, ...)
-	return io.write(s:format(...))
-end
