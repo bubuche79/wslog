@@ -1,7 +1,7 @@
 require "wsview"
 require "wsview.util"
 
-function div_row1(id, v, unit, label, split, el)
+function rt_row(id, v, unit, label, split, el)
 	local fmt = conv[unit]
 
 	el = el or "span"
@@ -34,7 +34,7 @@ function div_row(metric, unit, tbl, label, split, el)
 	local id = string.gsub(metric, "_", "-")
 	local v = tbl[metric]
 
-	div_row1(id, v, unit, label, split, el)
+	rt_row(id, v, unit, label, split, el)
 end
 
 function curr_hrow(metric, unit, tbl, label)
@@ -75,7 +75,7 @@ function current_header(tbl)
 	print("</div>")
 	print("</div>")
 
-	div_row1("wind-dir", dir, "dir", "wind_from", 0)
+	rt_row("wind-dir", dir, "dir", "wind_from", 0)
 
 	print("</div>")
 	print("</div>")

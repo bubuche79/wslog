@@ -41,15 +41,15 @@ div {
 	top: -7px;
 }
 
-.ws-data {
+.ws-data, .aggr-data {
 	white-space: nowrap;
 }
 
-.ws-value {
+.ws-value, .aggr-value {
 	font-weight: 600;
 }
 
-.ws-unit {
+.ws-unit, .aggr-unit {
 	font-weight: 100;
 }
 
@@ -96,3 +96,7 @@ div {
 	font-size: 22px;
 }
 
+#aggr .table {
+	padding-left: 10px;
+	padding-right: 10px;
+}

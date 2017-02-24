@@ -2,7 +2,7 @@ require "luci.http.protocol"
 
 conv = {
 	temp = { unit = "°C", fmt = "%.1f" },
-	humidity = { unit = "%", fmt = "%d" },
+	humidity = { unit = "%", fmt = "%.0f" },
 	rain_rate = { unit = "mm/h", fmt = "%.1f" },
 	pressure = { unit = "hPa", fmt = "%.1f" },
 	speed = { unit = "m/s", fmt = "%.1f" },
@@ -30,7 +30,8 @@ i18n = {
 		current = "Observations",
 		rain_rate = "Précipitation",
 		feels = "Paraît",
-		date_fmt = "%d %B %Y"
+		date_fmt = "%d %B %Y",
+		summary = "Bilan"
 	}
 }
 

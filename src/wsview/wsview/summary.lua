@@ -1,22 +1,33 @@
+require "wsview"
 require "wsview.util"
 
-function print_value(v, metric, unit)
-	print(string.format("<td class='data-%s'>", metric))
-	if (v == nil) then
-		print('--')
-	else
-		print(string.format("%.1f <span>%s</span>", v, unit))
-	end
-	print("</td>")
-end
+function aggr_row(metric, unit, row, cols)
+	local id = string.gsub(metric, "_", "-")
+	local fmt = conv[unit]
 
-function print_line(metric, unit, row)
-	print("<tr>")
-	print(string.format("<td>%s</td>", i18n_fmt(metric)))
-	print_value(row[metric .. "_min"], metric, unit)
-	print_value(row[metric .. "_max"], metric, unit)
-	print_value(row[metric .. "_avg"], metric, unit)
-	print("</tr>")
+	print("<div id='aggr-" .. id .. "' class='row'>")
+
+	print("<div class='col'>")
+	print("<span class='aggr-label'>" .. i18n_fmt(metric) .. "</span>")
+	print("</div>")
+
+	for i, m in pairs(cols) do
+		local v = row[metric .. "_" .. m]
+
+		print("<div class='col'>")
+		print("<span class='aggr-data'>")
+		if (v ~= nil) then
+			printf("<span class='aggr-value'>" .. fmt.fmt .. "</span>", v)
+			if (fmt.unit ~= nil) then
+				printf("<span class='aggr-unit'>%s</span>", fmt.unit)
+			end
+		else
+			print("<span class='aggr-value'>--</span>")
+		end
+		printf("</span></div>")
+	end
+
+	print("</div>")
 end
 
 function summary(s, e)
@@ -36,34 +47,22 @@ function summary(s, e)
 	local row = cur:fetch({}, "a")
 	cur:close()
 
-	print("<div id='summary'>")
-	print("<h2 class='summary'>Summary</h2>")
+	row.wind_dir_avg = ws_wind_dir(row.wind_dir_avg)
 
-	local table_start = [[<table class="weather-summary">
-<thead>
-<tr>
-<td></td>
-<td>Low</td>
-<td>High</td>
-<td>Average</td>
-</tr>
-</thead>]]
+	-- print html
+	print("<div id='aggr'>")
+	print("<h2 class='summary'>" .. i18n_fmt('summary') .. "</h2>")
 
-	local table_end = [[</table>]]
-
-	print(table_start)
-	print_line("temp", "°C", row)
-	print_line("dew_point", "°C", row)
-	print_line("humidity", "%", row)
-	print_line("rain", "mm", row)
-	print(table_end)
-
-	print(table_start)
-	print_line("wind_speed", "m/s", row)
-	print_line("wind_gust", "m/s", row)
-	print_line("wind_dir", "°", row)
-	print_line("barometer", "hPa", row)
-	print(table_end)
+	print("<div class='table'>")
+	aggr_row("temp", "temp", row, { "min", "max", "avg" })
+	aggr_row("dew_point", "temp", row, { "min", "max", "avg" })
+	aggr_row("humidity", "humidity", row, { "min", "max", "avg" })
+	aggr_row("rain", "rain_rate", row, { "", "", "max" })
+	aggr_row("wind_speed", "speed", row, { "min", "max", "avg" })
+	aggr_row("wind_gust", "speed", row, { "", "max", "" })
+	aggr_row("wind_dir", "dir", row, { "", "", "avg" })
+	aggr_row("barometer", "pressure", row, { "min", "max", "" })
+	print("</div>")
 
 	print("</div>")
 end
