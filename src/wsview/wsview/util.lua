@@ -1,4 +1,4 @@
-require "luci.http.protocol"
+--require "luci.http.protocol"
 
 conv = {
 	temp = { unit = "°C", fmt = "%.1f" },
