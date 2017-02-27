@@ -7,7 +7,6 @@
 
 #include "defs/dso.h"
 #include "defs/std.h"
-
 #include "libws/util.h"
 
 #include "board.h"
@@ -77,7 +76,7 @@ get_current(lua_State *L)
 			double value;
 
 			if (fields[i].get(bufp, &value) == 0) {
-				lua_pushnumber(L, value);
+				lua_pushnumber(L, round_scale(value, 2));
 				lua_setfield(L, -2, fields[i].name);
 			}
 		}

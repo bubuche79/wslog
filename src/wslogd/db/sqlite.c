@@ -11,6 +11,7 @@
 #include <sqlite3.h>
 
 #include "defs/std.h"
+#include "libws/util.h"
 
 #include "board.h"
 #include "conf.h"
@@ -80,17 +81,6 @@ static struct ws_db columns[] =
 
 static size_t columns_nel = array_size(columns);
 
-/**
- * Avoid float > double conversion.
- *
- * For example 17.2 (float) maps to 17.2000007629395 (double).
- */
-static double
-round_100(double v)
-{
-	return round(v * 100.0) / 100.0;
-}
-
 static void
 sqlite_log(const char *fn, int code)
 {
@@ -132,7 +122,7 @@ stmt_insert(const struct ws_archive *p)
 				ret = sqlite3_bind_int(stmt, bind_index, value);
 				break;
 			case SQLITE_FLOAT:
-				ret = sqlite3_bind_double(stmt, bind_index, round_100(value));
+				ret = sqlite3_bind_double(stmt, bind_index, round_scale(value, 2));
 				break;
 			default:
 				break;

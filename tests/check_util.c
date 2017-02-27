@@ -6,8 +6,6 @@
 #include <math.h>
 #include <errno.h>
 
-#include "defs/std.h"
-
 #include "libws/util.h"
 
 #define ck_assert_double(X, OP, Y) \
@@ -20,9 +18,9 @@
 #define ck_assert_double_eq(X, Y) \
 	ck_assert_double(X, ==, Y)
 
-START_TEST(test_heat_index)
+START_TEST(test_round_scale)
 {
-	ck_assert_int_eq(38, (int) lround(ws_heat_index(32, 60)));
+	ck_assert_double_eq(0.10, round_scale(0.1f, 2));
 }
 END_TEST
 
@@ -37,7 +35,7 @@ aggregate_suite(void)
 	/* Core test cases */
 	tc_core = tcase_create("core");
 
-	tcase_add_test(tc_core, test_heat_index);
+	tcase_add_test(tc_core, test_round_scale);
 	suite_add_tcase(s, tc_core);
 
 	return s;

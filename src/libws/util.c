@@ -195,6 +195,15 @@ ws_in(double len)
 	return len / 25.4;
 }
 
+DSO_EXPORT double
+round_scale(double v, int scale)
+{
+	long pow10[] = { 1, 10, 100, 1000 };
+	long ratio = pow10[scale];
+
+	return round(v * ratio) / ratio;
+}
+
 DSO_EXPORT const char *
 ws_dir(double dir)
 {
