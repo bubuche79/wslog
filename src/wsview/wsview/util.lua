@@ -1,5 +1,3 @@
---require "luci.http.protocol"
-
 conv = {
 	temp = { unit = "°C", fmt = "%.1f" },
 	humidity = { unit = "%", fmt = "%.0f" },
@@ -66,5 +64,22 @@ end
 
 function printf(s,...)
 	return print(s:format(...))
+end
+
+function getconfig()
+	local property = {}
+	local file = io.open("/etc/wslogd.conf", "r")
+
+	for line in file:lines() do
+		key, value = string.match(line, "^(.-) *= *(.-)$")
+
+		if (key ~= nil) then
+			property[key] = value
+		end
+	end
+
+	file:close()
+
+	return property
 end
 

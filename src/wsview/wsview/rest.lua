@@ -50,17 +50,8 @@ function rest_today()
 	local e = os.date("*t", now)
 	local s = os.time({ year = e.year, month = e.month, day = 0, hour = 0, isdst = e.isdst })
 
-	--print("<span class='date'>" .. i18n_date(s) .. "</span>")
-
-	driver = require "luasql.sqlite3"
-	env = driver.sqlite3()
-	cnx = env:connect("/var/run/wslogd.db")
-
 	http.prepare_content("application/json; charset=utf-8")
 
 	rest_json(s, now)
-
-	cnx:close()
-	env:close()
 end
 

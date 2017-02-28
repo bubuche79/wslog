@@ -73,14 +73,6 @@ function summary_today()
 	local s = os.time({ year = e.year, month = e.month, day = e.day, hour = 0, isdst = e.isdst })
 
 	--print("<span class='date'>" .. i18n_date(s) .. "</span>")
-
-	driver = require "luasql.sqlite3"
-	env = driver.sqlite3()
-	cnx = env:connect("/var/run/wslogd.db")
-
 	summary(s, now)
-
-	cnx:close()
-	env:close()
 end
 

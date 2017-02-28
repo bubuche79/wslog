@@ -44,14 +44,22 @@ end
 
 function dispatch()
 	lang = getlang()
+	conf = getconfig()
 	path = os.getenv("PATH_INFO") or "/"
 
+	-- connect database
+	local driver = require "luasql.sqlite3"
+	local env = driver.sqlite3()
+
+	cnx = env:connect(conf['archive.sqlite.db'])
+
+	-- process query
 	if path == "/" then
 		require "wsview.current"
 		require "wsview.summary"
 		header()
 		current()
-		summary_today()
+		summary_today(cnx)
 		footer()
 	elseif path == "/summary/" then
 		require "wsview.summary"
@@ -66,6 +74,9 @@ function dispatch()
 		require "wsview.rest"
 		rest_today()
 	end
+
+	cnx:close()
+	env:close()
 end
 
 function run()
