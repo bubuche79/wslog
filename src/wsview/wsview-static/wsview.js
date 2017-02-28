@@ -34,11 +34,10 @@ function chart1(json) {
 	var j = 0;
 	var ndays = days(json.period.year, json.period.month);
 
-	for (var i = 1; i < ndays + 1; i++) {
+	for (var i = 0; i < ndays + 2; i++) {
 		labels.push((i % 2) ? '' : i);
 
 		if (j < json.data.length && json.data[j].day == i) {
-			json.data[j].rain = i; // temp
 			datasets.temp_min.push(json.data[j].temp_min);
 			datasets.temp_max.push(json.data[j].temp_max);
 			datasets.rain.push(json.data[j].rain);
@@ -102,14 +101,17 @@ function chart1(json) {
 			tooltips: {
 				mode: 'x',
 				intersect: false,
-				position: 'nearest'
+				position: 'nearest',
+				bodySpacing: 5,
+				callbacks: {
+					title: function(item, data) {
+						return new Date(json.period.year, json.period.month, item[0].index).toLocaleString();
+					}
+				}
 			}, 
 			scales: {
 				xAxes: [{
 //					barThickness: 15,
-					ticks: {
-						stepSize: 2
-					},
 					gridLines: {
 						offsetGridLines: false,
 					},
