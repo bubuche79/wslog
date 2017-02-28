@@ -35,9 +35,10 @@ function chart1(json) {
 	var ndays = days(json.period.year, json.period.month);
 
 	for (var i = 1; i < ndays + 1; i++) {
-		labels.push(i);
+		labels.push((i % 2) ? '' : i);
 
 		if (j < json.data.length && json.data[j].day == i) {
+			json.data[j].rain = i; // temp
 			datasets.temp_min.push(json.data[j].temp_min);
 			datasets.temp_max.push(json.data[j].temp_max);
 			datasets.rain.push(json.data[j].rain);
@@ -66,6 +67,7 @@ function chart1(json) {
 				lineTension: 0,
 				backgroundColor: 'rgba(69, 114, 167, 1)',
 				borderColor: 'rgba(69, 114, 167, 1)',
+				borderWidth: 2,
 				pointStyle: 'circle',
 				data: datasets.temp_min
 			}, {
@@ -76,6 +78,7 @@ function chart1(json) {
 				lineTension: 0,
 				backgroundColor: 'rgba(170, 70, 70, 1)',
 				borderColor: 'rgba(170, 70, 70, 1)',
+				borderWidth: 2,
 				pointStyle: 'rectRounded',
 				data: datasets.temp_max
 			}, {
@@ -90,10 +93,11 @@ function chart1(json) {
 		options: {
 			title: {
 				display: true,
+				fontSize: 16,
 				text: 'Températures extrêmes, précipitations'
 			},
 			legend: {
-				position: 'top'
+				position: 'bottom'
 			},
 			tooltips: {
 				mode: 'x',
@@ -101,13 +105,28 @@ function chart1(json) {
 				position: 'nearest'
 			}, 
 			scales: {
+				xAxes: [{
+//					barThickness: 15,
+					ticks: {
+						stepSize: 2
+					},
+					gridLines: {
+						offsetGridLines: false,
+					},
+					scaleLabel: {
+						display: true,
+						labelString: "Jour du mois",
+						fontStyle: 'bold'
+					}
+				}],
 				yAxes: [{
 					type: 'linear',
 					position: 'left',
 					id: 'temp',
 					ticks: {
 						min: scale_min(limits.temp_min),
-						max: scale_max(limits.temp_max)
+						max: scale_max(limits.temp_max),
+						stepSize: 5
 					},
 					scaleLabel: {
 						display: true,
@@ -120,7 +139,8 @@ function chart1(json) {
 					id: 'rain',
 					ticks: {
 						min: 0,
-						max: scale_max(limits.rain)
+						max: scale_max(limits.rain) + 5,
+						stepSize: 5
 					},
 					scaleLabel: {
 						display: true,

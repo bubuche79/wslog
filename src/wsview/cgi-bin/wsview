@@ -11,7 +11,6 @@ function header()
   <meta charset="utf-8">
   <link type="text/css" rel="stylesheet" href="/wsview-static/wsview.css">
   <script type="text/javascript" src="/wsview-static/wsview.js"></script>
-  <script type="text/javascript" src="/wsview-static/Chart.min.js"></script>
 </head>
 <body>
 <div id="header">
@@ -19,6 +18,7 @@ function header()
 <nav id="menu-nav">
   <a href="/cgi-bin/wsview/" title="Current">Current</a></li>
   <a href="/cgi-bin/wsview/summary/" title="Summary">Summary</a></li>
+  <a href="/cgi-bin/wsview/climate/by-month/current" title="Monthly">Current month</a></li>
 </nav>
 </div>
 </div>]])
@@ -28,8 +28,9 @@ function footer()
 	print([[</body></html>]])
 end
 
-function test_chartjs()
+function chartjs()
 	print([[
+<script type="text/javascript" src="/wsview-static/Chart.min.js"></script>
 <div class="chart">
 <canvas id="chart"></canvas>
 <script>
@@ -45,22 +46,25 @@ function dispatch()
 	lang = getlang()
 	path = os.getenv("PATH_INFO") or "/"
 
-	if path == "/summary/" then
+	if path == "/" then
+		require "wsview.current"
+		require "wsview.summary"
+		header()
+		current()
+		summary_today()
+		footer()
+	elseif path == "/summary/" then
 		require "wsview.summary"
 		header()
 		summary_today()
 		footer()
+	elseif path == "/climate/by-month/current" then
+		header()
+		chartjs()
+		footer()
 	elseif path == "/rest/today.json" then
 		require "wsview.rest"
 		rest_today()
-	elseif path == "/" then
-		require "wsview.current"
-		require "wsview.summary"
-		header()
---		current()
---		summary_today()
-		test_chartjs()
-		footer()
 	end
 end
 
