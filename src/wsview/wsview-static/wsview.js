@@ -35,7 +35,7 @@ function chart1(json) {
 	var ndays = days(json.period.year, json.period.month);
 
 	for (var i = 0; i < ndays + 2; i++) {
-		labels.push((i % 2) ? '' : i);
+		labels.push(i > 0 && i < ndays + 1 && (i % 2 == 0) ? i : '');
 
 		if (j < json.data.length && json.data[j].day == i) {
 			datasets.temp_min.push(json.data[j].temp_min);

@@ -14,16 +14,21 @@ function sql_query(s, e)
 	return cnx:execute(sql)
 end
 
+function write_json(n, obj)
+	http.write(string.format('"%s":', n))
+	http.write_json(obj)
+end
+
 function rest_json(s, e)
 	local first = true
 
 	local cur = sql_query(s, e)
 	local row = cur:fetch({}, "a")
 
-	local now = os.date("*t", e)
+	local json_date = os.date("*t", e)
 
-	http.write('{"period":')
-	http.write_json({ year = now.year, month = now.month });
+	http.write('{')
+	write_json('period', json_date)
 	http.write(',"data":[')
 	while row do
 		if (not first) then
@@ -48,7 +53,7 @@ end
 function rest_today()
 	local now = os.time()
 	local e = os.date("*t", now)
-	local s = os.time({ year = e.year, month = e.month, day = 0, hour = 0, isdst = e.isdst })
+	local s = os.time({ year = e.year, month = e.month, day = 1, isdst = e.isdst })
 
 	http.prepare_content("application/json; charset=utf-8")
 
