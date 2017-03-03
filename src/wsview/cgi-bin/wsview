@@ -1,11 +1,12 @@
 #!/usr/bin/lua
 
 require "wsview.util"
+local http = require "wsview.http"
 
 function header()
-	print("Content-type: text/html; charset=utf-8\n")
+	http.prepare_content("text/html; charset=utf-8")
 
-	print([[<!DOCTYPE html>
+	http.write([[<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -18,7 +19,7 @@ function header()
 <nav id="menu-nav">
   <a href="/cgi-bin/wsview/" title="Current">Current</a></li>
   <a href="/cgi-bin/wsview/summary/" title="Summary">Summary</a></li>
-  <a href="/cgi-bin/wsview/climate/by-month/current" title="Monthly">Current month</a></li>
+  <a href="/cgi-bin/wsview/climate/" title="Monthly">Current month</a></li>
 </nav>
 </div>
 </div>]])
@@ -28,18 +29,35 @@ function footer()
 	print([[</body></html>]])
 end
 
-function chartjs()
-	print([[
+function climate(year, month)
+	http.write([[
 <script type="text/javascript" src="/wsview-static/Chart.min.js"></script>
 <div class="chart">
 <canvas id="chart"></canvas>
 <script>
 var ctx = document.getElementById("chart").getContext("2d");
-fetch('/cgi-bin/wsview/rest/today.json')
+fetch('/cgi-bin/wsview/rest/climate/]] .. year .. '/' .. month .. [[/')
 	.then(function(response) { return response.json(); })
-	.then(function(json) { new Chart(ctx, chart1(json)); });
+	.then(function(json) { new Chart(ctx, chart_temp_rain(json)); });
 </script>
 </div>]])
+end
+
+function parse_month(arg)
+	local year, month
+
+	if (arg == "") then
+		local t = os.date("*t")
+
+		year = t.year
+		month = t.month
+	else
+		year, month = string.match(arg, "(%d+)/(%d+)")
+		year = tonumber(year)
+		month = tonumber(month)
+	end
+
+	return year, month
 end
 
 function dispatch()
@@ -66,13 +84,19 @@ function dispatch()
 		header()
 		summary_today()
 		footer()
-	elseif path == "/climate/by-month/current" then
+	elseif string.starts(path, "/climate/") then
+		local arg = string.sub(path, 10) or ""
+		local year, month = parse_month(arg)
+
 		header()
-		chartjs()
+		climate(year, month)
 		footer()
-	elseif path == "/rest/today.json" then
+	elseif string.starts(path, "/rest/climate/") then
+		local arg = string.sub(path, 15) or ""
+		local year, month = parse_month(arg)
+
 		require "wsview.rest"
-		rest_today()
+		aggr_month(year, month)
 	end
 
 	cnx:close()
@@ -88,9 +112,9 @@ function run()
 		local res, id, data1, data2 = coroutine.resume(x, r)
 
 		if not res then
-			print("Status: 500 Internal Server Error")
-			print("Content-Type: text/plain\n")
-			print(id)
+			io.write("Status: 500 Internal Server Error\r\n")
+			io.write("Content-Type: text/plain\r\n\r\n")
+			io.write(id)
 			break;
 		end
 

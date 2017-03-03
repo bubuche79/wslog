@@ -7,7 +7,7 @@ function sql_query(s, e)
 	sql = sql .. "MAX(temp) AS temp_max, "
 	sql = sql .. "SUM(rain) AS rain "
 	sql = sql .. "FROM ws_archive "
-	sql = sql .. string.format("WHERE %d < time AND time < %d ", s, e)
+	sql = sql .. string.format("WHERE %d <= time AND time < %d ", s, e)
 	sql = sql .. "GROUP BY date(time, 'unixepoch') "
 	sql = sql .. "ORDER BY date(time, 'unixepoch') "
 
@@ -25,10 +25,6 @@ function rest_json(s, e)
 	local cur = sql_query(s, e)
 	local row = cur:fetch({}, "a")
 
-	local json_date = os.date("*t", e)
-
-	http.write('{')
-	write_json('period', json_date)
 	http.write(',"data":[')
 	while row do
 		if (not first) then
@@ -36,7 +32,7 @@ function rest_json(s, e)
 		end
 
 		local day_num = string.gsub(row.day, '.*-', '')
-	
+
 		row.day = tonumber(day_num)
 		http.write_json(row)
 
@@ -44,19 +40,22 @@ function rest_json(s, e)
 		first = false
 		row = cur:fetch({}, "a")
 	end
-	http.write("]}")
-	http.close()
+	http.write("]")
 
 	cur:close()
 end
 
-function rest_today()
-	local now = os.time()
-	local e = os.date("*t", now)
-	local s = os.time({ year = e.year, month = e.month, day = 1, isdst = e.isdst })
+function aggr_month(y, m)
+	local from = os.time({ year = y, month = m, day = 1 })
+	local to = os.time({ year = y, month = m+1, day = 1 })
 
 	http.prepare_content("application/json; charset=utf-8")
 
-	rest_json(s, now)
-end
+	http.write('{')
+	write_json('period', { year = y, month = m })
 
+	rest_json(from, to)
+
+	http.write('}')
+	http.close()
+end

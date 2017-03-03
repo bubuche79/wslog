@@ -18,7 +18,15 @@ function scale_max(a) {
 	return 5 * parseInt(a / 5) + 5;
 }
 
-function chart1(json) {
+function tt_title(json, items) {
+	return new Date(json.period.year, json.period.month, items[0].index).toLocaleString();
+}
+
+function tt_label(item, data) {
+	return data.datasets[item.datasetIndex].label + ' : ' + item.yLabel + ' °C';
+}
+
+function chart_temp_rain(json) {
 	var labels = [];
 	var datasets = {
 		temp_min: [],
@@ -104,9 +112,8 @@ function chart1(json) {
 				position: 'nearest',
 				bodySpacing: 5,
 				callbacks: {
-					title: function(item, data) {
-						return new Date(json.period.year, json.period.month, item[0].index).toLocaleString();
-					}
+					title: function(items, data) { return tt_title(json, items); },
+					label: function(item, data) { return tt_label(item, data); }
 				}
 			}, 
 			scales: {
@@ -114,6 +121,9 @@ function chart1(json) {
 //					barThickness: 15,
 					gridLines: {
 						offsetGridLines: false,
+					},
+					ticks: {
+						maxRotation: 0
 					},
 					scaleLabel: {
 						display: true,
@@ -157,3 +167,6 @@ function chart1(json) {
 	return options;
 };
 
+function chart_wind(json)
+{
+};
