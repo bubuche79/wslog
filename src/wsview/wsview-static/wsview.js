@@ -167,6 +167,124 @@ function chart_temp_rain(json) {
 	return options;
 };
 
+function aggr_data(json, field)
+{
+	var labels = [];
+
+	var dataset = {
+		data: [],
+		min: null,
+		max: null
+	};
+
+	var j = 0;
+	var ndays = days(json.period.year, json.period.month);
+
+	for (var i = 0; i < ndays + 2; i++) {
+		labels.push(i > 0 && i < ndays + 1 && (i % 2 == 0) ? i : '');
+
+		if (j < json.data.length && json.data[j].day == i) {
+			var v = json.data[j][field]
+
+			dataset.data.push(v);
+			dataset.min = min(dataset.min, v);
+			dataset.max = max(dataset.max, v);
+
+			j++;
+		} else {
+			dataset.data.push(null);
+		}
+	}
+
+	return {
+		labels: labels,
+		dataset: dataset
+	};
+}
+
 function chart_wind(json)
 {
+	var data = aggr_data(json, 'wind_speed');
+	var data1 = aggr_data(json, 'wind_gust_speed');
+
+	var options = {
+		type: 'line',
+		data: {
+			labels: data.labels,
+			datasets: [{
+				label: 'Vent moyen',
+				fill: false,
+				yAxisID: 'y-axis-1',
+				lineTension: 0,
+				backgroundColor: 'rgba(171, 119, 234, 1)',
+				borderColor: 'rgba(171, 119, 234, 1)',
+				borderWidth: 2,
+				pointStyle: 'circle',
+				data: data.dataset.data
+			}, {
+				label: 'Rafale',
+				fill: false,
+				yAxisID: 'y-axis-1',
+				lineTension: 0,
+				backgroundColor: 'rgba(128, 105, 155, 1)',
+				borderColor: 'rgba(128, 105, 155, 1)',
+				borderWidth: 2,
+				pointStyle: 'rectRounded',
+				data: data1.dataset.data
+			}]
+		},
+		options: {
+			title: {
+				display: true,
+				fontSize: 16,
+				text: 'Vent'
+			},
+			legend: {
+				position: 'bottom'
+			},
+			tooltips: {
+				mode: 'x',
+				intersect: false,
+				position: 'nearest',
+				bodySpacing: 5,
+				callbacks: {
+					title: function(items, data) { return tt_title(json, items); },
+					label: function(item, data) { return tt_label(item, data); }
+				}
+			}, 
+			scales: {
+				xAxes: [{
+//					barThickness: 15,
+					gridLines: {
+						offsetGridLines: false,
+					},
+					ticks: {
+						maxRotation: 0
+					},
+					scaleLabel: {
+						display: true,
+						labelString: "Jour du mois",
+						fontStyle: 'bold'
+					}
+				}],
+				yAxes: [{
+					type: 'linear',
+					position: 'left',
+					id: 'y-axis-1',
+					ticks: {
+						//min: 0,
+						//max: scale_max(data.dataset.max),
+						//stepSize: 1
+					},
+					scaleLabel: {
+						display: true,
+						labelString: "Vent (m/s)",
+						fontStyle: 'bold'
+					}
+				}]
+			}
+		}
+	}
+
+	return options;
 };
