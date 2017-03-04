@@ -26,41 +26,55 @@ function tt_label(item, data) {
 	return data.datasets[item.datasetIndex].label + ' : ' + item.yLabel + ' °C';
 }
 
-function chart_temp_rain(json) {
+function aggr_labels(json) {
 	var labels = [];
-	var datasets = {
-		temp_min: [],
-		temp_max: [],
-		rain: []
-	};
-	var limits = {
-		temp_min: null,
-		temp_max: null,
-		rain: null
-	};
 
 	var j = 0;
 	var ndays = days(json.period.year, json.period.month);
 
 	for (var i = 0; i < ndays + 2; i++) {
 		labels.push(i > 0 && i < ndays + 1 && (i % 2 == 0) ? i : '');
+	}
 
+	return labels;
+}
+
+function aggr_dataset(json, field) {
+	var dataset = {
+		data: [],
+		min: null,
+		max: null
+	};
+
+	var j = 0;
+	var ndays = days(json.period.year, json.period.month);
+
+	for (var i = 0; i < ndays + 2; i++) {
 		if (j < json.data.length && json.data[j].day == i) {
-			datasets.temp_min.push(json.data[j].temp_min);
-			datasets.temp_max.push(json.data[j].temp_max);
-			datasets.rain.push(json.data[j].rain);
+			var v = json.data[j][field]
 
-			limits.temp_min = min(limits.temp_min, json.data[j].temp_min);
-			limits.temp_max = max(limits.temp_max, json.data[j].temp_max);
-			limits.rain = max(limits.rain, json.data[j].rain);
+			dataset.data.push(v);
+			dataset.min = min(dataset.min, v);
+			dataset.max = max(dataset.max, v);
 
 			j++;
 		} else {
-			datasets.temp_min.push(null);
-			datasets.temp_max.push(null);
-			datasets.rain.push(null);
+			dataset.data.push(null);
 		}
 	}
+
+	return dataset;
+}
+
+function chart_temp_rain(json) {
+	var labels = aggr_labels(json);
+	var temp_min = aggr_dataset(json, 'temp_min');
+	var temp_max = aggr_dataset(json, 'temp_max');
+	var rain = aggr_dataset(json, 'rain');
+
+	var tmin_color = 'rgba(69, 114, 167, 1)';
+	var tmax_color = 'rgba(170, 70, 70, 1)';
+	var rain_color = 'rgba(162, 190, 163, 1)';
 
 	var options = {
 		type: 'bar',
@@ -72,29 +86,29 @@ function chart_temp_rain(json) {
 				fill: false,
 				yAxisID: 'temp',
 				lineTension: 0,
-				backgroundColor: 'rgba(69, 114, 167, 1)',
-				borderColor: 'rgba(69, 114, 167, 1)',
+				backgroundColor: tmin_color,
+				borderColor: tmin_color,
 				borderWidth: 2,
 				pointStyle: 'circle',
-				data: datasets.temp_min
+				data: temp_min.data
 			}, {
 				type: 'line',
 				label: 'Température maximale',
 				fill: false,
 				yAxisID: 'temp',
 				lineTension: 0,
-				backgroundColor: 'rgba(170, 70, 70, 1)',
-				borderColor: 'rgba(170, 70, 70, 1)',
+				backgroundColor: tmax_color,
+				borderColor: tmax_color,
 				borderWidth: 2,
-				pointStyle: 'rectRounded',
-				data: datasets.temp_max
+				pointStyle: 'rect',
+				data: temp_max.data
 			}, {
 				type: 'bar',
 				label: 'Pluie',
 				yAxisID: 'rain',
-				backgroundColor: 'rgba(162, 190, 163, 1)',
-				borderColor: 'rgba(162, 190, 163, 1)',
-				data: datasets.rain
+				backgroundColor: rain_color,
+				borderColor: rain_color,
+				data: rain.data
 			}]
 		},
 		options: {
@@ -136,8 +150,8 @@ function chart_temp_rain(json) {
 					position: 'left',
 					id: 'temp',
 					ticks: {
-						min: scale_min(limits.temp_min),
-						max: scale_max(limits.temp_max),
+						min: scale_min(temp_min.min),
+						max: scale_max(temp_max.max),
 						stepSize: 5
 					},
 					scaleLabel: {
@@ -151,7 +165,7 @@ function chart_temp_rain(json) {
 					id: 'rain',
 					ticks: {
 						min: 0,
-						max: scale_max(limits.rain) + 5,
+						max: scale_max(rain.max) + 5,
 						stepSize: 5
 					},
 					scaleLabel: {
@@ -167,70 +181,39 @@ function chart_temp_rain(json) {
 	return options;
 };
 
-function aggr_data(json, field)
-{
-	var labels = [];
-
-	var dataset = {
-		data: [],
-		min: null,
-		max: null
-	};
-
-	var j = 0;
-	var ndays = days(json.period.year, json.period.month);
-
-	for (var i = 0; i < ndays + 2; i++) {
-		labels.push(i > 0 && i < ndays + 1 && (i % 2 == 0) ? i : '');
-
-		if (j < json.data.length && json.data[j].day == i) {
-			var v = json.data[j][field]
-
-			dataset.data.push(v);
-			dataset.min = min(dataset.min, v);
-			dataset.max = max(dataset.max, v);
-
-			j++;
-		} else {
-			dataset.data.push(null);
-		}
-	}
-
-	return {
-		labels: labels,
-		dataset: dataset
-	};
-}
-
 function chart_wind(json)
 {
-	var data = aggr_data(json, 'wind_speed');
-	var data1 = aggr_data(json, 'wind_gust_speed');
+	var labels = aggr_labels(json);
+	var wind = aggr_dataset(json, 'wind_speed');
+	var wind_gust = aggr_dataset(json, 'wind_gust_speed');
+
+	var wcolor = 'rgba(86, 65, 112, 1)';
+	var wgcolor = 'rgba(128, 105, 155, 1)';
 
 	var options = {
 		type: 'line',
 		data: {
-			labels: data.labels,
+			labels: labels,
 			datasets: [{
 				label: 'Vent moyen',
 				fill: false,
 				yAxisID: 'y-axis-1',
 				lineTension: 0,
-				backgroundColor: 'rgba(171, 119, 234, 1)',
-				borderColor: 'rgba(171, 119, 234, 1)',
+				backgroundColor: wgcolor,
+				borderColor: wgcolor,
 				borderWidth: 2,
 				pointStyle: 'circle',
-				data: data.dataset.data
+				data: wind.data
 			}, {
 				label: 'Rafale',
 				fill: false,
 				yAxisID: 'y-axis-1',
 				lineTension: 0,
-				backgroundColor: 'rgba(128, 105, 155, 1)',
-				borderColor: 'rgba(128, 105, 155, 1)',
+				backgroundColor: wcolor,
+				borderColor: wcolor,
 				borderWidth: 2,
-				pointStyle: 'rectRounded',
-				data: data1.dataset.data
+				pointStyle: 'rect',
+				data: wind_gust.data
 			}]
 		},
 		options: {
@@ -272,7 +255,7 @@ function chart_wind(json)
 					position: 'left',
 					id: 'y-axis-1',
 					ticks: {
-						//min: 0,
+						min: 0,
 						//max: scale_max(data.dataset.max),
 						//stepSize: 1
 					},
