@@ -66,6 +66,16 @@ function aggr_dataset(json, field) {
 	return dataset;
 }
 
+function chart_defaults() {
+	Chart.defaults.global.legend.position = 'bottom';
+	Chart.defaults.global.title.display = 'true';
+	Chart.defaults.global.title.fontSize = 16;
+	Chart.defaults.global.tooltips.mode = 'x';
+	Chart.defaults.global.tooltips.intersect = false;
+	Chart.defaults.global.tooltips.position = 'nearest';
+	Chart.defaults.global.tooltips.bodySpacing = 5;
+}
+
 function chart_temp_rain(json) {
 	var labels = aggr_labels(json);
 	var temp_min = aggr_dataset(json, 'temp_min');
@@ -113,18 +123,9 @@ function chart_temp_rain(json) {
 		},
 		options: {
 			title: {
-				display: true,
-				fontSize: 16,
 				text: 'Températures extrêmes, précipitations'
 			},
-			legend: {
-				position: 'bottom'
-			},
 			tooltips: {
-				mode: 'x',
-				intersect: false,
-				position: 'nearest',
-				bodySpacing: 5,
 				callbacks: {
 					title: function(items, data) { return tt_title(json, items); },
 					label: function(item, data) { return tt_label(item, data); }
@@ -187,49 +188,40 @@ function chart_wind(json)
 	var wind = aggr_dataset(json, 'wind_speed');
 	var wind_gust = aggr_dataset(json, 'wind_gust_speed');
 
-	var wcolor = 'rgba(86, 65, 112, 1)';
-	var wgcolor = 'rgba(128, 105, 155, 1)';
+	var w_color = 'rgba(86, 65, 112, 1)';
+	var wg_color = 'rgba(128, 105, 155, 1)';
 
 	var options = {
 		type: 'line',
 		data: {
 			labels: labels,
 			datasets: [{
-				label: 'Vent moyen',
-				fill: false,
-				yAxisID: 'y-axis-1',
-				lineTension: 0,
-				backgroundColor: wgcolor,
-				borderColor: wgcolor,
-				borderWidth: 2,
-				pointStyle: 'circle',
-				data: wind.data
-			}, {
 				label: 'Rafale',
 				fill: false,
 				yAxisID: 'y-axis-1',
 				lineTension: 0,
-				backgroundColor: wcolor,
-				borderColor: wcolor,
+				backgroundColor: w_color,
+				borderColor: w_color,
 				borderWidth: 2,
 				pointStyle: 'rect',
 				data: wind_gust.data
+			}, {
+				label: 'Vent moyen',
+				fill: false,
+				yAxisID: 'y-axis-1',
+				lineTension: 0,
+				backgroundColor: wg_color,
+				borderColor: wg_color,
+				borderWidth: 2,
+				pointStyle: 'circle',
+				data: wind.data
 			}]
 		},
 		options: {
 			title: {
-				display: true,
 				fontSize: 16,
-				text: 'Vent'
-			},
-			legend: {
-				position: 'bottom'
 			},
 			tooltips: {
-				mode: 'x',
-				intersect: false,
-				position: 'nearest',
-				bodySpacing: 5,
 				callbacks: {
 					title: function(items, data) { return tt_title(json, items); },
 					label: function(item, data) { return tt_label(item, data); }
@@ -271,3 +263,73 @@ function chart_wind(json)
 
 	return options;
 };
+
+function chart_barometer(json) {
+	var labels = aggr_labels(json);
+	var barometer = aggr_dataset(json, 'barometer');
+
+	var barometer_color = 'rgba(137, 165, 78, 1)';
+
+	var options = {
+		type: 'line',
+		data: {
+			labels: labels,
+			datasets: [{
+				label: 'Pression moyenne',
+				fill: false,
+				yAxisID: 'y-axis-1',
+				lineTension: 0,
+				backgroundColor: barometer_color,
+				borderColor: barometer_color,
+				borderWidth: 2,
+				pointStyle: 'rect',
+				data: barometer.data
+			}]
+		},
+		options: {
+			title: {
+				text: 'Pression au niveau de la mer'
+			},
+			tooltips: {
+				callbacks: {
+					title: function(items, data) { return tt_title(json, items); },
+					label: function(item, data) { return tt_label(item, data); }
+				}
+			}, 
+			scales: {
+				xAxes: [{
+//					barThickness: 15,
+					gridLines: {
+						offsetGridLines: false,
+					},
+					ticks: {
+						maxRotation: 0
+					},
+					scaleLabel: {
+						display: true,
+						labelString: "Jour du mois",
+						fontStyle: 'bold'
+					}
+				}],
+				yAxes: [{
+					type: 'linear',
+					position: 'left',
+					id: 'y-axis-1',
+					ticks: {
+						//min: 0,
+						//max: scale_max(data.dataset.max),
+						//stepSize: 1
+					},
+					scaleLabel: {
+						display: true,
+						labelString: "Pression (hPa)",
+						fontStyle: 'bold'
+					}
+				}]
+			}
+		}
+	}
+
+	return options;
+};
+

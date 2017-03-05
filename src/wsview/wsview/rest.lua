@@ -7,7 +7,8 @@ function sql_query(s, e)
 	sql = sql .. "MAX(temp) AS temp_max, "
 	sql = sql .. "SUM(rain) AS rain, "
 	sql = sql .. "AVG(wind_speed) AS wind_speed, "
-	sql = sql .. "MAX(wind_gust_speed) AS wind_gust_speed "
+	sql = sql .. "MAX(wind_gust_speed) AS wind_gust_speed, "
+	sql = sql .. "AVG(barometer) AS barometer "
 	sql = sql .. "FROM ws_archive "
 	sql = sql .. string.format("WHERE %d <= time AND time < %d ", s, e)
 	sql = sql .. "GROUP BY date(time, 'unixepoch') "
