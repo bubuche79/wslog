@@ -2,14 +2,6 @@ function days(year, month) {
 	return new Date(year, month, 0).getDate();
 };
 
-function min(a, b) {
-	return (a == null || b < a) ? b : a;
-}
-
-function max(a, b) {
-	return (a == null || a < b) ? b : a;
-}
-
 function scale_min(a) {
 	return 5 * parseInt((a + 4) / 5) - 5;
 }
@@ -18,15 +10,7 @@ function scale_max(a) {
 	return 5 * parseInt(a / 5) + 5;
 }
 
-function tt_title(json, items) {
-	return new Date(json.period.year, json.period.month, items[0].index).toLocaleString();
-}
-
-function tt_label(item, data) {
-	return data.datasets[item.datasetIndex].label + ' : ' + item.yLabel + ' °C';
-}
-
-function aggr_labels(json) {
+function get_labels(json) {
 	var labels = [];
 
 	var j = 0;
@@ -39,297 +23,247 @@ function aggr_labels(json) {
 	return labels;
 }
 
-function aggr_dataset(json, field) {
-	var dataset = {
-		data: [],
-		min: null,
-		max: null
-	};
+function get_data(json, field) {
+	var data = [];
 
 	var j = 0;
 	var ndays = days(json.period.year, json.period.month);
 
 	for (var i = 0; i < ndays + 2; i++) {
 		if (j < json.data.length && json.data[j].day == i) {
-			var v = json.data[j][field]
-
-			dataset.data.push(v);
-			dataset.min = min(dataset.min, v);
-			dataset.max = max(dataset.max, v);
-
+			data.push(json.data[j][field]);
 			j++;
 		} else {
-			dataset.data.push(null);
+			data.push(null);
 		}
 	}
 
-	return dataset;
+	return data;
 }
 
-function chart_defaults() {
-	Chart.defaults.global.legend.position = 'bottom';
-	Chart.defaults.global.title.display = 'true';
-	Chart.defaults.global.title.fontSize = 16;
-	Chart.defaults.global.tooltips.mode = 'x';
-	Chart.defaults.global.tooltips.intersect = false;
-	Chart.defaults.global.tooltips.position = 'nearest';
-	Chart.defaults.global.tooltips.bodySpacing = 5;
+function get_type(config) {
+	var type = 'line';
+	var datasets = config.datasets;
+
+	for (i = 0; i < datasets.length; i++) {
+		if (datasets[i].type != 'line') {
+			type = datasets[i].type;
+		}
+	}
+
+	return type;
+}
+
+function create_chart(json, config) {
+	var year = json.period.year;
+	var month = json.period.month;
+
+	var chartjs = {
+		type: get_type(config),
+		data: {
+			labels: get_labels(json),
+			datasets: [],
+		},
+		options: {
+			title: {
+				display: true,
+				fontSize: 16,
+				text: config.options.title
+			},
+			legend: {
+				position: 'bottom'
+			},
+			tooltips: {
+				mode: 'x',
+				intersect: false,
+				position: 'nearest',
+				bodySpacing: 5,
+				callbacks: {
+					title: function(items, data) {
+						new Date(year, month, items[0].index).toLocaleString();
+					},
+					label: function(item, data) {
+						var result = null;
+						var dataset = data.datasets[item.datasetIndex];
+
+						if (dataset.data[item.index] != null) {
+							var unit = '';
+
+							for (i = 0; i < config.options.axes.length; i++) {
+								if (dataset.yAxisID == config.options.axes[i].id) {
+									unit = config.options.axes[i].unit;
+								}
+							}
+
+							result = dataset.label + ' : ' + item.yLabel.toFixed(1) + ' ' + unit;
+						}
+
+						return result;
+					}
+				}
+			},
+			scales: {
+				xAxes: [{
+					gridLines: {
+						offsetGridLines: false,
+					},
+					ticks: {
+						maxRotation: 0
+					},
+					scaleLabel: {
+						display: true,
+						labelString: "Jour du mois",
+						fontStyle: 'bold'
+					}
+				}],
+				yAxes: []
+			}
+		}
+	}
+
+	// Configure datasets
+	for (i = 0; i < config.datasets.length; i++) {
+		var dataset = config.datasets[i];
+
+		var dat = {
+			type: dataset.type,
+			label: dataset.label,
+			yAxisID: dataset.axis,
+			backgroundColor: dataset.color,
+			borderColor: dataset.color,
+			data: get_data(json, dataset.field)
+		};
+
+		if (dataset.type == 'line') {
+			dat.fill = false;
+			dat.lineTension = 0;
+			dat.borderWidth = 2;
+			dat.pointStyle = dataset.pointStyle;
+		}
+
+		chartjs.data.datasets.push(dat);
+	}
+
+	// Configure axes
+	for (i = 0; i < config.options.axes.length; i++) {
+		var axes = config.options.axes[i];
+
+		var dat = {
+			type: 'linear',
+			position: axes.position,
+			id: axes.id,
+			ticks: {
+//				min: scale_min(temp_min.min),
+//				max: scale_max(temp_max.max),
+				stepSize: 5
+			},
+			scaleLabel: {
+				display: true,
+				labelString: axes.label + ' (' + axes.unit + ')',
+				fontStyle: 'bold'
+			}
+		};
+
+		chartjs.options.scales.yAxes.push(dat);
+	}
+
+	return chartjs;
 }
 
 function chart_temp_rain(json) {
-	var labels = aggr_labels(json);
-	var temp_min = aggr_dataset(json, 'temp_min');
-	var temp_max = aggr_dataset(json, 'temp_max');
-	var rain = aggr_dataset(json, 'rain');
-
-	var tmin_color = 'rgba(69, 114, 167, 1)';
-	var tmax_color = 'rgba(170, 70, 70, 1)';
-	var rain_color = 'rgba(162, 190, 163, 1)';
-
 	var options = {
-		type: 'bar',
-		data: {
-			labels: labels,
-			datasets: [{
-				type: 'line',
-				label: 'Température minimale',
-				fill: false,
-				yAxisID: 'temp',
-				lineTension: 0,
-				backgroundColor: tmin_color,
-				borderColor: tmin_color,
-				borderWidth: 2,
-				pointStyle: 'circle',
-				data: temp_min.data
-			}, {
-				type: 'line',
-				label: 'Température maximale',
-				fill: false,
-				yAxisID: 'temp',
-				lineTension: 0,
-				backgroundColor: tmax_color,
-				borderColor: tmax_color,
-				borderWidth: 2,
-				pointStyle: 'rect',
-				data: temp_max.data
-			}, {
-				type: 'bar',
-				label: 'Pluie',
-				yAxisID: 'rain',
-				backgroundColor: rain_color,
-				borderColor: rain_color,
-				data: rain.data
-			}]
-		},
+		datasets: [{
+			type: 'line',
+			label: 'Température minimale',
+			field: 'temp_min',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(69, 114, 167, 1)'
+		},{
+			type: 'line',
+			label: 'Température maximale',
+			field: 'temp_max',
+			axis: 'y-axis-1',
+			pointStyle: 'rect',
+			color: 'rgba(170, 70, 70, 1)'
+		},{
+			type: 'bar',
+			label: 'Pluie',
+			field: 'rain',
+			axis: 'y-axis-2',
+			color: 'rgba(162, 190, 163, 1)'
+		}],
 		options: {
-			title: {
-				text: 'Températures extrêmes, précipitations'
-			},
-			tooltips: {
-				callbacks: {
-					title: function(items, data) { return tt_title(json, items); },
-					label: function(item, data) { return tt_label(item, data); }
-				}
-			}, 
-			scales: {
-				xAxes: [{
-//					barThickness: 15,
-					gridLines: {
-						offsetGridLines: false,
-					},
-					ticks: {
-						maxRotation: 0
-					},
-					scaleLabel: {
-						display: true,
-						labelString: "Jour du mois",
-						fontStyle: 'bold'
-					}
-				}],
-				yAxes: [{
-					type: 'linear',
-					position: 'left',
-					id: 'temp',
-					ticks: {
-						min: scale_min(temp_min.min),
-						max: scale_max(temp_max.max),
-						stepSize: 5
-					},
-					scaleLabel: {
-						display: true,
-						labelString: "Températures (°C)",
-						fontStyle: 'bold'
-					}
-				}, {
-					type: 'linear',
-					position: 'right',
-					id: 'rain',
-					ticks: {
-						min: 0,
-						max: scale_max(rain.max) + 5,
-						stepSize: 5
-					},
-					scaleLabel: {
-						display: true,
-						labelString: "Pluie (mm)",
-						fontStyle: 'bold'
-					}
-				}]
-			}
+			title: 'Températures extrêmes, précipitations',
+			axes: [{
+				id: 'y-axis-1',
+				position: 'left',
+				label: 'Température',
+				unit: '°C'
+			},{
+				id: 'y-axis-2',
+				position: 'right',
+				label: 'Pluie',
+				unit: 'mm'
+			}]
 		}
-	}
+	};
 
-	return options;
+	return create_chart(json, options);
 };
 
-function chart_wind(json)
-{
-	var labels = aggr_labels(json);
-	var wind = aggr_dataset(json, 'wind_speed');
-	var wind_gust = aggr_dataset(json, 'wind_gust_speed');
-
-	var w_color = 'rgba(86, 65, 112, 1)';
-	var wg_color = 'rgba(128, 105, 155, 1)';
-
+function chart_wind(json) {
 	var options = {
-		type: 'line',
-		data: {
-			labels: labels,
-			datasets: [{
-				label: 'Rafale',
-				fill: false,
-				yAxisID: 'y-axis-1',
-				lineTension: 0,
-				backgroundColor: w_color,
-				borderColor: w_color,
-				borderWidth: 2,
-				pointStyle: 'rect',
-				data: wind_gust.data
-			}, {
-				label: 'Vent moyen',
-				fill: false,
-				yAxisID: 'y-axis-1',
-				lineTension: 0,
-				backgroundColor: wg_color,
-				borderColor: wg_color,
-				borderWidth: 2,
-				pointStyle: 'circle',
-				data: wind.data
-			}]
-		},
+		datasets: [{
+			type: 'line',
+			label: 'Rafale',
+			field: 'wind_gust',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(86, 65, 112, 1)'
+		},{
+			type: 'line',
+			label: 'Vent moyen',
+			field: 'wind',
+			axis: 'y-axis-1',
+			pointStyle: 'rect',
+			color: 'rgba(128, 105, 155, 1)'
+		}],
 		options: {
-			title: {
-				fontSize: 16,
-			},
-			tooltips: {
-				callbacks: {
-					title: function(items, data) { return tt_title(json, items); },
-					label: function(item, data) { return tt_label(item, data); }
-				}
-			}, 
-			scales: {
-				xAxes: [{
-//					barThickness: 15,
-					gridLines: {
-						offsetGridLines: false,
-					},
-					ticks: {
-						maxRotation: 0
-					},
-					scaleLabel: {
-						display: true,
-						labelString: "Jour du mois",
-						fontStyle: 'bold'
-					}
-				}],
-				yAxes: [{
-					type: 'linear',
-					position: 'left',
-					id: 'y-axis-1',
-					ticks: {
-						min: 0,
-						//max: scale_max(data.dataset.max),
-						//stepSize: 1
-					},
-					scaleLabel: {
-						display: true,
-						labelString: "Vent (m/s)",
-						fontStyle: 'bold'
-					}
-				}]
-			}
+			title: 'Vent',
+			axes: [{
+				id: 'y-axis-1',
+				position: 'left',
+				label: 'Vent',
+				unit: 'm/s'
+			}]
 		}
-	}
+	};
 
-	return options;
+	return create_chart(json, options);
 };
 
 function chart_barometer(json) {
-	var labels = aggr_labels(json);
-	var barometer = aggr_dataset(json, 'barometer');
-
-	var barometer_color = 'rgba(137, 165, 78, 1)';
-
 	var options = {
-		type: 'line',
-		data: {
-			labels: labels,
-			datasets: [{
-				label: 'Pression moyenne',
-				fill: false,
-				yAxisID: 'y-axis-1',
-				lineTension: 0,
-				backgroundColor: barometer_color,
-				borderColor: barometer_color,
-				borderWidth: 2,
-				pointStyle: 'rect',
-				data: barometer.data
-			}]
-		},
+		datasets: [{
+			type: 'line',
+			label: 'Pression moyenne',
+			field: 'barometer',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(137, 165, 78, 1)'
+		}],
 		options: {
-			title: {
-				text: 'Pression au niveau de la mer'
-			},
-			tooltips: {
-				callbacks: {
-					title: function(items, data) { return tt_title(json, items); },
-					label: function(item, data) { return tt_label(item, data); }
-				}
-			}, 
-			scales: {
-				xAxes: [{
-//					barThickness: 15,
-					gridLines: {
-						offsetGridLines: false,
-					},
-					ticks: {
-						maxRotation: 0
-					},
-					scaleLabel: {
-						display: true,
-						labelString: "Jour du mois",
-						fontStyle: 'bold'
-					}
-				}],
-				yAxes: [{
-					type: 'linear',
-					position: 'left',
-					id: 'y-axis-1',
-					ticks: {
-						//min: 0,
-						//max: scale_max(data.dataset.max),
-						//stepSize: 1
-					},
-					scaleLabel: {
-						display: true,
-						labelString: "Pression (hPa)",
-						fontStyle: 'bold'
-					}
-				}]
-			}
+			title: 'Pression au niveau de la mer',
+			axes: [{
+				id: 'y-axis-1',
+				position: 'left',
+				label: 'Pression',
+				unit: 'hPa'
+			}]
 		}
-	}
+	};
 
-	return options;
+	return create_chart(json, options);
 };
 
