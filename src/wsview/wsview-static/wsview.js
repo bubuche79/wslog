@@ -217,14 +217,14 @@ function chart_wind(json) {
 		datasets: [{
 			type: 'line',
 			label: 'Rafale',
-			field: 'wind_gust',
+			field: 'wind_gust_speed',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
 			color: 'rgba(86, 65, 112, 1)'
 		},{
 			type: 'line',
 			label: 'Vent moyen',
-			field: 'wind',
+			field: 'wind_speed',
 			axis: 'y-axis-1',
 			pointStyle: 'rect',
 			color: 'rgba(128, 105, 155, 1)'
