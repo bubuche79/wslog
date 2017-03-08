@@ -73,7 +73,7 @@ define Package/wslog-cgi
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Weather station CGI viewer
-  DEPENDS:=+wslog +uhttpd +liblua +luasql-sqlite3 +luci-base
+  DEPENDS:=+wslog +uhttpd +liblua +luasql-sqlite3 +luci-base +luci-theme-bootstrap
 endef
 
 define Package/wslog-cgi/description
