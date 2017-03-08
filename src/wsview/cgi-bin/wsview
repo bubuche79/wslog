@@ -14,19 +14,29 @@ function header()
   <script type="text/javascript" src="/wsview-static/wsview.js"></script>
 </head>
 <body>
-<div id="header">
-<div id="menu">
-<nav id="menu-nav">
-  <a href="/cgi-bin/wsview/" title="Current">Current</a></li>
-  <a href="/cgi-bin/wsview/summary/" title="Summary">Summary</a></li>
-  <a href="/cgi-bin/wsview/climate/" title="Monthly">Current month</a></li>
-</nav>
+<header>
+<div class="fill">
+<div class="container">
+<a class="brand" href="#">WSVIEW</a>
+<ul class="nav">
+ <li><a href="/cgi-bin/wsview/">Temps réel</a></li>
+ <li><a href="/cgi-bin/wsview/summary/">Summary</a></li>
+ <li class="dropdown">
+  <a class="menu" href="#">Climat</a>
+  <ul class="dropdown-menu">
+   <li><a href="/cgi-bin/wsview/climate/">Mensuel</a></li>
+  </ul>
+ </li>
+</ul>
 </div>
-</div>]])
+</div>
+</header>
+<div class="container">
+]])
 end
 
 function footer()
-	print([[</body></html>]])
+	print([[</div></body></html>]])
 end
 
 function climate(year, month)
