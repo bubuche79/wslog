@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([wslog], [0.7], [bubuche.pub@free.fr])
+AC_INIT([wslog], [0.8], [bubuche.pub@free.fr])
 AC_CONFIG_HEADERS([config.h])
 
 AC_USE_SYSTEM_EXTENSIONS
