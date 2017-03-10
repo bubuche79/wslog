@@ -1,3 +1,5 @@
+require "luci.http.protocol"
+
 conv = {
 	temp = { unit = "°C", fmt = "%.1f" },
 	humidity = { unit = "%", fmt = "%.0f" },
@@ -29,7 +31,22 @@ i18n = {
 		rain_rate = "Précipitation",
 		feels = "Paraît",
 		date_fmt = "%d %B %Y",
-		summary = "Bilan"
+		summary = "Bilan",
+		tab_charts = "Graphiques",
+		tab_table = "Tableau",
+		-- months
+		january = "Janvier",
+		february = "Février",
+		march = "Mars",
+		april = "Avril",
+		may = "Mai",
+		june = "Juin",
+		july = "Juillet",
+		august = "Août",
+		september = "Septembre",
+		october = "Octobre",
+		november = "Novembre",
+		december = "Décembre"
 	}
 }
 

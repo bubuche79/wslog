@@ -9,10 +9,10 @@ function header()
 	http.write([[<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <link type="text/css" rel="stylesheet" href="/luci-static/bootstrap/cascade.css">
-  <link type="text/css" rel="stylesheet" href="/wsview-static/wsview.css">
-  <script type="text/javascript" src="/wsview-static/wsview.js"></script>
+ <meta charset="utf-8">
+ <link type="text/css" rel="stylesheet" href="/luci-static/bootstrap/cascade.css">
+ <link type="text/css" rel="stylesheet" href="/wsview-static/wsview.css">
+ <script type="text/javascript" src="/wsview-static/wsview.js"></script>
 </head>
 <body>
 <header>
@@ -41,23 +41,21 @@ function footer()
 end
 
 function parse_month(arg)
-	local year, month
-
 	if (arg == "") then
 		local t = os.date("*t")
 
-		year = t.year
-		month = t.month
+		params.year = t.year
+		params.month = t.month
 	else
-		year, month = string.match(arg, "(%d+)/(%d+)")
-		year = tonumber(year)
-		month = tonumber(month)
-	end
+		local year, month = string.match(arg, "(%d+)/(%d+)")
 
-	return year, month
+		params.year = tonumber(year)
+		params.month = tonumber(month)
+	end
 end
 
 function dispatch()
+	params = getparams()
 	lang = getlang()
 	conf = getconfig()
 	path = os.getenv("PATH_INFO") or "/"
@@ -82,19 +80,20 @@ function dispatch()
 		summary_today()
 		footer()
 	elseif string.starts(path, "/climate/") then
-		local arg = string.sub(path, 10) or ""
-		local year, month = parse_month(arg)
+--		local arg = string.sub(path, 10) or ""
+--		parse_month(arg)
 
+--		params.view = "charts"
 		require "wsview.climate"
 		header()
-		climate(year, month)
+		climate(params)
 		footer()
 	elseif string.starts(path, "/rest/climate/") then
 		local arg = string.sub(path, 15) or ""
-		local year, month = parse_month(arg)
+		parse_month(arg)
 
 		require "wsview.rest"
-		aggr_month(year, month)
+		aggr_month(params.year, params.month)
 	end
 
 	cnx:close()
