@@ -17,19 +17,20 @@ function climate_charts(year, month)
 	http.write([[
 <script type="text/javascript" src="/wsview-static/Chart.min.js"></script>
 <div class="charts">
-<div class="chart">
-<canvas id="chart1"></canvas>
-</div>
+<div class="chart"><canvas id="chart1"></canvas></div>
+<div class="chart"><canvas id="chart2"></canvas></div>
 </div>
 <script>
 var ctx1 = document.getElementById("chart1").getContext("2d");
+var ctx2 = document.getElementById("chart2").getContext("2d");
 
 fetch('/cgi-bin/wsview/rest/climate/]] .. year .. [[/')
 	.then(function(response) {
 		return response.json();
 	})
 	.then(function(json) {
-		new Chart(ctx1, chart_year_rain(json));
+		new Chart(ctx1, chart_year_temp(json));
+		new Chart(ctx2, chart_year_rain(json));
 	});
 </script>]])
 end

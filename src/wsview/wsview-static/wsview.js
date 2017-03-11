@@ -275,6 +275,37 @@ function chart_barometer(json) {
 	return create_chart(json, options);
 };
 
+function chart_year_temp(json) {
+	var options = {
+		datasets: [{
+			type: 'line',
+			label: 'Température minimale',
+			field: 'temp_min',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(69, 114, 167, 1)'
+		},{
+			type: 'line',
+			label: 'Température maximale',
+			field: 'temp_max',
+			axis: 'y-axis-1',
+			pointStyle: 'rect',
+			color: 'rgba(170, 70, 70, 1)'
+		}],
+		options: {
+			title: 'Températures',
+			axes: [{
+				id: 'y-axis-1',
+				position: 'left',
+				label: 'Températures',
+				unit: '°C'
+			}]
+		}
+	};
+
+	return create_chart(json, options);
+};
+
 function chart_year_rain(json) {
 	var options = {
 		datasets: [{

@@ -19,10 +19,14 @@ end
 
 function sql_year(s, e)
 	local sql = "SELECT substr(day, 1, 7) AS month, "
+	sql = sql .. "AVG(temp_min) AS temp_min, "
+	sql = sql .. "AVG(temp_max) AS temp_max, "
 	sql = sql .. "SUM(rain) AS rain, "
 	sql = sql .. "MAX(rain) AS rain_24h "
 	sql = sql .. "FROM ( "
 	sql = sql .. "SELECT date(time, 'unixepoch') AS day, "
+	sql = sql .. "MIN(temp) AS temp_min, "
+	sql = sql .. "MAX(temp) AS temp_max, "
 	sql = sql .. "SUM(rain) AS rain "
 	sql = sql .. "FROM ws_archive "
 	sql = sql .. string.format("WHERE %d <= time AND time < %d ", s, e)
