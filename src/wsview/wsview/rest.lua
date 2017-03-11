@@ -18,12 +18,18 @@ function sql_month(s, e)
 end
 
 function sql_year(s, e)
-	local sql = "SELECT strftime('%Y-%m', time, 'unixepoch') AS month, "
+	local sql = "SELECT substr(day, 1, 7) AS month, "
+	sql = sql .. "SUM(rain) AS rain, "
+	sql = sql .. "MAX(rain) AS rain_24h "
+	sql = sql .. "FROM ( "
+	sql = sql .. "SELECT date(time, 'unixepoch') AS day, "
 	sql = sql .. "SUM(rain) AS rain "
 	sql = sql .. "FROM ws_archive "
 	sql = sql .. string.format("WHERE %d <= time AND time < %d ", s, e)
-	sql = sql .. "GROUP BY strftime('%Y-%m', time, 'unixepoch') "
-	sql = sql .. "ORDER BY strftime('%Y-%m', time, 'unixepoch') "
+	sql = sql .. "GROUP BY date(time, 'unixepoch') "
+	sql = sql .. ") q "
+	sql = sql .. "GROUP BY substr(day, 1, 7) "
+	sql = sql .. "ORDER BY substr(day, 1, 7) "
 
 	return cnx:execute(sql)
 end

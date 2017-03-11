@@ -25,6 +25,7 @@ function header()
  <li class="dropdown">
   <a class="menu" href="#">Climat</a>
   <ul class="dropdown-menu">
+   <li><a href="/cgi-bin/wsview/climate-year/">Annuel</a></li>
    <li><a href="/cgi-bin/wsview/climate/">Mensuel</a></li>
   </ul>
  </li>
@@ -93,12 +94,15 @@ function dispatch()
 		header()
 		reports()
 		footer()
-	elseif string.starts(path, "/climate/") then
---		local arg = string.sub(path, 10) or ""
---		parse_month(arg)
+	elseif string.starts(path, "/climate-year/") then
+		require "wsview.climate.year"
 
---		params.view = "charts"
-		require "wsview.climate"
+		header()
+		climate(params)
+		footer()
+	elseif string.starts(path, "/climate/") then
+		require "wsview.climate.month"
+
 		header()
 		climate(params)
 		footer()

@@ -1,5 +1,9 @@
-function days(year, month) {
-	return new Date(year, month, 0).getDate();
+function get_x(json) {
+	if (json.period.month == null) {
+		return 12;
+	} else {
+		return new Date(json.period.year, json.period.month, 0).getDate();
+	}
 };
 
 function scale_min(a) {
@@ -12,12 +16,14 @@ function scale_max(a) {
 
 function get_labels(json) {
 	var labels = [];
+	var x = get_x(json);
 
-	var j = 0;
-	var ndays = days(json.period.year, json.period.month);
-
-	for (var i = 0; i < ndays + 2; i++) {
-		labels.push(i > 0 && i < ndays + 1 && (i % 2 == 0) ? i : '');
+	for (var i = 0; i < x + 2; i++) {
+		if (json.period.month == null) {
+			labels.push(i > 0 && i < x + 1 ? i : '');
+		} else {
+			labels.push(i > 0 && i < x + 1 && (i % 2 == 0) ? i : '');
+		}
 	}
 
 	return labels;
@@ -25,12 +31,13 @@ function get_labels(json) {
 
 function get_data(json, field) {
 	var data = [];
+	var x = get_x(json);
+	var x_field = (json.period.month == null) ? 'month' : 'day';
 
 	var j = 0;
-	var ndays = days(json.period.year, json.period.month);
 
-	for (var i = 0; i < ndays + 2; i++) {
-		if (j < json.data.length && json.data[j].day == i) {
+	for (var i = 0; i < x + 2; i++) {
+		if (j < json.data.length && json.data[j][x_field] == i) {
 			data.push(json.data[j][field]);
 			j++;
 		} else {
@@ -57,6 +64,7 @@ function get_type(config) {
 function create_chart(json, config) {
 	var year = json.period.year;
 	var month = json.period.month;
+	var x_label = (month == null) ? 'Mois' : 'Jour du mois';
 
 	var chartjs = {
 		type: get_type(config),
@@ -105,14 +113,14 @@ function create_chart(json, config) {
 			scales: {
 				xAxes: [{
 					gridLines: {
-						offsetGridLines: false,
+						offsetGridLines: false
 					},
 					ticks: {
 						maxRotation: 0
 					},
 					scaleLabel: {
 						display: true,
-						labelString: "Jour du mois",
+						labelString: x_label,
 						fontStyle: 'bold'
 					}
 				}],
@@ -188,7 +196,7 @@ function chart_temp_rain(json) {
 			color: 'rgba(170, 70, 70, 1)'
 		},{
 			type: 'bar',
-			label: 'Pluie',
+			label: 'Précipitations',
 			field: 'rain',
 			axis: 'y-axis-2',
 			color: 'rgba(162, 190, 163, 1)'
@@ -203,7 +211,7 @@ function chart_temp_rain(json) {
 			},{
 				id: 'y-axis-2',
 				position: 'right',
-				label: 'Pluie',
+				label: 'Précipitations',
 				unit: 'mm'
 			}]
 		}
@@ -260,6 +268,36 @@ function chart_barometer(json) {
 				position: 'left',
 				label: 'Pression',
 				unit: 'hPa'
+			}]
+		}
+	};
+
+	return create_chart(json, options);
+};
+
+function chart_year_rain(json) {
+	var options = {
+		datasets: [{
+			type: 'line',
+			label: 'Précipitations maximales sur 24h',
+			field: 'rain_24h',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(18, 137, 186, 1)'
+		}, {
+			type: 'bar',
+			label: 'Précipitations',
+			field: 'rain',
+			axis: 'y-axis-1',
+			color: 'rgba(162, 190, 163, 1)'
+		}],
+		options: {
+			title: 'Précipitations',
+			axes: [{
+				id: 'y-axis-1',
+				position: 'left',
+				label: 'Précipitations',
+				unit: 'mm'
 			}]
 		}
 	};
