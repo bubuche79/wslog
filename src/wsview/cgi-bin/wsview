@@ -47,10 +47,16 @@ function parse_month(arg)
 		params.year = t.year
 		params.month = t.month
 	else
-		local year, month = string.match(arg, "(%d+)/(%d+)")
+		local i = 1
 
-		params.year = tonumber(year)
-		params.month = tonumber(month)
+		for w in (arg .. "/"):gmatch("(%d+)/") do
+			if (i == 1) then
+				params.year = tonumber(w)
+			elseif (i == 2) then
+				params.month = tonumber(w)
+			end
+			i = i + 1
+		end
 	end
 end
 
@@ -70,14 +76,22 @@ function dispatch()
 	if path == "/" then
 		require "wsview.current"
 		require "wsview.summary"
+
 		header()
 		current()
 		summary_today(cnx)
 		footer()
 	elseif path == "/summary/" then
 		require "wsview.summary"
+
 		header()
 		summary_today()
+		footer()
+	elseif path == "/reports/" then
+		require "wsview.reports"
+
+		header()
+		reports()
 		footer()
 	elseif string.starts(path, "/climate/") then
 --		local arg = string.sub(path, 10) or ""
