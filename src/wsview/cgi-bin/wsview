@@ -21,7 +21,7 @@ function header()
 <a class="brand" href="#">WSVIEW</a>
 <ul class="nav">
  <li><a href="/cgi-bin/wsview/">Temps réel</a></li>
- <li><a href="/cgi-bin/wsview/summary/">Summary</a></li>
+ <li><a href="/cgi-bin/wsview/observations/">Observations</a></li>
  <li class="dropdown">
   <a class="menu" href="#">Climat</a>
   <ul class="dropdown-menu">
@@ -82,11 +82,11 @@ function dispatch()
 		current()
 		summary_today(cnx)
 		footer()
-	elseif path == "/summary/" then
-		require "wsview.summary"
+	elseif path == "/observations/" then
+		require "wsview.archive"
 
 		header()
-		summary_today()
+		archive(params)
 		footer()
 	elseif path == "/reports/" then
 		require "wsview.reports"
@@ -112,6 +112,11 @@ function dispatch()
 
 		require "wsview.rest"
 		aggr_month(params.year, params.month)
+	elseif string.starts(path, "/rest/archive/") then
+		local t = os.date("*t")
+
+		require "wsview.rest"
+		archive(t)
 	end
 
 	cnx:close()

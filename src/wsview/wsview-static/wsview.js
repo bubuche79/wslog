@@ -1,5 +1,7 @@
 function get_x(json) {
-	if (json.period.month == null) {
+	if (json.period == null) {
+		return json.data.length;
+	} else if (json.period.month == null) {
 		return 12;
 	} else {
 		return new Date(json.period.year, json.period.month, 0).getDate();
@@ -18,8 +20,10 @@ function get_labels(json) {
 	var labels = [];
 	var x = get_x(json);
 
-	for (var i = 0; i < x + 2; i++) {
-		if (json.period.month == null) {
+	for (var i = 0; i < x; i++) {
+		if (json.period == null) {
+			labels.push('');
+		} else if (json.period.month == null) {
 			labels.push(i > 0 && i < x + 1 ? i : '');
 		} else {
 			labels.push(i > 0 && i < x + 1 && (i % 2 == 0) ? i : '');
@@ -32,12 +36,15 @@ function get_labels(json) {
 function get_data(json, field) {
 	var data = [];
 	var x = get_x(json);
-	var x_field = (json.period.month == null) ? 'month' : 'day';
+	var x_field = (json.period != null && json.period.month == null) ? 'month' : 'day';
 
 	var j = 0;
 
-	for (var i = 0; i < x + 2; i++) {
-		if (j < json.data.length && json.data[j][x_field] == i) {
+	for (var i = 0; i < x; i++) {
+		if (json.period == null) {
+			data.push(json.data[j][field]);
+			j++;
+		} else if (j < json.data.length && json.data[j][x_field] == i) {
 			data.push(json.data[j][field]);
 			j++;
 		} else {
@@ -62,8 +69,8 @@ function get_type(config) {
 }
 
 function create_chart(json, config) {
-	var year = json.period.year;
-	var month = json.period.month;
+	var year = 2017;//json.period.year;
+	var month = 4;//json.period.month;
 	var x_label = (month == null) ? 'Mois' : 'Jour du mois';
 
 	var chartjs = {
@@ -82,7 +89,7 @@ function create_chart(json, config) {
 				position: 'bottom'
 			},
 			tooltips: {
-				mode: 'x',
+				mode: 'index',
 				intersect: false,
 				position: 'nearest',
 				bodySpacing: 5,
@@ -116,7 +123,9 @@ function create_chart(json, config) {
 						offsetGridLines: false
 					},
 					ticks: {
-						maxRotation: 0
+						maxRotation: 0,
+						maxTicksLimit: 10,
+						fixedStepSize: 100
 					},
 					scaleLabel: {
 						display: true,
@@ -147,6 +156,13 @@ function create_chart(json, config) {
 			dat.lineTension = 0;
 			dat.borderWidth = 2;
 			dat.pointStyle = dataset.pointStyle;
+            dat.borderCapStyle= 'butt';
+            dat.borderJoinStyle= 'miter';
+            dat.pointBorderWidth= 1;
+            dat.pointHoverRadius= 5;
+            dat.pointHoverBorderWidth= 2;
+            dat.pointRadius= 1;
+            dat.pointHitRadius= 0;
 		}
 
 		chartjs.data.datasets.push(dat);
@@ -176,6 +192,48 @@ function create_chart(json, config) {
 	}
 
 	return chartjs;
+}
+
+function obs_temp(json) {
+	var options = {
+		datasets: [{
+			type: 'line',
+			label: 'Température',
+			field: 'temp',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(69, 114, 167, 1)'
+		},{
+			type: 'line',
+			label: 'Point de rosée',
+			field: 'dew_point',
+			axis: 'y-axis-1',
+			pointStyle: 'rect',
+			color: 'rgba(170, 70, 70, 1)'
+		},{
+			type: 'line',
+			label: 'Humidité',
+			field: 'humidity',
+			axis: 'y-axis-2',
+			color: 'rgba(162, 190, 163, 1)'
+		}],
+		options: {
+			title: 'Températures, humidité, point de rosée',
+			axes: [{
+				id: 'y-axis-1',
+				position: 'left',
+				label: 'Température',
+				unit: '°C'
+			},{
+				id: 'y-axis-2',
+				position: 'right',
+				label: 'Humidité',
+				unit: '%'
+			}]
+		}
+	};
+
+	return create_chart(json, options);
 }
 
 function chart_temp_rain(json) {

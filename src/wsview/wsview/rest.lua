@@ -1,6 +1,22 @@
 local coroutine = require "coroutine"
 local http = require "wsview.http"
 
+function sql_archive(s, e)
+	local sql = "SELECT datetime(time, 'unixepoch') AS datetime, "
+	sql = sql .. "temp, "
+	sql = sql .. "dew_point, "
+	sql = sql .. "humidity, "
+	sql = sql .. "wind_speed, "
+	sql = sql .. "wind_dir, "
+	sql = sql .. "wind_gust_speed, "
+	sql = sql .. "barometer "
+	sql = sql .. "FROM ws_archive "
+	sql = sql .. string.format("WHERE %d <= time AND time < %d ", s, e)
+	sql = sql .. "ORDER BY time "
+
+	return cnx:execute(sql)
+end
+
 function sql_month(s, e)
 	local sql = "SELECT date(time, 'unixepoch') AS day, "
 	sql = sql .. "MIN(temp) AS temp_min, "
@@ -59,13 +75,15 @@ function rest_json(cur, cb)
 	local first = true
 	local row = cur:fetch({}, "a")
 
-	http.write(',"data":[')
+	http.write('"data":[')
 	while row do
 		if (not first) then
 			http.write(",")
 		end
 
-		cb(row)
+		if cb ~= nil then
+			cb(row)
+		end
 		http.write_json(row)
 
 		-- next row
@@ -74,6 +92,26 @@ function rest_json(cur, cb)
 	end
 	http.write("]")
 
+end
+
+function archive(t)
+	local from, to
+	local cur
+
+	to = os.time(t)
+	from = to - 4*24*3600
+
+	cur = sql_archive(from, to)
+	http.prepare_content("application/json; charset=utf-8")
+
+	http.write('{')
+
+	rest_json(cur)
+
+	http.write('}')
+	http.close()
+
+	cur:close()
 end
 
 function aggr_month(y, m)
@@ -95,9 +133,11 @@ function aggr_month(y, m)
 
 	if (m == nil) then
 		write_json('period', { year = y })
+		http.write(',')
 		rest_json(cur, rest_cb_year)
 	else
 		write_json('period', { year = y, month = m })
+		http.write(',')
 		rest_json(cur, rest_cb_month)
 	end
 
