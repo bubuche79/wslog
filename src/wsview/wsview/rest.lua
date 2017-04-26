@@ -81,12 +81,12 @@ function aggr_month(y, m)
 	local cur
 
 	if (m == nil) then
-		from = os.time({ year = y, month = 1, day = 1 })
-		to = os.time({ year = y+1, month = 1, day = 1 })
+		from = os.time({ year = y, month = 1, day = 1, hour = 0 })
+		to = os.time({ year = y+1, month = 1, day = 1, hour = 0 })
 		cur = sql_year(from, to)
 	else
-		from = os.time({ year = y, month = m, day = 1 })
-		to = os.time({ year = y, month = m+1, day = 1 })
+		from = os.time({ year = y, month = m, day = 1, hour = 0 })
+		to = os.time({ year = y, month = m+1, day = 1, hour = 0 })
 		cur = sql_month(from, to)
 	end
 
