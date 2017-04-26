@@ -95,13 +95,13 @@ function dispatch()
 		reports()
 		footer()
 	elseif string.starts(path, "/climate-year/") then
-		require "wsview.climate.year"
+		require "wsview.year"
 
 		header()
 		climate(params)
 		footer()
 	elseif string.starts(path, "/climate/") then
-		require "wsview.climate.month"
+		require "wsview.month"
 
 		header()
 		climate(params)
