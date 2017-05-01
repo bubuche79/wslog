@@ -2,7 +2,8 @@ local coroutine = require "coroutine"
 local http = require "wsview.http"
 
 function sql_archive(s, e)
-	local sql = "SELECT datetime(time, 'unixepoch') AS datetime, "
+	local sql = "SELECT time, "
+	sql = sql .. "interval, "
 	sql = sql .. "temp, "
 	sql = sql .. "dew_point, "
 	sql = sql .. "humidity, "
@@ -99,7 +100,7 @@ function archive(t)
 	local cur
 
 	to = os.time(t)
-	from = to - 4*24*3600
+	from = os.time({ year = t.year, month = t.month, day = t.day - 3, hour = 0 })
 
 	cur = sql_archive(from, to)
 	http.prepare_content("application/json; charset=utf-8")
