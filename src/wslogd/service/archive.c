@@ -93,6 +93,7 @@ archive_init(struct itimerspec *it)
 			 * aggregation to compute average wind speed, for example.
 			 */
 			hw_archive = 0;
+			it->it_value.tv_sec = 0;
 			break;
 #endif
 		default:
