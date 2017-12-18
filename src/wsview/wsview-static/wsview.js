@@ -1,5 +1,5 @@
 function get_x(json) {
-	if (json.period == null) {
+	if (json.period.from != null) {
 		return json.data.length;
 	} else if (json.period.month == null) {
 		return 12;
@@ -21,8 +21,8 @@ function get_labels(json) {
 	var x = get_x(json);
 
 	for (var i = 0; i < x; i++) {
-		if (json.period == null) {
-			labels.push('');
+		if (json.period.from != null) {
+			labels.push(json.data[i].time);
 		} else if (json.period.month == null) {
 			labels.push(i > 0 && i < x + 1 ? i : '');
 		} else {
@@ -36,12 +36,12 @@ function get_labels(json) {
 function get_data(json, field) {
 	var data = [];
 	var x = get_x(json);
-	var x_field = (json.period != null && json.period.month == null) ? 'month' : 'day';
+	var x_field = (json.period.from != null && json.period.month == null) ? 'month' : 'day';
 
 	var j = 0;
 
 	for (var i = 0; i < x; i++) {
-		if (json.period == null) {
+		if (json.period.from != null) {
 			data.push(json.data[j][field]);
 			j++;
 		} else if (j < json.data.length && json.data[j][x_field] == i) {
@@ -69,10 +69,6 @@ function get_type(config) {
 }
 
 function create_chart(json, config) {
-	var year = 2017;//json.period.year;
-	var month = 4;//json.period.month;
-	var x_label = (month == null) ? 'Mois' : 'Jour du mois';
-
 	var chartjs = {
 		type: get_type(config),
 		data: {
@@ -95,7 +91,7 @@ function create_chart(json, config) {
 				bodySpacing: 5,
 				callbacks: {
 					title: function(items, data) {
-						new Date(year, month, items[0].index).toLocaleString();
+						return moment.unix(items[0].xLabel).format('DD/MM/YY HH:mm');
 					},
 					label: function(item, data) {
 						var result = null;
@@ -119,17 +115,22 @@ function create_chart(json, config) {
 			},
 			scales: {
 				xAxes: [{
+					type: 'time',
 					gridLines: {
 						offsetGridLines: false
 					},
-					ticks: {
-						maxRotation: 0,
-						maxTicksLimit: 10,
-						fixedStepSize: 100
+					time: {
+						unit: 'day',
+						parser: moment.unix,
+						min: new Date(json.period.from),
+						displayFormats: {
+							hour: 'HH:mm',
+							day: 'D MMM'
+						}
 					},
 					scaleLabel: {
 						display: true,
-						labelString: x_label,
+//						labelString: x_label,
 						fontStyle: 'bold'
 					}
 				}],
@@ -156,13 +157,10 @@ function create_chart(json, config) {
 			dat.lineTension = 0;
 			dat.borderWidth = 2;
 			dat.pointStyle = dataset.pointStyle;
-            dat.borderCapStyle= 'butt';
-            dat.borderJoinStyle= 'miter';
-            dat.pointBorderWidth= 1;
-            dat.pointHoverRadius= 5;
-            dat.pointHoverBorderWidth= 2;
-            dat.pointRadius= 1;
-            dat.pointHitRadius= 0;
+			dat.pointRadius = 0;
+			dat.pointHitRadius = 5;
+			dat.pointHoverRadius = 5;
+			dat.spanGaps = false;
 		}
 
 		chartjs.data.datasets.push(dat);
@@ -202,20 +200,20 @@ function obs_temp(json) {
 			field: 'temp',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
-			color: 'rgba(69, 114, 167, 1)'
+			color: 'rgba(237, 86, 27, 1)'
 		},{
 			type: 'line',
 			label: 'Point de rosée',
 			field: 'dew_point',
 			axis: 'y-axis-1',
 			pointStyle: 'rect',
-			color: 'rgba(170, 70, 70, 1)'
+			color: 'rgba(80, 180, 50, 1)'
 		},{
 			type: 'line',
 			label: 'Humidité',
 			field: 'humidity',
 			axis: 'y-axis-2',
-			color: 'rgba(162, 190, 163, 1)'
+			color: 'rgba(5, 141, 199, 1)'
 		}],
 		options: {
 			title: 'Températures, humidité, point de rosée',
@@ -236,47 +234,41 @@ function obs_temp(json) {
 	return create_chart(json, options);
 }
 
-function chart_temp_rain(json) {
+function obs_wind(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
-			label: 'Température minimale',
-			field: 'temp_min',
+			label: 'Vent moyen',
+			field: 'wind_speed',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
 			color: 'rgba(69, 114, 167, 1)'
 		},{
 			type: 'line',
-			label: 'Température maximale',
-			field: 'temp_max',
-			axis: 'y-axis-1',
+			label: 'Direction',
+			field: 'wind_dir',
+			axis: 'y-axis-2',
 			pointStyle: 'rect',
 			color: 'rgba(170, 70, 70, 1)'
-		},{
-			type: 'bar',
-			label: 'Précipitations',
-			field: 'rain',
-			axis: 'y-axis-2',
-			color: 'rgba(162, 190, 163, 1)'
 		}],
 		options: {
-			title: 'Températures extrêmes, précipitations',
+			title: 'Vent',
 			axes: [{
 				id: 'y-axis-1',
 				position: 'left',
-				label: 'Température',
-				unit: '°C'
+				label: 'Vent',
+				unit: 'm/s'
 			},{
 				id: 'y-axis-2',
 				position: 'right',
-				label: 'Précipitations',
-				unit: 'mm'
+				label: 'Direction',
+				unit: '°'
 			}]
 		}
 	};
 
 	return create_chart(json, options);
-};
+}
 
 function chart_wind(json) {
 	var options = {

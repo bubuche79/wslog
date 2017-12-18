@@ -15,15 +15,19 @@ end
 
 function obs_charts(year, month)
 	http.write([[
-<script type="text/javascript" src="/wsview-static/Chart.min.js"></script>
 <script type="text/javascript" src="/wsview-static/moment-with-locales.min.js"></script>
+<script type="text/javascript" src="/wsview-static/Chart.min.js"></script>
 <div class="charts">
 <div class="chart">
 <canvas id="chart1"></canvas>
 </div>
+<div class="chart">
+<canvas id="chart2"></canvas>
+</div>
 </div>
 <script>
 var ctx1 = document.getElementById("chart1").getContext("2d");
+var ctx2 = document.getElementById("chart2").getContext("2d");
 
 fetch('/cgi-bin/wsview/rest/archive/]] .. year .. '/' .. month .. [[/')
 	.then(function(response) {
@@ -31,6 +35,7 @@ fetch('/cgi-bin/wsview/rest/archive/]] .. year .. '/' .. month .. [[/')
 	})
 	.then(function(json) {
 		new Chart(ctx1, obs_temp(json));
+		new Chart(ctx2, obs_wind(json));
 	});
 </script>]])
 end

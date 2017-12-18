@@ -107,6 +107,8 @@ function archive(t)
 
 	http.write('{')
 
+	write_json('period', { from = from, days = 4 })
+	http.write(',')
 	rest_json(cur)
 
 	http.write('}')
