@@ -6,6 +6,7 @@ libws_la_SOURCES = \
 	aggregate.c \
 	bitfield.c \
 	conf.c \
+	crc_ccitt.c \
 	err.c \
 	nybble.c \
 	util.c \
@@ -13,10 +14,20 @@ libws_la_SOURCES = \
 	aggregate.h \
 	bitfield.h \
 	conf.h \
+	crc_ccitt.h \
 	err.h \
 	nybble.h \
 	util.h \
 	serial.h
+
+if USE_VP2
+libws_la_SOURCES += \
+	vantage/serial.c \
+	vantage/config.c \
+	vantage/download.c \
+	vantage/testing.c \
+	vantage/vantage.h
+endif
 
 if USE_WS23XX
 libws_la_SOURCES += \

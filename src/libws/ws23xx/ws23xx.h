@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+int ws23xx_open();
+
 int ws23xx_reset_06(int fd);
 int ws23xx_write_addr(int fd, uint16_t addr);
 

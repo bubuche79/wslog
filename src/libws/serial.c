@@ -3,7 +3,6 @@
 #endif
 
 #include <termios.h>
-#include <fcntl.h>
 #ifdef DEBUG
 #include <stdio.h>
 #endif
@@ -17,8 +16,6 @@
 
 #include "defs/dso.h"
 #include "libws/serial.h"
-
-#define BAUDRATE B2400
 
 static struct termios oldio;
 
@@ -36,20 +33,19 @@ msleep(long ms)
 }
 
 DSO_EXPORT int
-ws_open(const char *device)
+ws_open(const char *device, speed_t speed)
 {
 	int fd = -1;
 	struct termios adtio;
-	int portstatus;
 
 	if ((fd = open(device, O_RDWR|O_NOCTTY)) == -1) {
 		goto error;
 	}
-	
+
 	if (flock(fd, LOCK_EX) == -1) {
 		goto error;
 	}
-	
+
 	/* Save current settings */
 	if (tcgetattr(fd, &oldio) == -1) {
 		goto error;
@@ -65,26 +61,14 @@ ws_open(const char *device)
 	adtio.c_cc[VMIN] = 0;			/* no blocking read */
 	adtio.c_cc[VTIME] = 0;			/* timer 0s */
 
-	(void) cfsetispeed(&adtio, BAUDRATE);
-	(void) cfsetospeed(&adtio, BAUDRATE);
+	(void) cfsetispeed(&adtio, speed);
+	(void) cfsetospeed(&adtio, speed);
 
 	if (tcsetattr(fd, TCSANOW, &adtio) == -1) {
 		goto error;
 	}
 
 	if (tcflush(fd, TCIOFLUSH) == -1) {
-		goto error;
-	}
-
-	/* Set DTR low and RTS high and leave other ctrl lines untouched */
-	if (ioctl(fd, TIOCMGET, &portstatus) == -1) {
-		goto error;
-	}
-
-	portstatus &= ~TIOCM_DTR;
-	portstatus |= TIOCM_RTS;
-
-	if (ioctl(fd, TIOCMSET, &portstatus) == -1) {
 		goto error;
 	}
 
@@ -120,8 +104,14 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
-ws_read_byte(int fd, uint8_t *byte, long timeout)
+DSO_EXPORT ssize_t
+ws_read(int fd, void *buf, size_t nbyte)
+{
+	return ws_read_to(fd, buf, nbyte, 0);
+}
+
+DSO_EXPORT ssize_t
+ws_read_to(int fd, void *buf, size_t nbyte, long timeout)
 {
 	int ret;
 	fd_set readset;
@@ -144,7 +134,7 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 
 	/* Read input */
 	if (FD_ISSET(fd, &readset)) {
-		ret = read(fd, byte, 1);
+		ret = read(fd, buf, nbyte);
 		if (ret == -1) {
 			goto error;
 		}
@@ -156,17 +146,17 @@ ws_read_byte(int fd, uint8_t *byte, long timeout)
 
 error:
 #ifdef DEBUG
-	perror("ws_read_byte");
+	perror("ws_read_to");
 #endif
 	return -1;
 }
 
-DSO_EXPORT int
-ws_write_byte(int fd, uint8_t byte)
+DSO_EXPORT ssize_t
+ws_write(int fd, const void *buf, size_t nbyte)
 {
 	int ret;
 
-	if ((ret = write(fd, &byte, 1)) == -1) {
+	if ((ret = write(fd, buf, nbyte)) == -1) {
 		goto error;
 	}
 	if (tcdrain(fd) == -1) {

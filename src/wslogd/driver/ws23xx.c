@@ -125,7 +125,7 @@ ws23xx_init(void)
 {
 	total_rain = -1;
 
-	fd = ws_open(confp->driver.ws23xx.tty);
+	fd = ws23xx_open(confp->driver.ws23xx.tty);
 	if (fd == -1) {
 		return -1;
 	}

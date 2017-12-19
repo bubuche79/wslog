@@ -609,8 +609,8 @@ main_hex(int argc, char* const argv[])
 	int fd;
 	uint8_t buf[nnybles];
 
-	if ((fd = ws_open(device)) == -1) {
-		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
+	if ((fd = ws23xx_open(device)) == -1) {
+		fprintf(stderr, "ws23xx_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 
@@ -661,8 +661,8 @@ main_set(int argc, char* const argv[])
 	value = strtol(argv[optind++], NULL, 10);
 
 	/* Process sub-command */
-	if ((fd = ws_open(device)) == -1) {
-		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
+	if ((fd = ws23xx_open(device)) == -1) {
+		fprintf(stderr, "ws23xx_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 
@@ -776,8 +776,8 @@ main_fetch(int argc, char* const argv[])
 	}
 
 	/* Process sub-command */
-	if ((fd = ws_open(device)) == -1) {
-		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
+	if ((fd = ws23xx_open(device)) == -1) {
+		fprintf(stderr, "ws23xx_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 
@@ -833,8 +833,8 @@ main_history(int argc, char* const argv[])
 	/* Loading data */
 	int fd;
 
-	if ((fd = ws_open(device)) == -1) {
-		fprintf(stderr, "ws_open %s: %s\n", device, strerror(errno));
+	if ((fd = ws23xx_open(device)) == -1) {
+		fprintf(stderr, "ws23xx_open %s: %s\n", device, strerror(errno));
 		exit(1);
 	}
 

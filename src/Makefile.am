@@ -1,5 +1,6 @@
 SUBDIRS = \
 	libws \
+	vantage \
 	ws23xx \
 	wslogd
 

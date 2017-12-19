@@ -18,6 +18,16 @@ AC_CHECK_LIB([sqlite3], [sqlite3_initialize], [ ])
 
 AM_CONDITIONAL([USE_LIBCHECK], [test "x$HAVE_LIBCHECK" = "x1"])
 
+# Add Vantage Pro 2 device support
+AC_ARG_ENABLE([vp2],
+	[AS_HELP_STRING([--disable-vp2], [Disable Vantage Pro 2 support])],
+	[], [enable_vp2=yes])
+
+AS_IF([test "x$enable_vp2" != "xno"],
+	[AC_DEFINE(HAVE_VP2, 1, [Vantage Pro 2 support])])
+
+AM_CONDITIONAL([USE_VP2], [test "x$enable_vp2" = "xyes"])
+
 # Add WS23XX device support
 AC_ARG_ENABLE([ws23xx],
 	[AS_HELP_STRING([--disable-ws23xx], [Disable La Crosse Technology WS23XX support])],
@@ -51,6 +61,7 @@ AM_CONDITIONAL([USE_WSVIEW], [test "x$enable_ws23xx" = "xyes"])
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/libws/Makefile
+                 src/vantage/Makefile
                  src/ws23xx/Makefile
                  src/wslogd/Makefile
                  src/wsview/Makefile

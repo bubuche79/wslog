@@ -2,11 +2,11 @@
 #include "config.h"
 #endif
 
-#include "ws23xx.h"
-
 #ifdef DEBUG
 #include <stdio.h>
 #endif
+#include <termios.h>
+#include <sys/ioctl.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -16,15 +16,20 @@
 
 #include "libws/nybble.h"
 #include "libws/serial.h"
+#include "libws/ws23xx/ws23xx.h"
 
-#define MAX_RESETS 		100
-#define MAX_RETRIES		50
-#define MAX_BLOCKS		30
+#define BAUDRATE 	B2400
+
+#define MAX_RESETS 	100
+#define MAX_RETRIES	50
+#define MAX_BLOCKS	30
 #define READ_TIMEOUT	1000			/* milliseconds */
 
-#define SETACK			0x04
-#define UNSETACK		0x0C
-#define WRITEACK		0x10
+#define SETACK		0x04
+#define UNSETACK	0x0C
+#define WRITEACK	0x10
+
+static const uint8_t reset = 0x06;
 
 static uint8_t
 checksum(const uint8_t *buf, size_t len)
@@ -46,7 +51,7 @@ read_byte(int fd, uint8_t *buf, long timeout)
 {
 	int ret;
 
-	ret = ws_read_byte(fd, buf, timeout);
+	ret = ws_read_to(fd, buf, 1, timeout);
 	if (ret == -1) {
 		goto error;
 	} else if (ret == 0) {
@@ -69,7 +74,7 @@ write_byte(int fd, uint8_t byte, uint8_t ack)
 	int ret;
 	uint8_t answer;
 
-	ret = ws_write_byte(fd, byte);
+	ret = ws_write(fd, &byte, 1);
 	if (ret == -1) {
 		goto error;
 	} else if (ret == 0) {
@@ -78,7 +83,7 @@ write_byte(int fd, uint8_t byte, uint8_t ack)
 	}
 
 	/* Check ack */
-	ret = ws_read_byte(fd, &answer, READ_TIMEOUT);
+	ret = ws_read_to(fd, &answer, 1, READ_TIMEOUT);
 	if (ret == -1) {
 		goto error;
 	} else if (ret == 0) {
@@ -102,6 +107,40 @@ error:
 }
 
 /**
+ * Open serial device
+ */
+DSO_EXPORT int
+ws23xx_open(const char *device)
+{
+	int fd;
+	int portstatus;
+
+	if ((fd = ws_open(device, BAUDRATE)) == -1) {
+		goto error;
+	}
+
+	/* Set DTR low and RTS high and leave other ctrl lines untouched */
+	if (ioctl(fd, TIOCMGET, &portstatus) == -1) {
+		goto error;
+	}
+
+	portstatus &= ~TIOCM_DTR;
+	portstatus |= TIOCM_RTS;
+
+	if (ioctl(fd, TIOCMSET, &portstatus) == -1) {
+		goto error;
+	}
+
+	return fd;
+
+error:
+	if (fd != -1) {
+		close(fd);
+	}
+	return -1;
+}
+
+/**
  * Write a reset string and wait for a reply.
  */
 DSO_EXPORT int
@@ -116,7 +155,7 @@ ws23xx_reset_06(int fd)
 		if (ws_flush(fd) == -1) {
 			goto error;
 		}
-		if (ws_write_byte(fd, 0x06) == -1) {
+		if (ws_write(fd, &reset, 1) == -1) {
 			goto error;
 		}
 
@@ -128,7 +167,7 @@ ws23xx_reset_06(int fd)
 		 * timeout until all data is exhausted, if we got a 2 back at all,
 		 * we consider it a success.
 		 */
-		ret = ws_read_byte(fd, &answer, READ_TIMEOUT);
+		ret = ws_read_to(fd, &answer, 1, READ_TIMEOUT);
 		if (ret == -1) {
 			goto error;
 		}
@@ -140,7 +179,7 @@ ws23xx_reset_06(int fd)
 				success = 1;
 			}
 
-			ret = ws_read_byte(fd, &answer, 50);
+			ret = ws_read_to(fd, &answer, 1, 50);
 			if (ret == -1) {
 				goto error;
 			}
