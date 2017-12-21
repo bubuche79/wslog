@@ -6,6 +6,8 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+
 #include "defs/dso.h"
 
 #include "libws/serial.h"
@@ -18,7 +20,7 @@ vantage_clr(int fd, const char *cmd, int arg)
 	char buf[16];
 	int buflen;
 
-	buflen = snprintf(buf, "%s %d\n", cmd, arg);
+	buflen = snprintf(buf, sizeof(buf), "%s %d\n", cmd, arg);
 	return vantage_ack(fd, buf, buflen, NULL, 0);
 }
 

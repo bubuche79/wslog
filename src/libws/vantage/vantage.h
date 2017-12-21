@@ -27,11 +27,11 @@ enum vantage_type
 
 struct vantage_rxck
 {
-	long received;		/* total packets received */
-	long missed;		/* total packets missed */
-	long resync;		/* number of resynchronizations */
-	long in_row;		/* largest number of packets received in a row */
-	long crc_ko;		/* number of CRC errors detected */
+	long received;			/* Total packets received */
+	long missed;			/* Total packets missed */
+	long resync;			/* Number of resynchronizations */
+	long in_row;			/* Largest number of packets received in a row */
+	long crc_ko;			/* Number of CRC errors detected */
 };
 
 struct vantage_loop
@@ -46,23 +46,34 @@ struct vantage_hilow
 
 struct vantage_dmp
 {
-	time_t tstamp;		/* timestamp */
+	time_t tstamp;			/* Timestamp */
 
-	float temp;		/* out temperature */
-	float hi_temp;		/* high out temperature */
-	float lo_temp;		/* low out temperature */
-	float humidity;		/* out humidity */
-
-	float rain;		/* rain click */
-	float hi_rain_rate;	/* highest rain rate */
-
-	float barometer;	/* barometer at end of period */
-	float solar_rad;	/* solar radiation */
-
-	float wind_samples;	/* number of wind samples */
-
-	float in_temp;
-	float in_humidity;
+	uint16_t temp;			/* Outside temperature (F°/10) */
+	uint16_t hi_temp;		/* High outside temperature */
+	uint16_t lo_temp;		/* Low outside temperature */
+	uint16_t rain;			/* Number of rain clicks */
+	uint16_t hi_rain_rate;		/* Highest rain rate (clicks/hour) */
+	uint16_t barometer;		/* Barometer (Hg/1000) */
+	uint16_t solar_rad;		/* Solar radiation (W/m²) */
+	uint16_t wind_samples;		/* Number of wind samples */
+	uint16_t in_temp;		/* Inside temperature (F°/10) */
+	uint8_t in_humidity;		/* Inside humidity */
+	uint8_t humidity;		/* Outside humidity */
+	uint8_t avg_wind_speed;		/* Average wind speed, mph */
+	uint8_t hi_wind_speed;		/* Highest wind speed, mph */
+	uint8_t hi_wind_dir;		/* Direction code of the highest wind speed */
+	uint8_t main_wind_dir;		/* Prevailing wind direction code */
+	uint8_t avg_uv;			/* Average uv index */
+	uint8_t et;			/* ET accumulated over the last hour */
+	uint16_t hi_solar_rad;		/* Highest solar radiation, W/m² */
+	uint8_t hi_uv;			/* Highest UV index, W/m² */
+	uint8_t forecast;		/* Weather forecast rule */
+	uint8_t leaf_temp[2];		/* Leaf temperature (F° + 90) */
+	uint8_t leaf_wet[2];		/* Leaf wetness (0 - 15) */
+	uint8_t soil_temp[4];		/* Soil temperature (F° + 90) */
+	uint8_t extra_humidity[2];	/* Extra humidity */
+	uint8_t extra_temp[3];		/* Extra temperature (F° + 90) */
+	uint8_t soil_moisture[4];	/* Soil moisture (cb) */
 };
 
 struct vantage_bar

@@ -114,33 +114,6 @@ error:
 }
 
 int
-vantage_ack(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len)
-{
-	ssize_t sz;
-	uint8_t ack;
-
-	if (vantage_write_cmd(fd, cmd, cmdlen) == -1) {
-		goto error;
-	}
-
-	/* ACK */
-	if ((sz = vantage_read(fd, &ack, 1)) == -1) {
-		goto error;
-	}
-
-	if (ack != ACK) {
-		errno = EIO;
-		goto error;
-	}
-
-	/* Data */
-	return vantage_read(fd, buf, len);
-
-error:
-	return -1;
-}
-
-int
 vantage_ok(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len)
 {
 
@@ -148,15 +121,19 @@ vantage_ok(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len)
 		goto error;
 	}
 
-	/* LF CR "OK" LF CR data LF CR */
+	/* OK */
 	if (vantage_read_check(fd, OK, sizeof(OK)) == -1) {
 		goto error;
 	}
-	if (vantage_read(fd, buf, len) == -1) {
-		goto error;
-	}
-	if (vantage_read_check(fd, DELIM, sizeof(DELIM)) == -1) {
-		goto error;
+
+	/* Data */
+	if (len > 0) {
+		if (vantage_read(fd, buf, len) == -1) {
+			goto error;
+		}
+		if (vantage_read_check(fd, DELIM, sizeof(DELIM)) == -1) {
+			goto error;
+		}
 	}
 
 	return 0;

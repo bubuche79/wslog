@@ -22,9 +22,10 @@ libws_la_SOURCES = \
 
 if USE_VP2
 libws_la_SOURCES += \
-	vantage/serial.c \
+	vantage/clearing.c \
 	vantage/config.c \
 	vantage/download.c \
+	vantage/serial.c \
 	vantage/testing.c \
 	vantage/util.c \
 	vantage/util.h
