@@ -44,8 +44,8 @@ usage_opt(FILE *out, int opt, int code)
 	exit(code);
 }
 
-static int
-main_test(int fd, int argc, char* const argv[])
+static void
+check_empty_args(int argc, char* const argv[])
 {
 	int c;
 
@@ -61,12 +61,60 @@ main_test(int fd, int argc, char* const argv[])
 	if (argc != 0) {
 		usage(stderr, 1);
 	}
+}
+
+static int
+main_test(int fd, int argc, char* const argv[])
+{
+	check_empty_args(argc, argv);
 
 	/* Process sub-command */
 	if (vantage_test(fd) == -1) {
 		fprintf(stderr, "vantage_test: %s\n", strerror(errno));
 		goto error;
 	}
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static int
+main_ver(int fd, int argc, char* const argv[])
+{
+	char buf[16];
+
+	check_empty_args(argc, argv);
+
+	/* Process sub-command */
+	if (vantage_ver(fd, buf, sizeof(buf)) == -1) {
+		fprintf(stderr, "vantage_ver: %s\n", strerror(errno));
+		goto error;
+	}
+
+	printf("ver: %s\n", buf);
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static int
+main_nver(int fd, int argc, char* const argv[])
+{
+	char buf[16];
+
+	check_empty_args(argc, argv);
+
+	/* Process sub-command */
+	if (vantage_nver(fd, buf, sizeof(buf)) == -1) {
+		fprintf(stderr, "vantage_nver: %s\n", strerror(errno));
+		goto error;
+	}
+
+	printf("nver: %s\n", buf);
 
 	return 0;
 
@@ -116,6 +164,7 @@ main(int argc, char * const argv[])
 		device = "/dev/ttyUSB0";
 	}
 
+	/* Open device */
 	if ((fd = vantage_open(device)) == -1) {
 		fprintf(stderr, "vantage_open %s: %s\n", device, strerror(errno));
 		exit(1);
@@ -124,10 +173,10 @@ main(int argc, char * const argv[])
 	/* Testing commands */
 	if (strcmp("test", cmd) == 0) {
 		status = main_test(fd, argc, argv);
-//	} else if (strcmp("ver", cmd) == 0) {
-//		main_ver(argc, argv);
-//	} else if (strcmp("nver", cmd) == 0) {
-//		main_nver(argc, argv);
+	} else if (strcmp("ver", cmd) == 0) {
+		status = main_ver(fd, argc, argv);
+	} else if (strcmp("nver", cmd) == 0) {
+		status = main_nver(fd, argc, argv);
 	} else {
 		status = 1;
 		fprintf(stderr, "%s: unknown command\n", cmd);

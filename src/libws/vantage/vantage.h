@@ -6,8 +6,11 @@
 #include <unistd.h>
 #include <termios.h>
 
-#define LF	'\n'
-#define CR	'\r'
+#define LF		0x0A	/* Line feed */
+#define CR		0x0D	/* Carriage return */
+#define ACK		0x06	/* Acknowledge */
+#define NACK		0x21	/* Not acknowledge */
+#define CANCEL		0x18	/* CRC check error */
 
 enum vantage_type
 {
