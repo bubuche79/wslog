@@ -8,6 +8,53 @@
 extern "C" {
 #endif
 
+enum vantage_cmd
+{
+	TEST = 0,
+	WRD,
+	RXCHECK,
+	RXTEST,
+	VER,
+	RECEIVERS,
+	NVER,
+	LOOP,
+	LPS,
+	HILOWS,
+	PUTRAIN,
+	PUTET,
+	DMP,
+	DMPAFT,
+	GETEE,
+	EERD,
+	EEWR,
+	EEBRD,
+	EEBWR,
+	CALED,
+	CALFIX,
+	BAR,
+	BARDATA,
+	CLRLOG,
+	CLRALM,
+	CLRCAL,
+	CLRGRA,
+	CLRVAR,
+	CLRHIGHS,
+	CLRLOWS,
+	CLRBITS,
+	CLRDATA,
+	BAUD,
+	SETTIME,
+	GETTIME,
+	GAIN,
+	SETPER,
+	STOP,
+	START,
+	NEWSETUP,
+	LAMPS
+};
+
+int vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...);
+
 int vantage_ack(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len);
 int vantage_ack_crc(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len);
 

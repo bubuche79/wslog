@@ -18,8 +18,6 @@
 DSO_EXPORT int
 vantage_baud(int fd, speed_t speed)
 {
-	char cmd[12];
-	int cmdlen;
 	int bauds;
 
 	if (speed == B1200) {
@@ -37,9 +35,7 @@ vantage_baud(int fd, speed_t speed)
 		goto error;
 	}
 
-	cmdlen = snprintf(cmd, sizeof(cmd), "BAUD %d\n", bauds);
-
-	return vantage_ok(fd, cmd, cmdlen, NULL, 0);
+	return vantage_proc(fd, BAUD, bauds);
 
 error:
 	return -1;
@@ -103,15 +99,12 @@ error:
 DSO_EXPORT int
 vantage_gain(int fd, int on)
 {
-	return -1;
+	return vantage_proc(fd, GAIN, (on) ? 1 : 0);
 }
 
 DSO_EXPORT int
 vantage_setper(int fd, unsigned int min)
 {
-	char cmd[12];
-	int cmdlen;
-
 	switch (min) {
 	case 1:
 	case 5:
@@ -126,9 +119,7 @@ vantage_setper(int fd, unsigned int min)
 		goto error;
 	}
 
-	cmdlen = snprintf(cmd, sizeof(cmd), "SETPER %d\n", min);
-
-	return vantage_ok(fd, cmd, cmdlen, NULL, 0);
+	return vantage_proc(fd, SETPER, min);
 
 error:
 	return -1;
@@ -149,16 +140,11 @@ vantage_start(int fd)
 DSO_EXPORT int
 vantage_newsetup(int fd)
 {
-	return vantage_ack(fd, "NEWSETUP\n", 9, NULL, 0);
+	return vantage_proc(fd, NEWSETUP);
 }
 
 DSO_EXPORT int
 vantage_lamps(int fd, int on)
 {
-	char cmd[9];
-	int cmdlen;
-
-	cmdlen = snprintf(cmd, sizeof(cmd), "LAMPS %d\n", on ? 1 : 0);
-
-	return vantage_ok(fd, cmd, cmdlen, NULL, 0);
+	return vantage_proc(fd, LAMPS, (on) ? 1 : 0);
 }

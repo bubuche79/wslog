@@ -16,22 +16,7 @@
 DSO_EXPORT int
 vantage_open(const char *device)
 {
-	int fd;
-
-	if ((fd = ws_open(device, BAUDRATE)) == -1) {
-		goto error;
-	}
-
-	/* Wakeup console */
-	if (vantage_wakeup(fd) == -1) {
-		(void) close(fd);
-		goto error;
-	}
-
-	return fd;
-
-error:
-	return -1;
+	return ws_open(device, BAUDRATE);
 }
 
 DSO_EXPORT int
