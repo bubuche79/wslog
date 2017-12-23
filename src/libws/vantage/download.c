@@ -9,12 +9,14 @@
 #include <sys/types.h>
 #include <time.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include "defs/dso.h"
 
+#include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
-#define RECORD_SIZE	52
+#define DMP_SIZE	52
 #define PAGE_SIZE	264
 
 static uint8_t
@@ -59,6 +61,11 @@ vantage_time(const uint8_t *buf)
 }
 
 static void
+vantage_mktime(uint8_t *buf, time_t time)
+{
+}
+
+static void
 vantage_dmp_decode(struct vantage_dmp *d, const uint8_t *buf)
 {
 #if 0
@@ -100,17 +107,159 @@ vantage_dmp_decode(struct vantage_dmp *d, const uint8_t *buf)
 	vantage_uint8_arr(buf + 48, 4, d->soil_moisture);
 }
 
+static int
+vantage_read_page(int fd, uint8_t *buf, uint8_t len)
+{
+	int i;
+
+	for (i = 0; i < 3; i++) {
+		int ret = vantage_pread(fd, IO_CRC, buf, len);
+
+		if (ret == 0) {
+			return 0;
+		} else if (ret == -1) {
+			// TODO use right errno
+			if (errno == -1) {
+				uint8_t nack = NACK;
+
+				/* Send the page again */
+				if (vantage_write(fd, &nack, 1) == -1) {
+					goto error;
+				}
+			} else {
+				goto error;
+			}
+		}
+	}
+
+	errno = EIO;
+
+error:
+	return -1;
+}
+
+DSO_EXPORT ssize_t
+vantage_read_pages(int fd, struct vantage_dmp *buf, size_t nel, int16_t npages, int16_t offset)
+{
+	ssize_t sz;
+	uint8_t byte;
+	uint8_t iobuf[PAGE_SIZE];
+
+	byte = ACK;
+
+	for (sz = 0; sz < nel && byte == ACK; ) {
+		size_t j;
+
+		/* Read page */
+		if (vantage_read_page(fd, iobuf, byte) == -1) {
+			// TODO byte = ESC;
+			goto error;
+		}
+
+		/* Decode page (5 records) */
+		for (j = offset; j < 5 && sz < nel; j++) {
+			uint8_t *p = iobuf + 1 + j * DMP_SIZE;
+
+			if (p[0] == 0xFF) {
+				byte = ESC;
+			} else {
+				vantage_dmp_decode(&buf[sz++], p);
+			}
+		}
+
+		/* Send ACK or ESC */
+		if (vantage_write(fd, &byte, 1) == -1) {
+			goto error;
+		}
+
+		/* Clear offset for next pages */
+		offset = 0;
+	}
+
+	return sz;
+
+error:
+	return -1;
+}
+
 DSO_EXPORT ssize_t
 vantage_dmp(int fd, struct vantage_dmp *buf, size_t nel)
 {
+	ssize_t sz;
+	uint8_t byte;
+	uint8_t iobuf[PAGE_SIZE];
 
-	vantage_dmp_decode(buf, NULL);
+	byte = ACK;
 
+	/* DMP command */
+	if (vantage_proc(fd, DMP) == -1) {
+		goto error;
+	}
+
+	// TODO Do we need to send ACK?
+
+	/* Read archive records */
+	for (sz = 0; sz < nel && byte == ACK; ) {
+		size_t j;
+
+		/* Read page */
+		if (vantage_read_page(fd, iobuf, byte) == -1) {
+			// TODO byte = ESC;
+			goto error;
+		}
+
+		/* Decode page (5 records) */
+		for (j = 0; j < 5 && sz < nel; j++) {
+			uint8_t *p = iobuf + 1 + j * DMP_SIZE;
+
+			if (p[0] == 0xFF) {
+				byte = ESC;
+			} else {
+				vantage_dmp_decode(&buf[sz++], p);
+			}
+		}
+
+		/* Send ACK or ESC */
+		if (vantage_write(fd, &byte, 1) == -1) {
+			goto error;
+		}
+	}
+
+	return sz;
+
+error:
 	return -1;
 }
 
 DSO_EXPORT ssize_t
 vantage_dmpaft(int fd, struct vantage_dmp *buf, size_t nel, time_t after)
 {
+	uint8_t iobuf[4];
+	int16_t page_cnt, offset;
+
+	/* DMPAFT command */
+	if (vantage_proc(fd, DMPAFT) == -1) {
+		goto error;
+	}
+
+	/* Send timestamp */
+	vantage_mktime(iobuf, after);
+
+	if (vantage_pwrite(fd, IO_CRC|IO_ACK, iobuf, sizeof(iobuf)) == -1) {
+		goto error;
+	}
+
+	/* Read number of pages, record offset */
+	if (vantage_pread(fd, IO_CRC, iobuf, sizeof(iobuf)) == -1) {
+		goto error;
+	}
+
+	page_cnt = vantage_uint16(iobuf);
+	offset = vantage_uint16(iobuf + 2);
+
+	/* Read archive records */
+	return vantage_read_pages(fd, buf, nel, page_cnt, offset);
+
+error:
 	return -1;
 }

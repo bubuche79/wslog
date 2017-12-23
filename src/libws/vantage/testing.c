@@ -17,6 +17,27 @@
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
+static int
+vantage_verx(int fd, enum vantage_cmd cmd, char *buf, size_t len)
+{
+	/* Vantage command */
+	if (vantage_proc(fd, cmd) == -1) {
+		goto error;
+	}
+
+	/* Read version */
+	if (vantage_read(fd, buf, len) == -1) {
+		goto error;
+	}
+
+	buf[len] = 0;
+
+	return 0;
+
+error:
+	return -1;
+}
+
 DSO_EXPORT int
 vantage_test(int fd)
 {
@@ -26,19 +47,19 @@ vantage_test(int fd)
 DSO_EXPORT int
 vantage_wrd(int fd, enum vantage_type *wrd)
 {
-	char cmd[] = { 'W', 'R', 'D', 0x12, 0x4d, LF };
-	uint8_t buf[1];
-
-	if (vantage_ack(fd, cmd, sizeof(cmd), buf, sizeof(buf)) == -1) {
-		goto error;
-	}
-
-	/* Decode result */
-	*wrd = buf[0];
-
-	return 0;
-
-error:
+//	char cmd[] = { 'W', 'R', 'D', 0x12, 0x4d, LF };
+//	uint8_t buf[1];
+//
+//	if (vantage_ack(fd, cmd, sizeof(cmd), buf, sizeof(buf)) == -1) {
+//		goto error;
+//	}
+//
+//	/* Decode result */
+//	*wrd = buf[0];
+//
+//	return 0;
+//
+//error:
 	return -1;
 }
 
@@ -62,9 +83,7 @@ vantage_ver(int fd, char *buf, size_t len)
 		return -1;
 	}
 
-	buf[11] = 0;
-
-	return vantage_ok(fd, "VER\n", 4, buf, 11);
+	return vantage_verx(fd, VER, buf, 11);
 }
 
 DSO_EXPORT int
@@ -81,7 +100,5 @@ vantage_nver(int fd, char *buf, size_t len)
 		return -1;
 	}
 
-	buf[4] = 0;
-
-	return vantage_ok(fd, "NVER\n", 5, buf, 4);
+	return vantage_verx(fd, NVER, buf, 4);
 }

@@ -154,7 +154,7 @@ error:
 DSO_EXPORT ssize_t
 ws_write(int fd, const void *buf, size_t nbyte)
 {
-	int ret;
+	ssize_t ret;
 
 	if ((ret = write(fd, buf, nbyte)) == -1) {
 		goto error;
@@ -172,6 +172,31 @@ ws_write(int fd, const void *buf, size_t nbyte)
 error:
 #ifdef DEBUG
 	perror("ws_write");
+#endif
+	return -1;
+}
+
+DSO_EXPORT ssize_t
+ws_writev(int fd, const struct iovec *iov, size_t iovcnt)
+{
+	ssize_t ret;
+
+	if ((ret = writev(fd, iov, iovcnt)) == -1) {
+		goto error;
+	}
+	if (tcdrain(fd) == -1) {
+		goto error;
+	}
+
+	if (ws_io_delay > 0) {
+		msleep(ws_io_delay);
+	}
+
+	return ret;
+
+error:
+#ifdef DEBUG
+	perror("ws_writev");
 #endif
 	return -1;
 }

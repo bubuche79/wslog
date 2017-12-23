@@ -10,7 +10,7 @@
 #define CR		0x0D	/* Carriage return */
 #define ACK		0x06	/* Acknowledge */
 #define NACK		0x21	/* Not acknowledge */
-#define CANCEL		0x18	/* CRC check error */
+#define ESC		0x18	/* CRC check error */
 
 enum vantage_type
 {
@@ -48,22 +48,22 @@ struct vantage_dmp
 {
 	time_t tstamp;			/* Timestamp */
 
-	uint16_t temp;			/* Outside temperature (F°/10) */
-	uint16_t hi_temp;		/* High outside temperature */
-	uint16_t lo_temp;		/* Low outside temperature */
+	int16_t temp;			/* Outside temperature (F°/10) */
+	int16_t hi_temp;		/* High outside temperature */
+	int16_t lo_temp;		/* Low outside temperature */
 	uint16_t rain;			/* Number of rain clicks */
 	uint16_t hi_rain_rate;		/* Highest rain rate (clicks/hour) */
 	uint16_t barometer;		/* Barometer (Hg/1000) */
 	uint16_t solar_rad;		/* Solar radiation (W/m²) */
 	uint16_t wind_samples;		/* Number of wind samples */
-	uint16_t in_temp;		/* Inside temperature (F°/10) */
+	int16_t in_temp;		/* Inside temperature (F°/10) */
 	uint8_t in_humidity;		/* Inside humidity */
 	uint8_t humidity;		/* Outside humidity */
 	uint8_t avg_wind_speed;		/* Average wind speed, mph */
 	uint8_t hi_wind_speed;		/* Highest wind speed, mph */
 	uint8_t hi_wind_dir;		/* Direction code of the highest wind speed */
 	uint8_t main_wind_dir;		/* Prevailing wind direction code */
-	uint8_t avg_uv;			/* Average uv index */
+	uint8_t avg_uv;			/* Average UV index */
 	uint8_t et;			/* ET accumulated over the last hour */
 	uint16_t hi_solar_rad;		/* Highest solar radiation, W/m² */
 	uint8_t hi_uv;			/* Highest UV index, W/m² */

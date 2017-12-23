@@ -4,9 +4,15 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* IO mode */
+#define IO_CRC		0x0001
+
+/* Acknowledge mode */
+#define IO_ACK		0x0010
+#define IO_OK		0x0020
+#define IO_TEST		0x0030
+#define IO_OK_DONE	0x0040
+#define IO_ACK_MASK	0x00F0
 
 enum vantage_cmd
 {
@@ -53,14 +59,17 @@ enum vantage_cmd
 	LAMPS
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+ssize_t vantage_read(int fd, void *buf, size_t len);
+ssize_t vantage_write(int fd, const void *buf, size_t len);
+
+int vantage_pread(int fd, int flags, void *buf, size_t len);
+int vantage_pwrite(int fd, int flags, const void *buf, size_t len);
+
 int vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...);
-
-int vantage_ack(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len);
-int vantage_ack_crc(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len);
-
-int vantage_ok(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len);
-
-int vantage_write_crc(int fd, const uint8_t *buf, size_t len);
 
 #ifdef __cplusplus
 }

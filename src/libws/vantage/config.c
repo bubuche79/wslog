@@ -47,11 +47,12 @@ vantage_settime(int fd, time_t time)
 	struct tm tm;
 	uint8_t buf[6];
 
-	if (vantage_ack(fd, "SETTIME\n", 8, NULL, 0) == -1) {
+	/* SETTIME command */
+	if (vantage_proc(fd, SETTIME) == -1) {
 		goto error;
 	}
 
-	/* Encode */
+	/* Write timestamp */
 	if (localtime_r(&time, &tm) == NULL) {
 		goto error;
 	}
@@ -63,8 +64,7 @@ vantage_settime(int fd, time_t time)
 	buf[4] = tm.tm_mon + 1;
 	buf[5] = tm.tm_yday - 1900;
 
-	/* Send with CRC */
-	return vantage_write_crc(fd, buf, sizeof(buf));
+	return vantage_pwrite(fd, IO_CRC|IO_ACK, buf, sizeof(buf));
 
 error:
 	return -1;
@@ -76,11 +76,16 @@ vantage_gettime(int fd, time_t *time)
 	struct tm tm;
 	uint8_t buf[6];
 
-	if (vantage_ack_crc(fd, "GETTIME\n", 8, buf, sizeof(buf)) == -1) {
+	/* GETTIME command */
+	if (vantage_proc(fd, GETTIME) == -1) {
 		goto error;
 	}
 
-	/* Decode */
+	/* Read timestamp */
+	if (vantage_pread(fd, IO_CRC, buf, sizeof(buf)) == -1) {
+		goto error;
+	}
+
 	tm.tm_sec = buf[0];
 	tm.tm_min = buf[1];
 	tm.tm_hour = buf[2];

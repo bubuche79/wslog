@@ -8,6 +8,7 @@
 #include <errno.h>
 
 #include "libws/serial.h"
+#include "libws/crc_ccitt.h"
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
@@ -17,22 +18,11 @@
 #define IO_TIMEOUT	250	/* Read timeout, in milliseconds */
 #define IO_DONE_TIMEOUT	2000	/* DONE acknowledge timeout, in milliseconds */
 
-enum ack_type
-{
-	AT_ACK,
-	AT_OK,
-	AT_TEST,
-	AT_DONE,		/* OK and DONE after a while */
-	AT_UNKOWN
-};
-
 struct proc_def
 {
 	const char *fmt;
-	enum ack_type ack;
+	int flags;
 };
-
-static const uint8_t DELIM[] = { LF, CR };
 
 static const uint8_t ACK_TEST[] = { 'T', 'E', 'S', 'T', LF };
 static const uint8_t ACK_OK[] = { LF, CR, 'O', 'K', LF, CR };
@@ -41,47 +31,47 @@ static const uint8_t ACK_DONE[] = { 'D', 'O', 'N', 'E', LF, CR };
 
 static const struct proc_def CMDS[] =
 {
-	{ "TEST\n", AT_TEST },
-	{ "WRD%c%c\n", AT_ACK },
-	{ "RXCHECK\n", AT_OK },
-	{ "RXTEST\n", AT_UNKOWN },
-	{ "VER\n", AT_OK },
-	{ "RECEIVERS\n", AT_OK },
-	{ "NVER\n", AT_OK },
-	{ "LOOP %d\n", AT_ACK },
-	{ "LPS %d %d\n", AT_ACK },
-	{ "HILOWS\n", AT_ACK },
-	{ "PUTRAIN %d\n", AT_ACK },
-	{ "PUTET %d\n", AT_ACK },
-	{ "DMP\n", AT_ACK },
-	{ "DMPAFT\n", AT_ACK },
-	{ "GETEE\n", AT_ACK },
-	{ "EERD %hx %hu\n", AT_UNKOWN },
-	{ "EEWR %hx %hu\n", AT_OK },
-	{ "EEBRD %hx %hu\n", AT_ACK },
-	{ "EEBWR %hx %hu\n", AT_ACK },
-	{ "CALED\n", AT_ACK },
-	{ "CALFIX\n", AT_ACK },
-	{ "BAR=%d %d\n", AT_OK },
-	{ "BARDATA\n", AT_OK },
-	{ "CLRLOG\n", AT_OK },
-	{ "CLRALM\n", AT_DONE },
-	{ "CLRCAL\n", AT_DONE },
-	{ "CLRGRA\n", AT_DONE },
-	{ "CLRVAR %d\n", AT_ACK },
-	{ "CLRHIGHS %d\n", AT_ACK },
-	{ "CLRLOWS %d\n", AT_ACK },
-	{ "CLRBITS\n", AT_ACK },
-	{ "CLRDATA\n", AT_ACK },
-	{ "BAUD %d\n", AT_OK },
-	{ "SETTIME\n", AT_ACK },
-	{ "GETTIME\n", AT_ACK },
-	{ "GAIN %d\n", AT_OK },
-	{ "SETPER %d\n", AT_ACK },
-	{ "STOP\n", AT_UNKOWN },
-	{ "START\n", AT_UNKOWN },
-	{ "NEWSETUP\n", AT_ACK },
-	{ "LAMPS %d\n", AT_OK },
+	{ "TEST\n", IO_TEST },
+	{ "WRD%c%c\n", IO_ACK },
+	{ "RXCHECK\n", IO_OK },
+	{ "RXTEST\n" },
+	{ "VER\n", IO_OK },
+	{ "RECEIVERS\n", IO_OK },
+	{ "NVER\n", IO_OK },
+	{ "LOOP %d\n", IO_ACK },
+	{ "LPS %d %d\n", IO_ACK },
+	{ "HILOWS\n", IO_ACK },
+	{ "PUTRAIN %d\n", IO_ACK },
+	{ "PUTET %d\n", IO_ACK },
+	{ "DMP\n", IO_ACK },
+	{ "DMPAFT\n", IO_ACK },
+	{ "GETEE\n", IO_ACK },
+	{ "EERD %hx %hu\n", 0 },
+	{ "EEWR %hx %hu\n", IO_OK },
+	{ "EEBRD %hx %hu\n", IO_ACK },
+	{ "EEBWR %hx %hu\n", IO_ACK },
+	{ "CALED\n", IO_ACK },
+	{ "CALFIX\n", IO_ACK },
+	{ "BAR=%d %d\n", IO_OK },
+	{ "BARDATA\n", IO_OK },
+	{ "CLRLOG\n", IO_OK },
+	{ "CLRALM\n", IO_OK_DONE },
+	{ "CLRCAL\n", IO_OK_DONE },
+	{ "CLRGRA\n", IO_OK_DONE },
+	{ "CLRVAR %d\n", IO_ACK },
+	{ "CLRHIGHS %d\n", IO_ACK },
+	{ "CLRLOWS %d\n", IO_ACK },
+	{ "CLRBITS\n", IO_ACK },
+	{ "CLRDATA\n", IO_ACK },
+	{ "BAUD %d\n", IO_OK },
+	{ "SETTIME\n", IO_ACK },
+	{ "GETTIME\n", IO_ACK },
+	{ "GAIN %d\n", IO_OK },
+	{ "SETPER %d\n", IO_ACK },
+	{ "STOP\n" },
+	{ "START\n" },
+	{ "NEWSETUP\n", IO_ACK },
+	{ "LAMPS %d\n", IO_OK },
 };
 
 static ssize_t
@@ -110,10 +100,16 @@ error:
 	return -1;
 }
 
-static ssize_t
+ssize_t
 vantage_read(int fd, void *buf, size_t len)
 {
 	return vantage_read_to(fd, buf, len, IO_TIMEOUT);
+}
+
+ssize_t
+vantage_write(int fd, const void *buf, size_t len)
+{
+	return ws_write(fd, buf, len);
 }
 
 static int
@@ -143,40 +139,21 @@ vantage_ack_ck(int fd, const uint8_t *ref, size_t reflen)
 }
 
 static int
-vantage_write_cmd(int fd, const char* cmd, size_t cmdlen)
-{
-	if (cmd[cmdlen - 1] != LF) {
-		errno = EINVAL;
-		goto error;
-	}
-
-	/* Write command */
-	if (ws_write(fd, cmd, cmdlen) == -1) {
-		goto error;
-	}
-
-	return 0;
-
-error:
-	return -1;
-}
-
-static int
-vantage_read_ack(int fd, enum ack_type at)
+vantage_read_ack(int fd, int ack)
 {
 	int ret;
 
-	switch (at) {
-	case AT_ACK:
+	switch (ack & 0xF0) {
+	case IO_ACK:
 		ret = vantage_ack_ck(fd, ACK_ACK, sizeof(ACK_ACK));
 		break;
-	case AT_OK:
+	case IO_OK:
 		ret = vantage_ack_ck(fd, ACK_OK, sizeof(ACK_OK));
 		break;
-	case AT_TEST:
+	case IO_TEST:
 		ret = vantage_ack_ck(fd, ACK_TEST, sizeof(ACK_TEST));
 		break;
-	case AT_DONE:
+	case IO_OK_DONE:
 		if (vantage_ack_ck(fd, ACK_OK, sizeof(ACK_OK)) == -1) {
 			goto error;
 		}
@@ -194,84 +171,102 @@ error:
 }
 
 int
+vantage_pread(int fd, int flags, void *buf, size_t len)
+{
+	if (flags & IO_ACK_MASK) {
+		errno = EINVAL;
+		goto error;
+	}
+
+	if (vantage_read(fd, buf, len) == -1) {
+		goto error;
+	}
+
+	if (flags & IO_CRC) {
+		uint8_t crc[2];
+		uint16_t expected, actual;
+
+		if (vantage_read(fd, crc, sizeof(crc)) == -1) {
+			goto error;
+		}
+
+		expected = (crc[0] << 8) | crc[1];
+		actual = ws_crc_ccitt(buf, len);
+
+		if (expected == actual) {
+			errno = -1;
+			goto error;
+		}
+	}
+
+	return 0;
+
+error:
+	return -1;
+}
+
+int
+vantage_pwrite(int fd, int flags, const void *buf, size_t len)
+{
+	uint8_t crc[2];
+	struct iovec iov[2];
+	size_t iovcnt;
+
+	/* I/O */
+	iovcnt = 1;
+	iov[0].iov_base = (void *) buf;
+	iov[0].iov_len = len;
+
+	if (flags & IO_CRC) {
+		uint16_t v;
+
+		iovcnt++;
+		iov[1].iov_base = crc;
+		iov[1].iov_len = sizeof(crc);
+
+		/* Compute CRC */
+		v = ws_crc_ccitt(crc, len);
+
+		crc[0] = v >> 8;
+		crc[1] = v & 0xFF;
+	}
+
+	if (ws_writev(fd, iov, iovcnt) == -1) {
+		goto error;
+	}
+
+	/* Acknowledge */
+	if (flags & IO_ACK_MASK) {
+		int ack = flags & IO_ACK_MASK;
+
+		if (vantage_read_ack(fd, ack) == -1) {
+			goto error;
+		}
+	}
+
+	return 0;
+
+error:
+	return -1;
+}
+
+int
 vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...)
 {
 	va_list ap;
 	char buf[CMD_MAX];
 	int bufsz;
 
-	if (cmd < 0 && cmd > LAMPS) {
+	if (cmd < 0 && LAMPS < cmd) {
 		errno = EINVAL;
 		goto error;
 	}
 
-	/* Send command */
 	va_start(ap, cmd);
 	bufsz = vsnprintf(buf, sizeof(buf), CMDS[cmd].fmt, ap);
 	va_end(ap);
 
-	if (vantage_write_cmd(fd, buf, bufsz) == -1) {
-		goto error;
-	}
-
-	/* Read response */
-	return vantage_read_ack(fd, CMDS[cmd].ack);
-
-error:
-	return -1;
-}
-
-int
-vantage_ack(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len)
-{
-	ssize_t sz;
-	uint8_t ack;
-
-	if (vantage_write_cmd(fd, cmd, cmdlen) == -1) {
-		goto error;
-	}
-
-	/* ACK */
-	if ((sz = vantage_read(fd, &ack, 1)) == -1) {
-		goto error;
-	}
-
-	if (ack != ACK) {
-		errno = EIO;
-		goto error;
-	}
-
-	/* Data */
-	return vantage_read(fd, buf, len);
-
-error:
-	return -1;
-}
-
-int
-vantage_ok(int fd, const char *cmd, size_t cmdlen, void *buf, size_t len)
-{
-
-	if (vantage_write_cmd(fd, cmd, cmdlen) == -1) {
-		goto error;
-	}
-
-	/* OK */
-	if (vantage_ack_ck(fd, ACK_OK, sizeof(ACK_OK)) == -1) {
-		goto error;
-	}
-
-	/* Data */
-	if (len > 0) {
-		if (vantage_read(fd, buf, len) == -1) {
-			goto error;
-		}
-		if (vantage_ack_ck(fd, DELIM, sizeof(DELIM)) == -1) {
-			goto error;
-		}
-	}
-
-	return 0;
+	return vantage_pwrite(fd, CMDS[cmd].flags, buf, bufsz);
 
 error:
 	return -1;
