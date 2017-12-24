@@ -2,6 +2,7 @@
 #define _LIBWS_VANTAGE_UTIL_H
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <stdint.h>
 
 /* IO mode */
@@ -62,6 +63,9 @@ enum vantage_cmd
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+time_t vantage_mktime(const uint8_t *buf);
+void vantage_time(uint8_t *buf, time_t time);
 
 ssize_t vantage_read(int fd, void *buf, size_t len);
 ssize_t vantage_write(int fd, const void *buf, size_t len);

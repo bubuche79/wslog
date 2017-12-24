@@ -108,7 +108,7 @@ vantage_gain(int fd, int on)
 }
 
 DSO_EXPORT int
-vantage_setper(int fd, unsigned int min)
+vantage_setper(int fd, int min)
 {
 	switch (min) {
 	case 1:

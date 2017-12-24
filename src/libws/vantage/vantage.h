@@ -158,7 +158,7 @@ int vantage_baud(int fd, speed_t speed);
 int vantage_settime(int fd, time_t time);
 int vantage_gettime(int fd, time_t *time);
 int vantage_gain(int fd, int on);
-int vantage_setper(int fd, unsigned int min);
+int vantage_setper(int fd, int min);
 int vantage_stop(int fd);
 int vantage_start(int fd);
 int vantage_newsetup(int fd);

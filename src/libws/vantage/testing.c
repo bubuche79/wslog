@@ -47,19 +47,23 @@ vantage_test(int fd)
 DSO_EXPORT int
 vantage_wrd(int fd, enum vantage_type *wrd)
 {
-//	char cmd[] = { 'W', 'R', 'D', 0x12, 0x4d, LF };
-//	uint8_t buf[1];
-//
-//	if (vantage_ack(fd, cmd, sizeof(cmd), buf, sizeof(buf)) == -1) {
-//		goto error;
-//	}
-//
-//	/* Decode result */
-//	*wrd = buf[0];
-//
-//	return 0;
-//
-//error:
+	uint8_t byte;
+
+	/* WRD command */
+	if (vantage_proc(fd, WRD, 0x12, 0x4d) == -1) {
+		goto error;
+	}
+
+	/* Read response */
+	if (vantage_read(fd, &byte, sizeof(byte)) == -1) {
+		goto error;
+	}
+
+	*wrd = byte;
+
+	return 0;
+
+error:
 	return -1;
 }
 
