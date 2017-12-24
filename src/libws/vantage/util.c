@@ -183,17 +183,17 @@ vantage_pread(int fd, int flags, void *buf, size_t len)
 	}
 
 	if (flags & IO_CRC) {
-		uint8_t crc[2];
-		uint16_t expected, actual;
+		uint16_t crc;
+		uint8_t crcbuf[2];
 
-		if (vantage_read(fd, crc, sizeof(crc)) == -1) {
+		if (vantage_read(fd, crcbuf, sizeof(crcbuf)) == -1) {
 			goto error;
 		}
 
-		expected = (crc[0] << 8) | crc[1];
-		actual = ws_crc_ccitt(buf, len);
+		crc = ws_crc_ccitt(0, buf, len);
+		crc = ws_crc_ccitt(crc, crcbuf, sizeof(crcbuf));
 
-		if (expected == actual) {
+		if (crc != 0) {
 			errno = -1;
 			goto error;
 		}
@@ -225,7 +225,7 @@ vantage_pwrite(int fd, int flags, const void *buf, size_t len)
 		iov[1].iov_len = sizeof(crc);
 
 		/* Compute CRC */
-		v = ws_crc_ccitt(crc, len);
+		v = ws_crc_ccitt(0, crc, len);
 
 		crc[0] = v >> 8;
 		crc[1] = v & 0xFF;

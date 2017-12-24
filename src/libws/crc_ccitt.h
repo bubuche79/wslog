@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-uint16_t ws_crc_ccitt(const uint8_t *buf, size_t len);
+uint16_t ws_crc_ccitt(uint16_t crc, const uint8_t *buf, size_t len);
 
 #ifdef __cplusplus
 }

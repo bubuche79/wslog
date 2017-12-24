@@ -96,7 +96,7 @@ START_TEST(test_nybtoul_einval)
 END_TEST
 
 Suite *
-aggregate_suite(void)
+nybble_suite(void)
 {
 	Suite *s;
 	TCase *tc_core;
@@ -129,7 +129,7 @@ main(void)
 	Suite *s;
 	SRunner *sr;
 
-	s = aggregate_suite();
+	s = nybble_suite();
 	sr = srunner_create(s);
 
 	srunner_run_all(sr, CK_NORMAL);

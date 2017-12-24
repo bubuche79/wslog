@@ -4,8 +4,6 @@
 
 #include "libws/crc_ccitt.h"
 
-#define DMP_SIZE	52
-
 const uint16_t crc_table[] =
 {
 	0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
@@ -43,19 +41,14 @@ const uint16_t crc_table[] =
 };
 
 uint16_t
-ws_crc_ccitt(const uint8_t *buf, size_t len)
+ws_crc_ccitt(uint16_t crc, const uint8_t *buf, size_t len)
 {
-	uint16_t crc;
 	int i;
-
-	crc = 0;
 
 	for (i = 0; i < len; i++) {
 		crc = crc_table[(crc >> 8) ^ *buf] ^ (crc << 8);
 		buf++;
 	}
-
-	crc = ((crc >> 8) & 0xFF) | ((crc << 8) & 0xFF00);
 
 	return crc;
 }
