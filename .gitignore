@@ -37,6 +37,5 @@ Makefile.in
 *.lo
 *.so*
 
-check_aggregate
-check_nybble
+check
 

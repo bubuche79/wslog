@@ -1,3 +1,4 @@
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -5,6 +6,8 @@
 #include <check.h>
 
 #include "libws/crc_ccitt.h"
+
+#include "suites.h"
 
 START_TEST(test_crc_ccitt)
 {
@@ -19,12 +22,12 @@ START_TEST(test_crc_ccitt)
 END_TEST
 
 Suite *
-crc_ccitt_suite(void)
+suite_crc_ccitt(void)
 {
 	Suite *s;
 	TCase *tc_core;
 
-	s = suite_create("crc");
+	s = suite_create("crc_ccitt");
 
 	/* Core test cases */
 	tc_core = tcase_create("core");
@@ -33,20 +36,4 @@ crc_ccitt_suite(void)
 	suite_add_tcase(s, tc_core);
 
 	return s;
-}
-
-int
-main(void)
-{
-	int number_failed;
-	Suite *s;
-	SRunner *sr;
-
-	s = crc_ccitt_suite();
-	sr = srunner_create(s);
-
-	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
-	srunner_free(sr);
-	return (number_failed == 0) ? 0 : 1;
 }

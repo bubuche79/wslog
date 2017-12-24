@@ -1,3 +1,4 @@
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -8,6 +9,8 @@
 #include <errno.h>
 
 #include "libws/nybble.h"
+
+#include "suites.h"
 
 #define ck_assert_err(X, Y, Z) \
 	do { \
@@ -96,7 +99,7 @@ START_TEST(test_nybtoul_einval)
 END_TEST
 
 Suite *
-nybble_suite(void)
+suite_nybble(void)
 {
 	Suite *s;
 	TCase *tc_core;
@@ -120,20 +123,4 @@ nybble_suite(void)
 	suite_add_tcase(s, tc_limits);
 
 	return s;
-}
-
-int
-main(void)
-{
-	int number_failed;
-	Suite *s;
-	SRunner *sr;
-
-	s = nybble_suite();
-	sr = srunner_create(s);
-
-	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
-	srunner_free(sr);
-	return (number_failed == 0) ? 0 : 1;
 }
