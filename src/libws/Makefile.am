@@ -7,7 +7,6 @@ libws_la_SOURCES = \
 	bitfield.c \
 	conf.c \
 	crc_ccitt.c \
-	err.c \
 	nybble.c \
 	util.c \
 	serial.c \
@@ -24,6 +23,7 @@ if USE_VP2
 libws_la_SOURCES += \
 	vantage/clearing.c \
 	vantage/config.c \
+	vantage/current.c \
 	vantage/download.c \
 	vantage/serial.c \
 	vantage/testing.c \

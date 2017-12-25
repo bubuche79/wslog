@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <err.h>
 
-#include "libws/err.h"
 #include "libws/conf.h"
 
 #include "conf.h"
@@ -92,7 +92,7 @@ main(int argc, char *argv[])
 		case 'c':
 			conf_file = optarg;
 			if (conf_file[0] != '/') {
-				die(1, "%s: Not an absolute file\n", conf_file);
+				err(1, "%s: Not an absolute file\n", conf_file);
 			}
 			break;
 		case 'i':
@@ -131,7 +131,7 @@ main(int argc, char *argv[])
 	/* Detach, create new session */
 	if (!one_process_mode) {
 		if (daemon_create() == -1) {
-			die(1, "daemon: %s\n", strerror(errno));
+			err(1, "daemon: %s\n", strerror(errno));
 		}
 	}
 
