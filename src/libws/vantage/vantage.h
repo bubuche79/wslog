@@ -36,7 +36,39 @@ struct vantage_rxck
 
 struct vantage_loop
 {
-
+	uint16_t addr;			/* Nex record address */
+	int8_t bar_trend;		/* 3-hour barometer trend */
+	int16_t barometer;		/* Barometer (Hg/1000) */
+	int16_t in_temp;		/* Inside temperature (F°/10) */
+	int8_t in_humidity;		/* Inside humidity (%) */
+	int16_t temp;			/* Outside temperature */
+	uint8_t wind_speed;		/* Wind speed (mph) */
+	uint16_t wind_dir;		/* Wind direction (1 - 360°) */
+	uint16_t wind_avg_10m;		/* 10-minutes average wind speed (mph/10) */
+	uint16_t wind_avg_2m;		/* 2-minutes average wind speed (mph/10) */
+	uint16_t wind_gust_10m;		/* 10-minutes wind gust speed (mph/10) */
+	uint16_t wind_gust_dir_10m;	/* 10-minutes wind gust direction (mph/10) */
+	int16_t dew_point;		/* Dew point (F°) */
+	int8_t humidity;		/* Outside humidity */
+	int16_t heat_index;		/* Heat index (F°) */
+	int16_t wind_chill;		/* Wind chill (F°) */
+	int16_t thsw_chill;		/* THSW index (F°) */
+	uint16_t rain_rate;		/* Rain rate (clicks/hour) */
+	int8_t uv;			/* UV index */
+	uint16_t solar_rad;		/* Solar radiation (W/m²) */
+	uint16_t storm_rain;		/* Storm rain (clicks) */
+	time_t storm_start;		/* Start date of storm */
+	uint16_t daily_rain;		/* Daily rain (clicks) */
+	uint16_t last_15m_rain;		/* Last 15-minutes rain (clicks) */
+	uint16_t last_1h_rain;		/* Last 1-hour rain (clicks) */
+	uint16_t daily_et;		/* Daily ET (inch/1000) */
+	uint16_t last_24h_rain;		/* Last 24-hours rain (clicks) */
+	uint8_t barometer_algo;		/* Barometric reduction method */
+	int16_t barometer_off;		/* User supplied barometric offset (inch/1000) */
+	int16_t barometer_cal;		/* Barometric calibration (inch/1000) */
+	int16_t barometer_raw;		/* Barometric sensor raw reading (inch/1000) */
+	int16_t barometer_abs;		/* Absolute barometric pressure (inch/1000) */
+	int16_t altimeter_opts;		/* Altimeter setting (inch/1000) */
 };
 
 struct vantage_hilow
@@ -65,6 +97,8 @@ struct vantage_dmp
 	uint8_t main_wind_dir;		/* Prevailing wind direction code */
 	uint8_t avg_uv;			/* Average UV index */
 	uint8_t et;			/* ET accumulated over the last hour */
+
+	/* rev b */
 	uint16_t hi_solar_rad;		/* Highest solar radiation, W/m² */
 	uint8_t hi_uv;			/* Highest UV index, W/m² */
 	uint8_t forecast;		/* Weather forecast rule */
@@ -127,8 +161,8 @@ int vantage_nver(int fd, char *buf, size_t len);
 ssize_t vantage_loop(int fd, struct vantage_loop *buf, size_t nel);
 ssize_t vantage_lps(int fd, int type, struct vantage_loop *buf, size_t nel);
 ssize_t vantage_hilows(int fd, struct vantage_hilow *buf, size_t nel);
-ssize_t vantage_putrain(int fd, unsigned long rain);
-ssize_t vantage_putet(int fd, unsigned long et);
+ssize_t vantage_putrain(int fd, long rain);
+ssize_t vantage_putet(int fd, long et);
 
 ssize_t vantage_dmp(int fd, struct vantage_dmp *buf, size_t nel);
 ssize_t vantage_dmpaft(int fd, struct vantage_dmp *buf, size_t nel, time_t after);

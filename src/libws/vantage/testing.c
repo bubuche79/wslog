@@ -13,9 +13,21 @@
 
 #include "defs/dso.h"
 
-#include "libws/serial.h"
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
+
+const char *WRD_STR[] =
+{
+	"Wizard III",
+	"Wizard II",
+	"Monitor",
+	"Perception",
+	"GroWeather",
+	"Energy Enviromonitor",
+	"Health Enviromonitor",
+	"Vantage Pro",
+	"Vantage Vue"
+};
 
 static int
 vantage_verx(int fd, enum vantage_cmd cmd, char *buf, size_t len)
@@ -42,6 +54,20 @@ DSO_EXPORT int
 vantage_test(int fd)
 {
 	return vantage_proc(fd, TEST);
+}
+
+const char *
+vantage_type_str(enum vantage_type wrd)
+{
+	const char *s;
+
+	if (wrd < 7) {
+		s = WRD_STR[wrd];
+	} else {
+		s = WRD_STR[(wrd - 16) + 7];
+	}
+
+	return s;
 }
 
 DSO_EXPORT int

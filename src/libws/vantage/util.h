@@ -5,6 +5,8 @@
 #include <sys/time.h>
 #include <stdint.h>
 
+#include "libws/vantage/vantage.h"
+
 /* IO mode */
 #define IO_CRC		0x0001
 
@@ -63,6 +65,8 @@ enum vantage_cmd
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+const char *vantage_type_str(enum vantage_type t);
 
 time_t vantage_mktime(const uint8_t *buf);
 void vantage_time(uint8_t *buf, time_t time);
