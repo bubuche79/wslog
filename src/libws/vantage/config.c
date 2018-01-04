@@ -62,7 +62,7 @@ vantage_settime(int fd, time_t time)
 	buf[2] = tm.tm_hour;
 	buf[3] = tm.tm_mday;
 	buf[4] = tm.tm_mon + 1;
-	buf[5] = tm.tm_yday - 1900;
+	buf[5] = tm.tm_year;
 
 	return vantage_pwrite(fd, IO_CRC|IO_ACK, buf, sizeof(buf));
 
@@ -91,7 +91,7 @@ vantage_gettime(int fd, time_t *time)
 	tm.tm_hour = buf[2];
 	tm.tm_mday = buf[3];
 	tm.tm_mon = buf[4] - 1;
-	tm.tm_yday = 1900 + buf[5];
+	tm.tm_year = buf[5];
 
 	*time = mktime(&tm);
 

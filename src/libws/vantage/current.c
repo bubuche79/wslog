@@ -13,7 +13,7 @@
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
-#define LOOP_SIZE 	99
+#define LOOP_SIZE 	97		/* 99 bytes with CRC */
 #define LOOP_DELAY 	2000
 
 #define LPS_DELAY 	2500		/* LPS delay between packets */
@@ -93,7 +93,7 @@ vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel)
 		vantage_loop_decode(&p[sz], buf);
 
 		if (sz == 0) {
-			timeout += LOOP_DELAY;
+			timeout += LPS_DELAY;
 		}
 	}
 

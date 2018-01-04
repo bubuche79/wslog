@@ -16,7 +16,7 @@
 static void
 usage(FILE *out, int status)
 {
-	fprintf(out, "Usage: " PROGNAME " [-h] <command> [<args>]\n");
+	fprintf(out, "Usage: " PROGNAME " [-h] [-d dev] <command> [<args>]\n");
 	fprintf(out, "\n");
 	fprintf(out, "Options:\n");
 	fprintf(out, "   -h              display this\n");
@@ -30,6 +30,7 @@ usage(FILE *out, int status)
 	fprintf(out, "   settime [time]  set time and date on console\n");
 	fprintf(out, "   gettime         get current time and date\n");
 	fprintf(out, "   setper min      set archive interval, in minutes\n");
+	fprintf(out, "   lps [n]         display current weather\n");
 
 	exit(status);
 }
@@ -80,7 +81,7 @@ check_empty_cmdline(int argc, char* const argv[])
 {
 	check_empty_opts(argc, argv);
 
-	if (optind + 1 != argc) {
+	if (optind != argc) {
 		usage(stderr, 1);
 	}
 }
@@ -184,22 +185,31 @@ error:
 static int
 main_settime(int fd, int argc, char* const argv[])
 {
-	time_t time;
-	char buf[32];
-	struct tm tm;
+	time_t ref;
 
 	check_empty_cmdline(argc, argv);
 
-	/* Process sub-command */
-	if (vantage_gettime(fd, &time) == -1) {
-		fprintf(stderr, "vantage_gettime: %s\n", strerror(errno));
-		goto error;
+	if (optind == argc) {
+		time(&ref);
+	} else if (optind + 1 == argc) {
+		struct tm tm;
+		const char *timep = argv[optind++];
+
+		if (strptime(timep, "%FT%T", &tm) == NULL) {
+			fprintf(stderr, "strptime %s: %s\n", timep, strerror(errno));
+			goto error;
+		}
+
+		tm.tm_isdst = -1;
+	} else {
+		usage(stderr, 1);
 	}
 
-	localtime_r(&time, &tm);
-	strftime(buf, sizeof(buf), "%F %T", &tm);
-
-	printf("%s\n", buf);
+	/* Process sub-command */
+	if (vantage_settime(fd, ref) == -1) {
+		fprintf(stderr, "vantage_settime: %s\n", strerror(errno));
+		goto error;
+	}
 
 	return 0;
 
@@ -214,7 +224,7 @@ main_gettime(int fd, int argc, char* const argv[])
 	char buf[32];
 	struct tm tm;
 
-	check_empty_cmdline(argc, argv);
+	check_empty_opts(argc, argv);
 
 	/* Process sub-command */
 	if (vantage_gettime(fd, &time) == -1) {
@@ -251,7 +261,7 @@ main_setper(int fd, int argc, char* const argv[])
 	min = strtoui(min_str);
 
 	if (min == -1) {
-		fprintf(stderr, "%s: %s\n", min_str, strerror(errno));
+		fprintf(stderr, "strtoui %s: %s\n", min_str, strerror(errno));
 		goto error;
 	}
 
@@ -260,6 +270,37 @@ main_setper(int fd, int argc, char* const argv[])
 		fprintf(stderr, "vantage_setper: %s\n", strerror(errno));
 		goto error;
 	}
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static double
+vantage_temp(int16_t f, int scale)
+{
+	long pow10[] = { 1, 10, 100, 1000 };
+
+	return ((double) f / pow10[scale] - 32.0) * 5 / 9;
+}
+
+static int
+main_lps(int fd, int argc, char* const argv[])
+{
+	struct vantage_loop lps;
+
+	check_empty_opts(argc, argv);
+
+	/* Process sub-command */
+	if (vantage_lps(fd, LPS_LOOP2, &lps, 1) == -1) {
+		fprintf(stderr, "vantage_lps: %s\n", strerror(errno));
+		goto error;
+	}
+
+	printf("Temp: %.1f\n", vantage_temp(lps.temp, 1));
+	printf("Humidity: %d\n", lps.humidity);
+	printf("In temp: %.1f\n", vantage_temp(lps.in_temp, 1));
 
 	return 0;
 
@@ -307,12 +348,18 @@ main(int argc, char * const argv[])
 		device = "/dev/ttyUSB0";
 	}
 
+	status = 1;
+
 	/* Open device */
-	fd = -1;
-//	if ((fd = vantage_open(device)) == -1) {
-//		fprintf(stderr, "vantage_open %s: %s\n", device, strerror(errno));
-//		exit(1);
-//	}
+	if ((fd = vantage_open(device)) == -1) {
+		fprintf(stderr, "vantage_open %s: %s\n", device, strerror(errno));
+		exit(1);
+	}
+
+	if (vantage_wakeup(fd) == -1) {
+		fprintf(stderr, "vantage_wakeup: %s\n", strerror(errno));
+		goto exit;
+	}
 
 	/* Testing commands */
 	if (strcmp("test", cmd) == 0) {
@@ -329,14 +376,15 @@ main(int argc, char * const argv[])
 		status = main_gettime(fd, argc, argv);
 	} else if (strcmp("setper", cmd) == 0) {
 		status = main_setper(fd, argc, argv);
+	} else if (strcmp("lps", cmd) == 0) {
+		status = main_lps(fd, argc, argv);
 	} else {
-		status = 1;
 		fprintf(stderr, "%s: unknown command\n", cmd);
 	}
 
+exit:
 	if (vantage_close(fd) == -1) {
 		fprintf(stderr, "vantage_close: %s\n", strerror(errno));
-		status = -1;
 	}
 
 	exit(status);

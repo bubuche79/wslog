@@ -123,7 +123,7 @@ ws_read_to(int fd, void *buf, size_t nbyte, long timeout)
 		FD_SET(fd, &readset);
 
 		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout % 1000) * 1000;
+		tv.tv_usec = (timeout - 1000 * tv.tv_sec) * 1000;
 
 		ret = select(fd + 1, &readset, NULL, NULL, &tv);
 	} while (ret == -1 && errno == EINTR);

@@ -21,7 +21,7 @@ struct proc_def
 	int flags;
 };
 
-static const uint8_t ACK_TEST[] = { 'T', 'E', 'S', 'T', LF };
+static const uint8_t ACK_TEST[] = { LF, CR, 'T', 'E', 'S', 'T', LF, CR };
 static const uint8_t ACK_OK[] = { LF, CR, 'O', 'K', LF, CR };
 static const uint8_t ACK_ACK[] = { ACK };
 static const uint8_t ACK_DONE[] = { 'D', 'O', 'N', 'E', LF, CR };
