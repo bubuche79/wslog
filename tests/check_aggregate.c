@@ -11,16 +11,6 @@
 
 #include "suites.h"
 
-#define ck_assert_double(X, OP, Y) \
-	do { \
-		double _ck_x = (X); \
-		double _ck_y = (Y); \
-		ck_assert_msg(_ck_x == _ck_y, "Assertion '%s' failed: %s == %f, %s == %f", #X" "#OP" "#Y, #X, _ck_x, #Y, _ck_y); \
-	} while (0)
-
-#define ck_assert_double_eq(X, Y) \
-	ck_assert_double(X, ==, Y)
-
 static const int a1[] = { 1, 3, 6, 8 };
 static const int a2[] = { 8, 6, 5, 2, 0 };
 static const int a3[] = { -1, 0, 4 };
