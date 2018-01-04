@@ -6,6 +6,8 @@
 #include "config.h"
 #endif
 
+#include <errno.h>
+
 #include "defs/dso.h"
 
 #include "libws/vantage/util.h"
@@ -20,18 +22,21 @@ vantage_clrlog(int fd)
 DSO_EXPORT int
 vantage_clralm(int fd)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 
 DSO_EXPORT int
 vantage_clrcal(int fd)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 
 DSO_EXPORT int
 vantage_clrgra(int fd)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 

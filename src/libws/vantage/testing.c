@@ -96,12 +96,14 @@ error:
 DSO_EXPORT int
 vantage_rxcheck(int fd, struct vantage_rxck *ck)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 
 DSO_EXPORT int
 vantage_rxtest(int fd)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 
@@ -119,6 +121,7 @@ vantage_ver(int fd, char *buf, size_t len)
 DSO_EXPORT int
 vantage_receivers(int fd, uint8_t *receivers)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 

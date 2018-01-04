@@ -15,9 +15,6 @@
 #define CMD_MAX		16	/* Maximum size of command */
 #define ACK_MAX		6	/* Maximum size of ACK/OK response */
 
-#define IO_TIMEOUT	250	/* Read timeout, in milliseconds */
-#define IO_DONE_TIMEOUT	2000	/* DONE acknowledge timeout, in milliseconds */
-
 struct proc_def
 {
 	const char *fmt;
@@ -100,18 +97,6 @@ error:
 	return -1;
 }
 
-ssize_t
-vantage_read(int fd, void *buf, size_t len)
-{
-	return vantage_read_to(fd, buf, len, IO_TIMEOUT);
-}
-
-ssize_t
-vantage_write(int fd, const void *buf, size_t len)
-{
-	return ws_write(fd, buf, len);
-}
-
 static int
 vantage_ack_ck_to(int fd, const uint8_t *ack, size_t acklen, long timeout)
 {
@@ -170,15 +155,27 @@ error:
 	return -1;
 }
 
+ssize_t
+vantage_read(int fd, void *buf, size_t len)
+{
+	return vantage_read_to(fd, buf, len, IO_TIMEOUT);
+}
+
+ssize_t
+vantage_write(int fd, const void *buf, size_t len)
+{
+	return ws_write(fd, buf, len);
+}
+
 int
-vantage_pread(int fd, int flags, void *buf, size_t len)
+vantage_pread_to(int fd, int flags, void *buf, size_t len, long timeout)
 {
 	if (flags & IO_ACK_MASK) {
 		errno = EINVAL;
 		goto error;
 	}
 
-	if (vantage_read(fd, buf, len) == -1) {
+	if (vantage_read_to(fd, buf, len, timeout) == -1) {
 		goto error;
 	}
 
@@ -203,6 +200,12 @@ vantage_pread(int fd, int flags, void *buf, size_t len)
 
 error:
 	return -1;
+}
+
+int
+vantage_pread(int fd, int flags, void *buf, size_t len)
+{
+	return vantage_pread_to(fd, flags, buf, len, IO_TIMEOUT);
 }
 
 int

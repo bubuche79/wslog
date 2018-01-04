@@ -12,6 +12,9 @@
 #define NACK		0x21	/* Not acknowledge */
 #define ESC		0x18	/* CRC check error */
 
+#define LPS_LOOP	0x01	/* LOOP packet */
+#define LPS_LOOP2	0x02	/* LOOP2 packet */
+
 enum vantage_type
 {
 	WIZARD_III = 0,
@@ -36,7 +39,6 @@ struct vantage_rxck
 
 struct vantage_loop
 {
-	uint16_t addr;			/* Nex record address */
 	int8_t bar_trend;		/* 3-hour barometer trend */
 	int16_t barometer;		/* Barometer (Hg/1000) */
 	int16_t in_temp;		/* Inside temperature (F°/10) */
@@ -53,17 +55,17 @@ struct vantage_loop
 	int16_t heat_index;		/* Heat index (F°) */
 	int16_t wind_chill;		/* Wind chill (F°) */
 	int16_t thsw_chill;		/* THSW index (F°) */
-	uint16_t rain_rate;		/* Rain rate (clicks/hour) */
+	int16_t rain_rate;		/* Rain rate (clicks/hour) */
 	int8_t uv;			/* UV index */
-	uint16_t solar_rad;		/* Solar radiation (W/m²) */
-	uint16_t storm_rain;		/* Storm rain (clicks) */
+	int16_t solar_rad;		/* Solar radiation (W/m²) */
+	int16_t storm_rain;		/* Storm rain (clicks) */
 	time_t storm_start;		/* Start date of storm */
-	uint16_t daily_rain;		/* Daily rain (clicks) */
-	uint16_t last_15m_rain;		/* Last 15-minutes rain (clicks) */
-	uint16_t last_1h_rain;		/* Last 1-hour rain (clicks) */
-	uint16_t daily_et;		/* Daily ET (inch/1000) */
-	uint16_t last_24h_rain;		/* Last 24-hours rain (clicks) */
-	uint8_t barometer_algo;		/* Barometric reduction method */
+	int16_t daily_rain;		/* Daily rain (clicks) */
+	int16_t last_15m_rain;		/* Last 15-minutes rain (clicks) */
+	int16_t last_1h_rain;		/* Last 1-hour rain (clicks) */
+	int16_t daily_et;		/* Daily ET (inch/1000) */
+	int16_t last_24h_rain;		/* Last 24-hours rain (clicks) */
+	int8_t barometer_algo;		/* Barometric reduction method */
 	int16_t barometer_off;		/* User supplied barometric offset (inch/1000) */
 	int16_t barometer_cal;		/* Barometric calibration (inch/1000) */
 	int16_t barometer_raw;		/* Barometric sensor raw reading (inch/1000) */
@@ -158,14 +160,14 @@ int vantage_ver(int fd, char *buf, size_t len);
 int vantage_receivers(int fd, uint8_t *receivers);
 int vantage_nver(int fd, char *buf, size_t len);
 
-ssize_t vantage_loop(int fd, struct vantage_loop *buf, size_t nel);
-ssize_t vantage_lps(int fd, int type, struct vantage_loop *buf, size_t nel);
-ssize_t vantage_hilows(int fd, struct vantage_hilow *buf, size_t nel);
+ssize_t vantage_loop(int fd, struct vantage_loop *p, size_t nel);
+ssize_t vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel);
+ssize_t vantage_hilows(int fd, struct vantage_hilow *p, size_t nel);
 ssize_t vantage_putrain(int fd, long rain);
 ssize_t vantage_putet(int fd, long et);
 
-ssize_t vantage_dmp(int fd, struct vantage_dmp *buf, size_t nel);
-ssize_t vantage_dmpaft(int fd, struct vantage_dmp *buf, size_t nel, time_t after);
+ssize_t vantage_dmp(int fd, struct vantage_dmp *p, size_t nel);
+ssize_t vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after);
 
 ssize_t vantage_getee(int fd, void *buf, size_t len);
 ssize_t vantage_eerd(int fd, uint16_t addr, void *buf, size_t len);

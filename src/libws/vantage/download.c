@@ -19,36 +19,48 @@
 #define DMP_SIZE	52
 #define PAGE_SIZE	264
 
-static uint8_t
-vantage_uint8(const uint8_t *buf)
+int8_t
+vantage_int8(const uint8_t *buf, uint16_t off)
 {
-	return buf[0];
+	return buf[off];
+}
+
+uint8_t
+vantage_uint8(const uint8_t *buf, uint16_t off)
+{
+	return buf[off];
 }
 
 static void
-vantage_uint8_arr(const uint8_t *buf, size_t nel, uint8_t *arr)
+vantage_uint8_arr(const uint8_t *buf, uint16_t off, uint8_t *p, size_t nel)
 {
 	size_t i;
 
 	for (i = 0; i < nel; i++) {
-		arr[i] = vantage_uint8(buf + i);
+		p[i] = vantage_uint8(buf, off + i);
 	}
 }
 
-static uint16_t
-vantage_uint16(const uint8_t *buf)
+int16_t
+vantage_int16(const uint8_t *buf, uint16_t off)
 {
-	return (buf[1] << 8) | buf[0];
+	return (buf[off+1] << 8) | buf[off];
+}
+
+uint16_t
+vantage_uint16(const uint8_t *buf, uint16_t off)
+{
+	return (buf[off+1] << 8) | buf[off];
 }
 
 time_t
-vantage_mktime(const uint8_t *buf)
+vantage_mktime(const uint8_t *buf, uint16_t off, int wtime)
 {
 	struct tm tm;
 	uint16_t date, time;
 
-	date = vantage_uint16(buf + 0);
-	time = vantage_uint16(buf + 2);
+	date = vantage_uint16(buf, off + 0);
+	time = vantage_uint16(buf, off + 2);
 
 	tm.tm_year = date >> 9;
 	tm.tm_mon = ((date >> 5) & 0x0F) - 1;
@@ -81,45 +93,45 @@ vantage_time(uint8_t *buf, time_t time)
 }
 
 static void
-vantage_dmp_decode(struct vantage_dmp *d, const uint8_t *buf)
+vantage_dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 {
 #if 0
 	uint8_t rec_type;
 #endif
 
-	d->tstamp = vantage_mktime(buf + 0);
-	d->temp = vantage_uint16(buf + 4);
-	d->hi_temp = vantage_uint16(buf + 6);
-	d->lo_temp = vantage_uint16(buf + 8);
-	d->rain = vantage_uint16(buf + 10);
-	d->hi_rain_rate = vantage_uint16(buf + 12);
-	d->barometer = vantage_uint16(buf + 14);
-	d->solar_rad = vantage_uint16(buf + 16);
-	d->wind_samples = vantage_uint16(buf + 18);
-	d->in_temp = vantage_uint16(buf + 20);
-	d->in_humidity = vantage_uint8(buf + 22);
-	d->humidity = vantage_uint8(buf + 23);
-	d->avg_wind_speed = vantage_uint8(buf + 24);
-	d->hi_wind_speed = vantage_uint8(buf + 25);
-	d->hi_wind_dir = vantage_uint8(buf + 26);
-	d->main_wind_dir = vantage_uint8(buf + 27);
-	d->avg_uv = vantage_uint8(buf + 28);
-	d->et = vantage_uint8(buf + 29);
-	d->hi_solar_rad = vantage_uint16(buf + 30);
-	d->hi_uv = vantage_uint8(buf + 32);
-	d->forecast = vantage_uint8(buf + 33);
+	dmp->tstamp = vantage_mktime(buf, 0, 1);
+	dmp->temp = vantage_uint16(buf, 4);
+	dmp->hi_temp = vantage_uint16(buf, 6);
+	dmp->lo_temp = vantage_uint16(buf, 8);
+	dmp->rain = vantage_uint16(buf, 10);
+	dmp->hi_rain_rate = vantage_uint16(buf, 12);
+	dmp->barometer = vantage_uint16(buf, 14);
+	dmp->solar_rad = vantage_uint16(buf, 16);
+	dmp->wind_samples = vantage_uint16(buf, 18);
+	dmp->in_temp = vantage_uint16(buf, 20);
+	dmp->in_humidity = vantage_uint8(buf, 22);
+	dmp->humidity = vantage_uint8(buf, 23);
+	dmp->avg_wind_speed = vantage_uint8(buf, 24);
+	dmp->hi_wind_speed = vantage_uint8(buf, 25);
+	dmp->hi_wind_dir = vantage_uint8(buf, 26);
+	dmp->main_wind_dir = vantage_uint8(buf, 27);
+	dmp->avg_uv = vantage_uint8(buf, 28);
+	dmp->et = vantage_uint8(buf, 29);
+	dmp->hi_solar_rad = vantage_uint16(buf, 30);
+	dmp->hi_uv = vantage_uint8(buf, 32);
+	dmp->forecast = vantage_uint8(buf, 33);
 
-	vantage_uint8_arr(buf + 34, 2, d->leaf_temp);
-	vantage_uint8_arr(buf + 36, 2, d->leaf_wet);
-	vantage_uint8_arr(buf + 38, 4, d->soil_temp);
+	vantage_uint8_arr(buf, 34, dmp->leaf_temp, 2);
+	vantage_uint8_arr(buf, 36, dmp->leaf_wet, 2);
+	vantage_uint8_arr(buf, 38, dmp->soil_temp, 4);
 
 #if 0
-	rec_type = vantage_uint8(buf + 42);
+	rec_type = vantage_uint8(buf, 42);
 #endif
 
-	vantage_uint8_arr(buf + 43, 2, d->extra_humidity);
-	vantage_uint8_arr(buf + 45, 3, d->extra_temp);
-	vantage_uint8_arr(buf + 48, 4, d->soil_moisture);
+	vantage_uint8_arr(buf, 43, dmp->extra_humidity, 2);
+	vantage_uint8_arr(buf, 45, dmp->extra_temp, 3);
+	vantage_uint8_arr(buf, 48, dmp->soil_moisture, 4);
 }
 
 static int
@@ -154,11 +166,11 @@ error:
 }
 
 DSO_EXPORT ssize_t
-vantage_read_pages(int fd, struct vantage_dmp *buf, size_t nel, int16_t npages, int16_t offset)
+vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t npages, int16_t offset)
 {
 	ssize_t sz;
 	uint8_t byte;
-	uint8_t iobuf[PAGE_SIZE];
+	uint8_t buf[PAGE_SIZE];
 
 	byte = ACK;
 
@@ -166,19 +178,19 @@ vantage_read_pages(int fd, struct vantage_dmp *buf, size_t nel, int16_t npages, 
 		size_t j;
 
 		/* Read page */
-		if (vantage_read_page(fd, iobuf, byte) == -1) {
+		if (vantage_read_page(fd, buf, byte) == -1) {
 			// TODO byte = ESC;
 			goto error;
 		}
 
 		/* Decode page (5 records) */
 		for (j = offset; j < 5 && sz < nel; j++) {
-			uint8_t *p = iobuf + 1 + j * DMP_SIZE;
+			uint8_t *r = buf + 1 + j * DMP_SIZE;
 
-			if (p[0] == 0xFF) {
+			if (r[0] == 0xFF) {
 				byte = ESC;
 			} else {
-				vantage_dmp_decode(&buf[sz++], p);
+				vantage_dmp_decode(&p[sz++], r);
 			}
 		}
 
@@ -198,11 +210,11 @@ error:
 }
 
 DSO_EXPORT ssize_t
-vantage_dmp(int fd, struct vantage_dmp *buf, size_t nel)
+vantage_dmp(int fd, struct vantage_dmp *p, size_t nel)
 {
 	ssize_t sz;
 	uint8_t byte;
-	uint8_t iobuf[PAGE_SIZE];
+	uint8_t buf[PAGE_SIZE];
 
 	byte = ACK;
 
@@ -218,19 +230,19 @@ vantage_dmp(int fd, struct vantage_dmp *buf, size_t nel)
 		size_t j;
 
 		/* Read page */
-		if (vantage_read_page(fd, iobuf, byte) == -1) {
+		if (vantage_read_page(fd, buf, byte) == -1) {
 			// TODO byte = ESC;
 			goto error;
 		}
 
 		/* Decode page (5 records) */
 		for (j = 0; j < 5 && sz < nel; j++) {
-			uint8_t *p = iobuf + 1 + j * DMP_SIZE;
+			uint8_t *r = buf + 1 + j * DMP_SIZE;
 
-			if (p[0] == 0xFF) {
+			if (r[0] == 0xFF) {
 				byte = ESC;
 			} else {
-				vantage_dmp_decode(&buf[sz++], p);
+				vantage_dmp_decode(&p[sz++], r);
 			}
 		}
 
@@ -247,9 +259,9 @@ error:
 }
 
 DSO_EXPORT ssize_t
-vantage_dmpaft(int fd, struct vantage_dmp *buf, size_t nel, time_t after)
+vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 {
-	uint8_t iobuf[4];
+	uint8_t buf[4];
 	int16_t page_cnt, offset;
 
 	/* DMPAFT command */
@@ -258,22 +270,22 @@ vantage_dmpaft(int fd, struct vantage_dmp *buf, size_t nel, time_t after)
 	}
 
 	/* Send timestamp */
-	vantage_time(iobuf, after);
+	vantage_time(buf, after);
 
-	if (vantage_pwrite(fd, IO_CRC|IO_ACK, iobuf, sizeof(iobuf)) == -1) {
+	if (vantage_pwrite(fd, IO_CRC|IO_ACK, buf, sizeof(buf)) == -1) {
 		goto error;
 	}
 
 	/* Read number of pages, record offset */
-	if (vantage_pread(fd, IO_CRC, iobuf, sizeof(iobuf)) == -1) {
+	if (vantage_pread(fd, IO_CRC, buf, sizeof(buf)) == -1) {
 		goto error;
 	}
 
-	page_cnt = vantage_uint16(iobuf);
-	offset = vantage_uint16(iobuf + 2);
+	page_cnt = vantage_int16(buf, 0);
+	offset = vantage_int16(buf, 2);
 
 	/* Read archive records */
-	return vantage_read_pages(fd, buf, nel, page_cnt, offset);
+	return vantage_read_pages(fd, p, nel, page_cnt, offset);
 
 error:
 	return -1;

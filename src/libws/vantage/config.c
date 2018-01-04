@@ -133,12 +133,14 @@ error:
 DSO_EXPORT int
 vantage_stop(int fd)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 
 DSO_EXPORT int
 vantage_start(int fd)
 {
+	errno = ENOTSUP;
 	return -1;
 }
 

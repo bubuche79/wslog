@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
@@ -29,8 +30,8 @@ DSO_EXPORT int
 vantage_wakeup(int fd)
 {
 	int retry;
-	uint8_t in[] = { LF };
-	uint8_t resp[] = { LF, CR };
+	const uint8_t in[] = { LF };
+	const uint8_t resp[] = { LF, CR };
 
 	uint8_t buf[2];
 	size_t bufsz = 2;
@@ -59,7 +60,7 @@ vantage_wakeup(int fd)
 		}
 	}
 
-	if (retry == 0) {
+	if (retry == 3) {
 		errno = EIO;
 		goto error;
 	}
