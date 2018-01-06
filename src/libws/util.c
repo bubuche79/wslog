@@ -263,7 +263,10 @@ ws_dump(const char *pathname, const void *buf, size_t len)
 {
 	int fd;
 
-	if ((fd = open(pathname, O_CREAT|O_TRUNC|O_WRONLY)) == -1) {
+	int flags = O_CREAT|O_TRUNC|O_WRONLY;
+	mode_t mode = S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH;
+
+	if ((fd = open(pathname, flags, mode)) == -1) {
 		return -1;
 	}
 

@@ -30,6 +30,24 @@ enum vantage_type
 	VANTAGE_VUE = 17		/* Vantage Vue */
 };
 
+struct vantage_cfg
+{
+	union {
+		struct {
+			uint8_t time_mode : 1;		/* Time mode (0: AM/PM, 1: 24H) */
+			uint8_t time_is : 1;		/* Is AM or PM (0: PM, 1: AM) */
+			uint8_t month_fmt : 1;		/* Month format (0: M/D, 1: D.M) */
+			uint8_t wind_cup_size : 1;	/* Wind cup size (0: small, 1: large) */
+			uint8_t rain_size : 2;		/* Rain collector size (0: 0.01in, 1: 0.2mm, 2: 0.1mm) */
+			uint8_t latitude : 1;		/* Latitude (0: S, 1: N) */
+			uint8_t longitude : 1;		/* Longitude (0: W, 1: E) */
+		};
+		uint8_t setup;				/* Raw setup byte */
+	};
+	uint8_t rain_start;		/* Rain season start (1 = January) */
+	uint8_t ar_period;		/* Archive period (minutes) */
+};
+
 struct vantage_rxck
 {
 	long pkt_recv;			/* Total packets received */
@@ -116,15 +134,15 @@ struct vantage_dmp
 
 struct vantage_bar
 {
-	long bar;			/* most recent barometer measurement */
-	long elevation;			/* elevation, in feet */
-	long dew_point;			/* dew point when the barometer measurement was taken */
-	long virt_temp;			/* temperature used in correction formula (12h average) */
-	long c;				/* humidity correction factor used in the formula */
-	long r;				/* correction ratio */
-	long barcal;			/* constant offset correction factor */
-	long gain;			/* factory value to calibrate the barometer sensor */
-	long offset;			/* factory value to calibrate the barometer sensor */
+	long bar;			/* Most recent barometer measurement */
+	long elevation;			/* Elevation, in feet */
+	long dew_point;			/* Dew point when the barometer measurement was taken */
+	long virt_temp;			/* Temperature used in correction formula (12h average) */
+	long c;				/* Humidity correction factor used in the formula */
+	long r;				/* Correction ratio */
+	long barcal;			/* Constant offset correction factor */
+	long gain;			/* Factory value to calibrate the barometer sensor */
+	long offset;			/* Factory value to calibrate the barometer sensor */
 };
 
 enum vantage_var
@@ -171,11 +189,11 @@ ssize_t vantage_putet(int fd, long et);
 ssize_t vantage_dmp(int fd, struct vantage_dmp *p, size_t nel);
 ssize_t vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after);
 
-ssize_t vantage_getee(int fd, void *buf, size_t len);
-ssize_t vantage_eerd(int fd, uint16_t addr, void *buf, size_t len);
-ssize_t vantage_eewr(int fd, uint16_t addr, void *buf, size_t len);
-ssize_t vantage_eebrd(int fd, uint16_t addr, void *buf, size_t len);
-ssize_t vantage_eebwr(int fd, uint16_t addr, void *buf, size_t len);
+int vantage_getee(int fd, void *buf, size_t len);
+int vantage_eerd(int fd, uint16_t addr, void *buf, size_t len);
+int vantage_eewr(int fd, uint16_t addr, uint8_t byte);
+int vantage_eebrd(int fd, uint16_t addr, void *buf, size_t len);
+int vantage_eebwr(int fd, uint16_t addr, void *buf, size_t len);
 
 ssize_t vantage_caled(int fd, void *buf, size_t len);
 ssize_t vantage_calfix(int fd, void *buf, size_t len);
@@ -201,6 +219,9 @@ int vantage_stop(int fd);
 int vantage_start(int fd);
 int vantage_newsetup(int fd);
 int vantage_lamps(int fd, int on);
+
+/* Extra functions */
+int vantage_ee_cfg(int fd, struct vantage_cfg *p);
 
 #ifdef __cplusplus
 }

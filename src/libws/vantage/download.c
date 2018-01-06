@@ -106,15 +106,15 @@ vantage_dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 #endif
 
 	dmp->tstamp = vantage_mktime(buf, 0, 1);
-	dmp->temp = vantage_uint16(buf, 4);
-	dmp->hi_temp = vantage_uint16(buf, 6);
-	dmp->lo_temp = vantage_uint16(buf, 8);
+	dmp->temp = vantage_int16(buf, 4);
+	dmp->hi_temp = vantage_int16(buf, 6);
+	dmp->lo_temp = vantage_int16(buf, 8);
 	dmp->rain = vantage_uint16(buf, 10);
 	dmp->hi_rain_rate = vantage_uint16(buf, 12);
 	dmp->barometer = vantage_uint16(buf, 14);
 	dmp->solar_rad = vantage_uint16(buf, 16);
 	dmp->wind_samples = vantage_uint16(buf, 18);
-	dmp->in_temp = vantage_uint16(buf, 20);
+	dmp->in_temp = vantage_int16(buf, 20);
 	dmp->in_humidity = vantage_uint8(buf, 22);
 	dmp->humidity = vantage_uint8(buf, 23);
 	dmp->avg_wind_speed = vantage_uint8(buf, 24);

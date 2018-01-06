@@ -26,12 +26,15 @@ usage(FILE *out, int status)
 	fprintf(out, "Available low-level " PROGNAME " commands:\n");
 	fprintf(out, "   test            test connectivity\n");
 	fprintf(out, "   wrd             display weather station type\n");
+	fprintf(out, "   rxcheck         display console diagnostic report\n");
 	fprintf(out, "   ver             display firmware date\n");
 	fprintf(out, "   nver            display firmware version\n");
 	fprintf(out, "   settime [time]  set time and date on console\n");
 	fprintf(out, "   gettime         get current time and date\n");
 	fprintf(out, "   setper min      set archive interval, in minutes\n");
 	fprintf(out, "   lps [n]         display current weather\n");
+	fprintf(out, "   dmp [n]         download records\n");
+	fprintf(out, "   dmpaft time     download records after specified date and time\n");
 	fprintf(out, "   getee file      dump 4K EEPROM content\n");
 	fprintf(out, "   eebrd addr len  read binary data from EEPROM\n");
 
@@ -105,6 +108,58 @@ strtoui(const char *s)
 	return v;
 }
 
+static time_t
+strtotime(const char *s)
+{
+	struct tm tm;
+
+	if (strptime(s, "%Y-%m-%dT%H:%M:%S", &tm) == NULL) {
+		errno = EINVAL;
+		goto error;
+	}
+
+	tm.tm_isdst = -1;
+
+	return mktime(&tm);
+
+error:
+	return -1;
+}
+
+static double
+vantage_temp(int16_t f, int scale)
+{
+	long pow10[] = { 1, 10, 100, 1000 };
+
+	return ((double) f / pow10[scale] - 32.0) * 5 / 9;
+}
+
+static double
+vantage_pressure(int16_t f, int scale)
+{
+	long pow10[] = { 1, 10, 100, 1000 };
+
+	return ((double) f / pow10[scale]) / 0.02952998751;
+}
+
+static void
+print_lps(struct vantage_loop *lps)
+{
+	printf("Temp: %.1f\n", vantage_temp(lps->temp, 1));
+	printf("Humidity: %d\n", lps->humidity);
+	printf("In temp: %.1f\n", vantage_temp(lps->in_temp, 1));
+	printf("Pressure: %.1f\n", vantage_pressure(lps->barometer, 3));
+}
+
+static void
+print_dmp(const struct vantage_dmp *dmp)
+{
+	printf("Temp: %.1f\n", vantage_temp(dmp->temp, 1));
+	printf("Humidity: %d\n", dmp->humidity);
+	printf("In temp: %.1f\n", vantage_temp(dmp->in_temp, 1));
+	printf("Pressure: %.1f\n", vantage_pressure(dmp->barometer, 3));
+}
+
 static void
 print_hex(uint16_t addr, void *buf, uint16_t len)
 {
@@ -152,6 +207,31 @@ main_wrd(int fd, int argc, char* const argv[])
 	}
 
 	printf("%s\n", vantage_type_str(type));
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static int
+main_rxcheck(int fd, int argc, char* const argv[])
+{
+	struct vantage_rxck ck;
+
+	check_empty_cmdline(argc, argv);
+
+	/* Process sub-command */
+	if (vantage_rxcheck(fd, &ck) == -1) {
+		fprintf(stderr, "vantage_rxcheck: %s\n", strerror(errno));
+		goto error;
+	}
+
+	printf("%s: %ld\n", "Packets received", ck.pkt_recv);
+	printf("%s: %ld\n", "Packets missed", ck.pkt_missed);
+	printf("%s: %ld\n", "Maximum packets received without error", ck.pkt_in_row);
+	printf("%s: %ld\n", "Resynchronizations", ck.resync);
+	printf("%s: %ld\n", "CRC errors", ck.crc_ko);
 
 	return 0;
 
@@ -211,15 +291,12 @@ main_settime(int fd, int argc, char* const argv[])
 	if (optind == argc) {
 		time(&ref);
 	} else if (optind + 1 == argc) {
-		struct tm tm;
 		const char *timep = argv[optind++];
 
-		if (strptime(timep, "%FT%T", &tm) == NULL) {
-			fprintf(stderr, "strptime %s: %s\n", timep, strerror(errno));
+		if ((ref = strtotime(timep)) == -1) {
+			fprintf(stderr, "strtotime %s: %s\n", timep, strerror(errno));
 			goto error;
 		}
-
-		tm.tm_isdst = -1;
 	} else {
 		usage(stderr, 1);
 	}
@@ -296,39 +373,75 @@ error:
 	return 1;
 }
 
-static double
-vantage_temp(int16_t f, int scale)
-{
-	long pow10[] = { 1, 10, 100, 1000 };
-
-	return ((double) f / pow10[scale] - 32.0) * 5 / 9;
-}
-
-static double
-vantage_pressure(int16_t f, int scale)
-{
-	long pow10[] = { 1, 10, 100, 1000 };
-
-	return ((double) f / pow10[scale]) / 0.02952998751;
-}
-
 static int
 main_lps(int fd, int argc, char* const argv[])
 {
-	struct vantage_loop lps;
+	struct vantage_loop lps[1];
 
 	check_empty_opts(argc, argv);
 
 	/* Process sub-command */
-	if (vantage_lps(fd, LPS_LOOP2, &lps, 1) == -1) {
+	if (vantage_lps(fd, LPS_LOOP2, lps, 1) == -1) {
 		fprintf(stderr, "vantage_lps: %s\n", strerror(errno));
 		goto error;
 	}
 
-	printf("Temp: %.1f\n", vantage_temp(lps.temp, 1));
-	printf("Humidity: %d\n", lps.humidity);
-	printf("In temp: %.1f\n", vantage_temp(lps.in_temp, 1));
-	printf("Pressure: %.1f\n", vantage_pressure(lps.barometer, 3));
+	print_lps(&lps[0]);
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static int
+main_dmp(int fd, int argc, char* const argv[])
+{
+	struct vantage_dmp dmp;
+
+	check_empty_opts(argc, argv);
+
+	/* Process sub-command */
+	if (vantage_dmp(fd, &dmp, 1) == -1) {
+		fprintf(stderr, "vantage_dmp: %s\n", strerror(errno));
+		goto error;
+	}
+
+	print_dmp(&dmp);
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static int
+main_dmpaft(int fd, int argc, char* const argv[])
+{
+	const char *s;
+	time_t after;
+	struct vantage_dmp dmp;
+
+	check_empty_opts(argc, argv);
+
+	if (optind + 1 != argc) {
+		usage(stderr, 1);
+	}
+
+	s = argv[optind++];
+
+	if ((after = strtotime(s)) == -1) {
+		fprintf(stderr, "strtotime %s: %s\n", s, strerror(errno));
+		goto error;
+	}
+
+	/* Process sub-command */
+	if (vantage_dmpaft(fd, &dmp, 1, after) == -1) {
+		fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
+		goto error;
+	}
+
+	print_dmp(&dmp);
 
 	return 0;
 
@@ -450,6 +563,8 @@ main(int argc, char * const argv[])
 		status = main_test(fd, argc, argv);
 	} else if (strcmp("wrd", cmd) == 0) {
 		status = main_wrd(fd, argc, argv);
+	} else if (strcmp("rxcheck", cmd) == 0) {
+		status = main_rxcheck(fd, argc, argv);
 	} else if (strcmp("ver", cmd) == 0) {
 		status = main_ver(fd, argc, argv);
 	} else if (strcmp("nver", cmd) == 0) {
@@ -462,6 +577,10 @@ main(int argc, char * const argv[])
 		status = main_setper(fd, argc, argv);
 	} else if (strcmp("lps", cmd) == 0) {
 		status = main_lps(fd, argc, argv);
+	} else if (strcmp("dmp", cmd) == 0) {
+		status = main_dmp(fd, argc, argv);
+	} else if (strcmp("dmpaft", cmd) == 0) {
+		status = main_dmpaft(fd, argc, argv);
 	} else if (strcmp("getee", cmd) == 0) {
 		status = main_getee(fd, argc, argv);
 	} else if (strcmp("eebrd", cmd) == 0) {
