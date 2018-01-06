@@ -45,8 +45,8 @@ static const struct proc_def CMDS[] =
 	{ "GETEE\n", IO_ACK },
 	{ "EERD %hx %hu\n", 0 },
 	{ "EEWR %hx %hu\n", IO_OK },
-	{ "EEBRD %hx %hu\n", IO_ACK },
-	{ "EEBWR %hx %hu\n", IO_ACK },
+	{ "EEBRD %hx %lx\n", IO_ACK },
+	{ "EEBWR %hx %lx\n", IO_ACK },
 	{ "CALED\n", IO_ACK },
 	{ "CALFIX\n", IO_ACK },
 	{ "BAR=%d %d\n", IO_OK },
@@ -228,7 +228,7 @@ vantage_pwrite(int fd, int flags, const void *buf, size_t len)
 		iov[1].iov_len = sizeof(crc);
 
 		/* Compute CRC */
-		v = ws_crc_ccitt(0, crc, len);
+		v = ws_crc_ccitt(0, buf, len);
 
 		crc[0] = v >> 8;
 		crc[1] = v & 0xFF;
@@ -268,6 +268,10 @@ vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...)
 	va_start(ap, cmd);
 	bufsz = vsnprintf(buf, sizeof(buf), CMDS[cmd].fmt, ap);
 	va_end(ap);
+
+#ifdef DEBUG
+	printf("%*s\n", bufsz, buf);
+#endif
 
 	return vantage_pwrite(fd, CMDS[cmd].flags, buf, bufsz);
 

@@ -13,8 +13,11 @@
 
 #include "defs/dso.h"
 
+#include "libws/serial.h"
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
+
+static const uint8_t LFCR[] = { LF, CR };
 
 const char *WRD_STR[] =
 {
@@ -96,7 +99,38 @@ error:
 DSO_EXPORT int
 vantage_rxcheck(int fd, struct vantage_rxck *ck)
 {
-	errno = ENOTSUP;
+	int ret;
+	ssize_t sz;
+	char buf[128];
+
+	/* RXCHECK command */
+	if (vantage_proc(fd, RXCHECK) == -1) {
+		goto error;
+	}
+
+	/* Read response */
+	sz = 0;
+
+	do {
+		if ((ret = ws_read_to(fd, buf + sz, sizeof(buf) - sz, IO_TIMEOUT)) == -1) {
+			goto error;
+		}
+
+		sz += ret;
+	} while (memcmp(buf + sz - 2, LFCR, 2));
+
+	ret = sscanf(buf, " %ld %ld %ld %ld %ld",
+			&ck->pkt_recv, &ck->pkt_missed, &ck->resync,
+			&ck->pkt_in_row, &ck->crc_ko);
+
+	if (ret != 5) {
+		errno = EIO;
+		goto error;
+	}
+
+	return 0;
+
+error:
 	return -1;
 }
 

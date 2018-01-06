@@ -57,19 +57,25 @@ time_t
 vantage_mktime(const uint8_t *buf, uint16_t off, int wtime)
 {
 	struct tm tm;
-	uint16_t date, time;
+	uint16_t date;
 
 	date = vantage_uint16(buf, off + 0);
-	time = vantage_uint16(buf, off + 2);
 
 	tm.tm_year = date >> 9;
 	tm.tm_mon = ((date >> 5) & 0x0F) - 1;
 	tm.tm_mday = date & 0x1F;
 
-	tm.tm_hour = time / 100;
-	tm.tm_min = time - (100 * tm.tm_hour);
-	tm.tm_sec = 0;
+	if (wtime) {
+		uint16_t time = vantage_uint16(buf, off + 2);
 
+		tm.tm_hour = time / 100;
+		tm.tm_min = time - (100 * tm.tm_hour);
+	} else {
+		tm.tm_hour = 0;
+		tm.tm_min = 0;
+	}
+
+	tm.tm_sec = 0;
 	tm.tm_isdst = -1;
 
 	return mktime(&tm);

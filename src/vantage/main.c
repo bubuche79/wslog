@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "libws/util.h"
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
@@ -31,6 +32,8 @@ usage(FILE *out, int status)
 	fprintf(out, "   gettime         get current time and date\n");
 	fprintf(out, "   setper min      set archive interval, in minutes\n");
 	fprintf(out, "   lps [n]         display current weather\n");
+	fprintf(out, "   getee file      dump 4K EEPROM content\n");
+	fprintf(out, "   eebrd addr len  read binary data from EEPROM\n");
 
 	exit(status);
 }
@@ -100,6 +103,22 @@ strtoui(const char *s)
 	}
 
 	return v;
+}
+
+static void
+print_hex(uint16_t addr, void *buf, uint16_t len)
+{
+	uint16_t i, j;
+
+	for (i = 0; i < len;) {
+		printf("%.4hx", addr + i);
+
+		for (j = 0; j < 16 && i < len; i++, j++) {
+			printf(" %.2x", ((uint8_t *) buf)[i]);
+		}
+
+		printf("\n");
+	}
 }
 
 static int
@@ -285,6 +304,14 @@ vantage_temp(int16_t f, int scale)
 	return ((double) f / pow10[scale] - 32.0) * 5 / 9;
 }
 
+static double
+vantage_pressure(int16_t f, int scale)
+{
+	long pow10[] = { 1, 10, 100, 1000 };
+
+	return ((double) f / pow10[scale]) / 0.02952998751;
+}
+
 static int
 main_lps(int fd, int argc, char* const argv[])
 {
@@ -301,6 +328,63 @@ main_lps(int fd, int argc, char* const argv[])
 	printf("Temp: %.1f\n", vantage_temp(lps.temp, 1));
 	printf("Humidity: %d\n", lps.humidity);
 	printf("In temp: %.1f\n", vantage_temp(lps.in_temp, 1));
+	printf("Pressure: %.1f\n", vantage_pressure(lps.barometer, 3));
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static int
+main_getee(int fd, int argc, char* const argv[])
+{
+	const char *file;
+	uint8_t buf[EEPROM_SIZE];
+
+	check_empty_opts(argc, argv);
+
+	if (optind + 1 != argc) {
+		usage(stderr, 1);
+	}
+
+	file = argv[optind++];
+
+	/* Process sub-command */
+	if (vantage_getee(fd, buf, sizeof(buf)) == -1) {
+		fprintf(stderr, "vantage_getee: %s\n", strerror(errno));
+		goto error;
+	}
+
+	return ws_dump(file, buf, sizeof(buf));
+
+error:
+	return 1;
+}
+
+static int
+main_eebrd(int fd, int argc, char* const argv[])
+{
+	uint16_t addr;
+	size_t len;
+	uint8_t buf[EEPROM_SIZE];
+
+	check_empty_opts(argc, argv);
+
+	if (optind + 2 != argc) {
+		usage(stderr, 1);
+	}
+
+	addr = strtoll(argv[optind++], NULL, 16);
+	len = strtoll(argv[optind++], NULL, 16);
+
+	/* Process sub-command */
+	if (vantage_eebrd(fd, addr, buf, len) == -1) {
+		fprintf(stderr, "vantage_eebrd: %s\n", strerror(errno));
+		goto error;
+	}
+
+	print_hex(addr, buf, len);
 
 	return 0;
 
@@ -378,6 +462,10 @@ main(int argc, char * const argv[])
 		status = main_setper(fd, argc, argv);
 	} else if (strcmp("lps", cmd) == 0) {
 		status = main_lps(fd, argc, argv);
+	} else if (strcmp("getee", cmd) == 0) {
+		status = main_getee(fd, argc, argv);
+	} else if (strcmp("eebrd", cmd) == 0) {
+		status = main_eebrd(fd, argc, argv);
 	} else {
 		fprintf(stderr, "%s: unknown command\n", cmd);
 	}

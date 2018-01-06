@@ -4,6 +4,8 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "defs/dso.h"
 
@@ -254,4 +256,21 @@ strftimespec(char *s, size_t len, const struct timespec *ts, int width)
     }
 
     return ret1 + ret2;
+}
+
+DSO_EXPORT int
+ws_dump(const char *pathname, const void *buf, size_t len)
+{
+	int fd;
+
+	if ((fd = open(pathname, O_CREAT|O_TRUNC|O_WRONLY)) == -1) {
+		return -1;
+	}
+
+	if (write(fd, buf, len) < len) {
+		(void) close(fd);
+		return -1;
+	}
+
+	return close(fd);
 }

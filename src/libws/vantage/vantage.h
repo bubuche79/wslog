@@ -6,34 +6,36 @@
 #include <unistd.h>
 #include <termios.h>
 
-#define LF		0x0A	/* Line feed */
-#define CR		0x0D	/* Carriage return */
-#define ACK		0x06	/* Acknowledge */
-#define NACK		0x21	/* Not acknowledge */
-#define ESC		0x18	/* CRC check error */
+#define LF		0x0A		/* Line feed */
+#define CR		0x0D		/* Carriage return */
+#define ACK		0x06		/* Acknowledge */
+#define NACK		0x21		/* Not acknowledge */
+#define ESC		0x18		/* CRC check error */
 
-#define LPS_LOOP	0x01	/* LOOP packet */
-#define LPS_LOOP2	0x02	/* LOOP2 packet */
+#define LPS_LOOP	0x01		/* LOOP packet */
+#define LPS_LOOP2	0x02		/* LOOP2 packet */
+
+#define EEPROM_SIZE	4096
 
 enum vantage_type
 {
-	WIZARD_III = 0,
-	WIZARD_II = 1,
-	MONITOR = 2,
-	PERCEPTION = 3,
-	GROWEATHER = 4,
-	ENERGY_ENV = 5,
-	HEALTH_ENV = 6,
-	VANTAGE_PRO = 16,
-	VANTAGE_VUE = 17
+	WIZARD_III = 0,			/* Wizard III */
+	WIZARD_II = 1,			/* Wizard II */
+	MONITOR = 2,			/* Monitor */
+	PERCEPTION = 3,			/* Perception */
+	GROWEATHER = 4,			/* GroWeather */
+	ENERGY_ENV = 5,			/* Energy Enviromonitor */
+	HEALTH_ENV = 6,			/* Health Enviromonitor */
+	VANTAGE_PRO = 16,		/* Vantage Pro, Vantage Pro 2 */
+	VANTAGE_VUE = 17		/* Vantage Vue */
 };
 
 struct vantage_rxck
 {
-	long received;			/* Total packets received */
-	long missed;			/* Total packets missed */
+	long pkt_recv;			/* Total packets received */
+	long pkt_missed;		/* Total packets missed */
+	long pkt_in_row;		/* Maximum packets received without error */
 	long resync;			/* Number of resynchronizations */
-	long in_row;			/* Largest number of packets received in a row */
 	long crc_ko;			/* Number of CRC errors detected */
 };
 
@@ -114,15 +116,15 @@ struct vantage_dmp
 
 struct vantage_bar
 {
-	long bar;		/* most recent barometer measurement */
-	long elevation;		/* elevation, in feet */
-	long dew_point;		/* dew point when the barometer measurement was taken */
-	long virt_temp;		/* temperature used in correction formula (12h average) */
-	long c;			/* humidity correction factor used in the formula */
-	long r;			/* correction ratio */
-	long barcal;		/* constant offset correction factor */
-	long gain;		/* factory value to calibrate the barometer sensor */
-	long offset;		/* factory value to calibrate the barometer sensor */
+	long bar;			/* most recent barometer measurement */
+	long elevation;			/* elevation, in feet */
+	long dew_point;			/* dew point when the barometer measurement was taken */
+	long virt_temp;			/* temperature used in correction formula (12h average) */
+	long c;				/* humidity correction factor used in the formula */
+	long r;				/* correction ratio */
+	long barcal;			/* constant offset correction factor */
+	long gain;			/* factory value to calibrate the barometer sensor */
+	long offset;			/* factory value to calibrate the barometer sensor */
 };
 
 enum vantage_var

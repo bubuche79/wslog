@@ -25,6 +25,7 @@ libws_la_SOURCES += \
 	vantage/config.c \
 	vantage/current.c \
 	vantage/download.c \
+	vantage/eeprom.c \
 	vantage/serial.c \
 	vantage/testing.c \
 	vantage/util.c \
