@@ -14,12 +14,11 @@ libws_la_SOURCES = \
 	bitfield.h \
 	conf.h \
 	crc_ccitt.h \
-	err.h \
 	nybble.h \
 	util.h \
 	serial.h
 
-if USE_VP2
+if USE_VANTAGE
 libws_la_SOURCES += \
 	vantage/clearing.c \
 	vantage/config.c \
@@ -29,7 +28,7 @@ libws_la_SOURCES += \
 	vantage/serial.c \
 	vantage/testing.c \
 	vantage/util.c \
-	vantage/util.h
+	vantage/util.h \
 	vantage/vantage.h
 endif
 

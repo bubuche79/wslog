@@ -13,6 +13,7 @@
 #include <sys/ioctl.h>
 #include <sys/file.h>
 #include <time.h>
+#include <fcntl.h>
 
 #include "defs/dso.h"
 #include "libws/serial.h"
