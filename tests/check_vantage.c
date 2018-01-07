@@ -17,7 +17,7 @@ START_TEST(test_vantage_time)
 
 	ck_assert_uint_eq(time, vantage_mktime(buf, 0, 1));
 
-	vantage_time(tmp, time);
+	vantage_localtime(tmp, time);
 	ck_assert_mem_eq(buf, tmp, sizeof(buf));
 }
 END_TEST

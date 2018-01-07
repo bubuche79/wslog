@@ -16,6 +16,8 @@
 #define LPS_LOOP2	0x02		/* LOOP2 packet */
 
 #define EEPROM_SIZE	4096
+#define VER_SIZE	12		/* Including null byte */
+#define NVER_SIZE	5		/* Including null byte */
 
 enum vantage_type
 {
@@ -32,6 +34,9 @@ enum vantage_type
 
 struct vantage_cfg
 {
+	int16_t latitude;		/* Latitude (tenth of degree) */
+	int16_t longitude;		/* Longitude (tenth of degree) */
+	uint16_t altitude;		/* Elevation (feet) */
 	union {
 		struct {
 			uint8_t time_mode : 1;		/* Time mode (0: AM/PM, 1: 24H) */
@@ -39,8 +44,8 @@ struct vantage_cfg
 			uint8_t month_fmt : 1;		/* Month format (0: M/D, 1: D.M) */
 			uint8_t wind_cup_size : 1;	/* Wind cup size (0: small, 1: large) */
 			uint8_t rain_size : 2;		/* Rain collector size (0: 0.01in, 1: 0.2mm, 2: 0.1mm) */
-			uint8_t latitude : 1;		/* Latitude (0: S, 1: N) */
-			uint8_t longitude : 1;		/* Longitude (0: W, 1: E) */
+			uint8_t latitude_dir : 1;	/* Latitude (0: S, 1: N) */
+			uint8_t longitude_dir : 1;	/* Longitude (0: W, 1: E) */
 		};
 		uint8_t setup;				/* Raw setup byte */
 	};

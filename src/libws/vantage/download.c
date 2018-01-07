@@ -85,7 +85,7 @@ vantage_mktime(const uint8_t *buf, uint16_t off, int wtime)
 }
 
 void
-vantage_time(uint8_t *buf, time_t time)
+vantage_localtime(uint8_t *buf, time_t time)
 {
 	struct tm tm;
 	uint16_t date, t;
@@ -246,7 +246,7 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 	}
 
 	/* Send timestamp */
-	vantage_time(buf, after);
+	vantage_localtime(buf, after);
 
 	if (vantage_pwrite(fd, IO_CRC|IO_ACK, buf, sizeof(buf)) == -1) {
 		goto error;

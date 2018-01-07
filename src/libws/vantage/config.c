@@ -92,6 +92,7 @@ vantage_gettime(int fd, time_t *time)
 	tm.tm_mday = buf[3];
 	tm.tm_mon = buf[4] - 1;
 	tm.tm_year = buf[5];
+	tm.tm_isdst = -1;
 
 	*time = mktime(&tm);
 

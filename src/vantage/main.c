@@ -22,6 +22,8 @@ usage(FILE *out, int status)
 	fprintf(out, "Options:\n");
 	fprintf(out, "   -h              display this\n");
 	fprintf(out, "   -d device       TTY console device\n");
+	fprintf(out, "Available " PROGNAME " commands:\n");
+	fprintf(out, "   info            display console info\n");
 	fprintf(out, "\n");
 	fprintf(out, "Available low-level " PROGNAME " commands:\n");
 	fprintf(out, "   test            test connectivity\n");
@@ -109,11 +111,18 @@ strtoui(const char *s)
 }
 
 static time_t
-strtotime(const char *s)
+strtotime(const char *s, int sec)
 {
 	struct tm tm;
+	const char *fmt;
 
-	if (strptime(s, "%Y-%m-%dT%H:%M:%S", &tm) == NULL) {
+	if (sec) {
+		fmt = "%Y-%m-%dT%H:%M:%S";
+	} else {
+		fmt = "%Y-%m-%dT%H:%M";
+	}
+
+	if (strptime(s, fmt, &tm) == NULL) {
 		errno = EINVAL;
 		goto error;
 	}
@@ -143,7 +152,17 @@ vantage_pressure(int16_t f, int scale)
 }
 
 static void
-print_lps(struct vantage_loop *lps)
+print_rxcheck(const char *pref, const struct vantage_rxck *ck)
+{
+	printf("%s%s: %ld\n", pref, "Packets received", ck->pkt_recv);
+	printf("%s%s: %ld\n", pref, "Packets missed", ck->pkt_missed);
+	printf("%s%s: %ld\n", pref, "Maximum packets received without error", ck->pkt_in_row);
+	printf("%s%s: %ld\n", pref, "Resynchronizations", ck->resync);
+	printf("%s%s: %ld\n", pref, "CRC errors", ck->crc_ko);
+}
+
+static void
+print_lps(const struct vantage_loop *lps)
 {
 	printf("Temp: %.1f\n", vantage_temp(lps->temp, 1));
 	printf("Humidity: %d\n", lps->humidity);
@@ -175,6 +194,75 @@ print_hex(uint16_t addr, void *buf, uint16_t len)
 
 		printf("\n");
 	}
+}
+
+static int
+main_info(int fd, int argc, char* const argv[])
+{
+	enum vantage_type wrd;
+	char ver[VER_SIZE];
+	char nver[NVER_SIZE];
+	time_t onboard_time;
+	struct vantage_cfg cfg;
+	struct vantage_rxck ck;
+	char buf[32];
+
+	check_empty_cmdline(argc, argv);
+
+	/* Process sub-command */
+	if (vantage_wrd(fd, &wrd) == -1) {
+		fprintf(stderr, "vantage_wrd: %s\n", strerror(errno));
+		goto error;
+	}
+
+	if (vantage_ver(fd, ver, sizeof(ver)) == -1) {
+		fprintf(stderr, "vantage_ver: %s\n", strerror(errno));
+		goto error;
+	}
+	if (vantage_nver(fd, nver, sizeof(nver)) == -1) {
+		fprintf(stderr, "vantage_nver: %s\n", strerror(errno));
+		goto error;
+	}
+
+	if (vantage_ee_cfg(fd, &cfg) == -1) {
+		fprintf(stderr, "vantage_ee_cfg: %s\n", strerror(errno));
+		goto error;
+	}
+	if (vantage_gettime(fd, &onboard_time) == -1) {
+		fprintf(stderr, "vantage_gettime: %s\n", strerror(errno));
+		goto error;
+	}
+
+	if (vantage_rxcheck(fd, &ck) == -1) {
+		fprintf(stderr, "vantage_rxcheck: %s\n", strerror(errno));
+		goto error;
+	}
+
+	localftime_r(buf, sizeof(buf), &onboard_time, "%F %T");
+
+	/* Display */
+	printf("Console:\n");
+	printf("  Type: %s\n\n", vantage_type_str(wrd));
+
+	printf("Console firmware:\n");
+	printf("  Date: %s\n", ver);
+	printf("  Version: %s\n\n", nver);
+
+	printf("Console settings:\n");
+	printf("  Archive interval: %d (minutes)\n", cfg.ar_period);
+//	printf("  Altitude: %hu (feet)\n", cfg.altitude);
+	printf("  Wind cup size: %s\n", cfg.wind_cup_size ? "large" : "small");
+	printf("  Rain collector size: %s\n", (cfg.rain_size == 0 ? "0.01 in" : (cfg.rain_size == 1 ? "0.2 mm" : "0.1 mm")));
+	printf("  Rain season start: %d\n", cfg.rain_start);
+	printf("  Console time: %s\n\n", buf);
+
+	printf("Reception diagnostics:\n");
+	print_rxcheck("  ", &ck);
+
+	return 0;
+
+error:
+	return 1;
 }
 
 static int
@@ -228,11 +316,7 @@ main_rxcheck(int fd, int argc, char* const argv[])
 		goto error;
 	}
 
-	printf("%s: %ld\n", "Packets received", ck.pkt_recv);
-	printf("%s: %ld\n", "Packets missed", ck.pkt_missed);
-	printf("%s: %ld\n", "Maximum packets received without error", ck.pkt_in_row);
-	printf("%s: %ld\n", "Resynchronizations", ck.resync);
-	printf("%s: %ld\n", "CRC errors", ck.crc_ko);
+	print_rxcheck("", &ck);
 
 	return 0;
 
@@ -294,7 +378,7 @@ main_settime(int fd, int argc, char* const argv[])
 	} else if (optind + 1 == argc) {
 		const char *timep = argv[optind++];
 
-		if ((ref = strtotime(timep)) == -1) {
+		if ((ref = strtotime(timep, 1)) == -1) {
 			fprintf(stderr, "strtotime %s: %s\n", timep, strerror(errno));
 			goto error;
 		}
@@ -431,7 +515,7 @@ main_dmpaft(int fd, int argc, char* const argv[])
 
 	s = argv[optind++];
 
-	if ((after = strtotime(s)) == -1) {
+	if ((after = strtotime(s, 0)) == -1) {
 		fprintf(stderr, "strtotime %s: %s\n", s, strerror(errno));
 		goto error;
 	}
@@ -576,8 +660,11 @@ main(int argc, char * const argv[])
 		goto exit;
 	}
 
-	/* Testing commands */
-	if (strcmp("test", cmd) == 0) {
+	/* Commands */
+	if (strcmp("info", cmd) == 0) {
+		status = main_info(fd, argc, argv);
+	/* Low-level commands */
+	} else if (strcmp("test", cmd) == 0) {
 		status = main_test(fd, argc, argv);
 	} else if (strcmp("wrd", cmd) == 0) {
 		status = main_wrd(fd, argc, argv);

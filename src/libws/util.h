@@ -25,7 +25,7 @@ double round_scale(double v, int scale);
 const char *ws_dir(double dir);
 
 size_t gmftime(char *s, size_t max, const time_t *timep, const char *fmt);
-size_t localftime(char *s, size_t max, const time_t *timep, const char *fmt);
+size_t localftime_r(char *s, size_t max, const time_t *timep, const char *fmt);
 ssize_t strftimespec(char *s, size_t max, const struct timespec *ts, int width);
 
 int ws_dump(const char *pathname, const void *buf, size_t len);

@@ -29,7 +29,7 @@ print_loop1(const struct ws_loop *p)
 {
 	char buf[32];
 
-	localftime(buf, sizeof(buf), &p->time, "%F %T");
+	localftime_r(buf, sizeof(buf), &p->time, "%F %T");
 
 	printf("%s %.1f°C %hhu%% %.1fm/s (%s) %.1fmm %.1f°C %hhu%%\n", buf, p->temp,
 			p->humidity, p->wind_speed,

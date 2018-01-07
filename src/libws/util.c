@@ -222,7 +222,7 @@ gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 }
 
 DSO_EXPORT size_t
-localftime(char *s, size_t max, const time_t *timep, const char *fmt)
+localftime_r(char *s, size_t max, const time_t *timep, const char *fmt)
 {
 	struct tm tm;
 

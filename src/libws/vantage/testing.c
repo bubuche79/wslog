@@ -35,6 +35,8 @@ const char *WRD_STR[] =
 static int
 vantage_verx(int fd, enum vantage_cmd cmd, char *buf, size_t len)
 {
+	char lfcr[2];
+
 	/* Vantage command */
 	if (vantage_proc(fd, cmd) == -1) {
 		goto error;
@@ -42,6 +44,9 @@ vantage_verx(int fd, enum vantage_cmd cmd, char *buf, size_t len)
 
 	/* Read version */
 	if (vantage_read(fd, buf, len) == -1) {
+		goto error;
+	}
+	if (vantage_read(fd, lfcr, sizeof(lfcr)) == -1) {
 		goto error;
 	}
 
@@ -144,12 +149,12 @@ vantage_rxtest(int fd)
 DSO_EXPORT int
 vantage_ver(int fd, char *buf, size_t len)
 {
-	if (len < 12) {
+	if (len < VER_SIZE) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	return vantage_verx(fd, VER, buf, 11);
+	return vantage_verx(fd, VER, buf, VER_SIZE - 1);
 }
 
 DSO_EXPORT int
@@ -162,10 +167,10 @@ vantage_receivers(int fd, uint8_t *receivers)
 DSO_EXPORT int
 vantage_nver(int fd, char *buf, size_t len)
 {
-	if (len < 5) {
+	if (len < NVER_SIZE) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	return vantage_verx(fd, NVER, buf, 4);
+	return vantage_verx(fd, NVER, buf, NVER_SIZE - 1);
 }
