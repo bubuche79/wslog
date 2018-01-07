@@ -6,6 +6,9 @@
 #include "config.h"
 #endif
 
+#if DEBUG
+#include <stdio.h>
+#endif
 #include <sys/types.h>
 #include <time.h>
 #include <stdint.h>
@@ -17,7 +20,7 @@
 #include "libws/vantage/vantage.h"
 
 #define DMP_SIZE	52
-#define PAGE_SIZE	264
+#define PAGE_SIZE	265
 
 int8_t
 vantage_int8(const uint8_t *buf, uint16_t off)
@@ -61,7 +64,7 @@ vantage_mktime(const uint8_t *buf, uint16_t off, int wtime)
 
 	date = vantage_uint16(buf, off + 0);
 
-	tm.tm_year = date >> 9;
+	tm.tm_year = 100 + (date >> 9);
 	tm.tm_mon = ((date >> 5) & 0x0F) - 1;
 	tm.tm_mday = date & 0x1F;
 
@@ -89,7 +92,7 @@ vantage_time(uint8_t *buf, time_t time)
 
 	localtime_r(&time, &tm);
 
-	date = (tm.tm_year << 9) + ((tm.tm_mon + 1) << 5) + tm.tm_mday;
+	date = ((tm.tm_year - 100) << 9) + ((tm.tm_mon + 1) << 5) + tm.tm_mday;
 	t = (tm.tm_hour * 100) + tm.tm_min;
 
 	buf[0] = date & 0xFF;
@@ -141,7 +144,7 @@ vantage_dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 }
 
 static int
-vantage_read_page(int fd, uint8_t *buf, uint8_t len)
+vantage_read_page(int fd, uint8_t *buf, size_t len)
 {
 	int i;
 
@@ -172,7 +175,7 @@ error:
 }
 
 DSO_EXPORT ssize_t
-vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t npages, int16_t offset)
+vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t offset)
 {
 	ssize_t sz;
 	uint8_t byte;
@@ -180,11 +183,12 @@ vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t npages, in
 
 	byte = ACK;
 
+	/* Read all pages */
 	for (sz = 0; sz < nel && byte == ACK; ) {
 		size_t j;
 
 		/* Read page */
-		if (vantage_read_page(fd, buf, byte) == -1) {
+		if (vantage_read_page(fd, buf, sizeof(buf)) == -1) {
 			// TODO byte = ESC;
 			goto error;
 		}
@@ -218,47 +222,12 @@ error:
 DSO_EXPORT ssize_t
 vantage_dmp(int fd, struct vantage_dmp *p, size_t nel)
 {
-	ssize_t sz;
-	uint8_t byte;
-	uint8_t buf[PAGE_SIZE];
-
-	byte = ACK;
-
 	/* DMP command */
 	if (vantage_proc(fd, DMP) == -1) {
 		goto error;
 	}
 
-	// TODO Do we need to send ACK?
-
-	/* Read archive records */
-	for (sz = 0; sz < nel && byte == ACK; ) {
-		size_t j;
-
-		/* Read page */
-		if (vantage_read_page(fd, buf, byte) == -1) {
-			// TODO byte = ESC;
-			goto error;
-		}
-
-		/* Decode page (5 records) */
-		for (j = 0; j < 5 && sz < nel; j++) {
-			uint8_t *r = buf + 1 + j * DMP_SIZE;
-
-			if (r[0] == 0xFF) {
-				byte = ESC;
-			} else {
-				vantage_dmp_decode(&p[sz++], r);
-			}
-		}
-
-		/* Send ACK or ESC */
-		if (vantage_write(fd, &byte, 1) == -1) {
-			goto error;
-		}
-	}
-
-	return sz;
+	return vantage_read_pages(fd, p, nel, 0);
 
 error:
 	return -1;
@@ -267,6 +236,7 @@ error:
 DSO_EXPORT ssize_t
 vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 {
+	size_t sz;
 	uint8_t buf[4];
 	int16_t page_cnt, offset;
 
@@ -290,8 +260,34 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 	page_cnt = vantage_int16(buf, 0);
 	offset = vantage_int16(buf, 2);
 
+#if DEBUG
+	printf("DMPAFT: %d pages, record offset %d\n", page_cnt, offset);
+#endif
+
 	/* Read archive records */
-	return vantage_read_pages(fd, p, nel, page_cnt, offset);
+	if (page_cnt == 0) {
+		sz = 0;
+	} else {
+		uint8_t byte = ACK;
+		size_t rec_cnt = 5 * page_cnt - offset;
+
+		if (nel < rec_cnt) {
+			nel = rec_cnt;
+		}
+
+		/* ACK */
+		if (vantage_write(fd, &byte, 1) == -1) {
+			goto error;
+		}
+
+		if (vantage_read_pages(fd, p, nel, offset) == -1) {
+			goto error;
+		}
+
+		sz = rec_cnt;
+	}
+
+	return sz;
 
 error:
 	return -1;

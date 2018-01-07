@@ -51,7 +51,7 @@ static const struct proc_def CMDS[] =
 	{ "CALFIX\n", IO_ACK },
 	{ "BAR=%d %d\n", IO_OK },
 	{ "BARDATA\n", IO_OK },
-	{ "CLRLOG\n", IO_OK },
+	{ "CLRLOG\n", IO_ACK },
 	{ "CLRALM\n", IO_OK_DONE },
 	{ "CLRCAL\n", IO_OK_DONE },
 	{ "CLRGRA\n", IO_OK_DONE },

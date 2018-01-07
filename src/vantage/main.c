@@ -154,6 +154,7 @@ print_lps(struct vantage_loop *lps)
 static void
 print_dmp(const struct vantage_dmp *dmp)
 {
+	printf("Timestamp: %s\n", ctime(&dmp->tstamp));
 	printf("Temp: %.1f\n", vantage_temp(dmp->temp, 1));
 	printf("Humidity: %d\n", dmp->humidity);
 	printf("In temp: %.1f\n", vantage_temp(dmp->in_temp, 1));
@@ -505,6 +506,23 @@ error:
 	return 1;
 }
 
+static int
+main_clrlog(int fd, int argc, char* const argv[])
+{
+	check_empty_cmdline(argc, argv);
+
+	/* Process sub-command */
+	if (vantage_clrlog(fd) == -1) {
+		fprintf(stderr, "vantage_clrlog: %s\n", strerror(errno));
+		goto error;
+	}
+
+	return 0;
+
+error:
+	return 1;
+}
+
 int
 main(int argc, char * const argv[])
 {
@@ -585,6 +603,8 @@ main(int argc, char * const argv[])
 		status = main_getee(fd, argc, argv);
 	} else if (strcmp("eebrd", cmd) == 0) {
 		status = main_eebrd(fd, argc, argv);
+	} else if (strcmp("clrlog", cmd) == 0) {
+		status = main_clrlog(fd, argc, argv);
 	} else {
 		fprintf(stderr, "%s: unknown command\n", cmd);
 	}

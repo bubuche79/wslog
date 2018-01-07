@@ -16,6 +16,7 @@
 DSO_EXPORT int
 vantage_clrlog(int fd)
 {
+	// TODO larger timeout for ACK
 	return vantage_proc(fd, CLRLOG);
 }
 
