@@ -136,19 +136,27 @@ error:
 }
 
 static double
-vantage_temp(int16_t f, int scale)
+vantage_float(int16_t v, int scale)
 {
-	long pow10[] = { 1, 10, 100, 1000 };
+	double pow10[] = { 1.0, 10.0, 100.0, 1000.0 };
 
-	return ((double) f / pow10[scale] - 32.0) * 5 / 9;
+	return v / pow10[scale];
 }
 
 static double
-vantage_pressure(int16_t f, int scale)
+vantage_temp(int16_t f, int scale)
 {
-	long pow10[] = { 1, 10, 100, 1000 };
+	double pow10[] = { 1.0, 10.0, 100.0, 1000.0 };
 
-	return ((double) f / pow10[scale]) / 0.02952998751;
+	return (f / pow10[scale] - 32.0) * 5 / 9;
+}
+
+static double
+vantage_pressure(int16_t fp, int scale)
+{
+	double pow10[] = { 1.0, 10.0, 100.0, 1000.0 };
+
+	return (fp / pow10[scale]) / 0.02952998751;
 }
 
 static void
@@ -250,11 +258,15 @@ main_info(int fd, int argc, char* const argv[])
 
 	printf("Console settings:\n");
 	printf("  Archive interval: %d (minutes)\n", cfg.ar_period);
-//	printf("  Altitude: %hu (feet)\n", cfg.altitude);
+	printf("  Altitude: %hu (feet)\n", cfg.altitude);
 	printf("  Wind cup size: %s\n", cfg.wind_cup_size ? "large" : "small");
 	printf("  Rain collector size: %s\n", (cfg.rain_size == 0 ? "0.01 in" : (cfg.rain_size == 1 ? "0.2 mm" : "0.1 mm")));
 	printf("  Rain season start: %d\n", cfg.rain_start);
-	printf("  Console time: %s\n\n", buf);
+	printf("  Time (onboard): %s\n\n", buf);
+
+	printf("Console settings:\n");
+	printf("  Latitude (onboard): %.1f°\n", vantage_float(cfg.latitude, 1));
+	printf("  Longitude (onboard): %.1f°\n\n", vantage_float(cfg.longitude, 1));
 
 	printf("Reception diagnostics:\n");
 	print_rxcheck("  ", &ck);

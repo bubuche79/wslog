@@ -16,8 +16,8 @@
 #define LPS_LOOP2	0x02		/* LOOP2 packet */
 
 #define EEPROM_SIZE	4096
-#define VER_SIZE	12		/* Including null byte */
-#define NVER_SIZE	5		/* Including null byte */
+#define VER_SIZE	12		/* VER string, with null byte */
+#define NVER_SIZE	5		/* NVER string, with null byte */
 
 enum vantage_type
 {
