@@ -75,21 +75,19 @@ vantage_eebwr(int fd, uint16_t addr, void *buf, size_t len)
 DSO_EXPORT int
 vantage_ee_cfg(int fd, struct vantage_cfg *p)
 {
-	uint16_t addr;
 	uint8_t buf[0xAF];
 
-	addr = 0x01;
-
-	if (vantage_eebrd(fd, addr, buf, sizeof(buf)) == -1) {
+	if (vantage_eebrd(fd, 0x01, buf, sizeof(buf)) == -1) {
 		goto error;
 	}
 
 	p->latitude = vantage_int16(buf, 0x0B - 0x01);
 	p->longitude = vantage_int16(buf, 0x0D - 0x01);
 	p->altitude = vantage_uint16(buf, 0x0F - 0x01);
-	p->setup = vantage_int8(buf, 0x2B - 0x01);
-	p->rain_start = vantage_int8(buf, 0x2C - 0x01);
-	p->ar_period = vantage_int8(buf, 0x2D - 0x01);
+	p->unit_bits = vantage_uint8(buf, 0x29 - 0x01);
+	p->setup_bits = vantage_uint8(buf, 0x2B - 0x01);
+	p->rain_start = vantage_uint8(buf, 0x2C - 0x01);
+	p->ar_period = vantage_uint8(buf, 0x2D - 0x01);
 
 	return 0;
 

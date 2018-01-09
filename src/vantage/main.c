@@ -259,12 +259,12 @@ main_info(int fd, int argc, char* const argv[])
 	printf("Console settings:\n");
 	printf("  Archive interval: %d (minutes)\n", cfg.ar_period);
 	printf("  Altitude: %hu (feet)\n", cfg.altitude);
-	printf("  Wind cup size: %s\n", cfg.wind_cup_size ? "large" : "small");
-	printf("  Rain collector size: %s\n", (cfg.rain_size == 0 ? "0.01 in" : (cfg.rain_size == 1 ? "0.2 mm" : "0.1 mm")));
+	printf("  Wind cup size: %s\n", cfg.sb_wind_cup ? "large" : "small");
+	printf("  Rain collector size: %s\n", (cfg.sb_rain_cup == 0 ? "0.01 in" : (cfg.sb_rain_cup == 1 ? "0.2 mm" : "0.1 mm")));
 	printf("  Rain season start: %d\n", cfg.rain_start);
 	printf("  Time (onboard): %s\n\n", buf);
 
-	printf("Console settings:\n");
+	printf("Station info:\n");
 	printf("  Latitude (onboard): %.1f°\n", vantage_float(cfg.latitude, 1));
 	printf("  Longitude (onboard): %.1f°\n\n", vantage_float(cfg.longitude, 1));
 

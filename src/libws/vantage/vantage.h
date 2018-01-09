@@ -39,15 +39,24 @@ struct vantage_cfg
 	uint16_t altitude;		/* Elevation (feet) */
 	union {
 		struct {
-			uint8_t time_mode : 1;		/* Time mode (0: AM/PM, 1: 24H) */
-			uint8_t time_is : 1;		/* Is AM or PM (0: PM, 1: AM) */
-			uint8_t month_fmt : 1;		/* Month format (0: M/D, 1: D.M) */
-			uint8_t wind_cup_size : 1;	/* Wind cup size (0: small, 1: large) */
-			uint8_t rain_size : 2;		/* Rain collector size (0: 0.01in, 1: 0.2mm, 2: 0.1mm) */
-			uint8_t latitude_dir : 1;	/* Latitude (0: S, 1: N) */
-			uint8_t longitude_dir : 1;	/* Longitude (0: W, 1: E) */
+			uint8_t ub_barometer : 2;	/* Barometer */
+			uint8_t ub_temp : 2;		/* Temperature */
+			uint8_t ub_altitude : 1;	/* Elevation */
+			uint8_t ub_wind : 2;		/* Wind */
 		};
-		uint8_t setup;				/* Raw setup byte */
+		uint8_t unit_bits;			/* Raw unit bits */
+	};
+	union {
+		struct {
+			uint8_t sb_time_mode : 1;	/* Time mode (0: AM/PM, 1: 24H) */
+			uint8_t sb_time_period : 1;	/* Is AM or PM (0: PM, 1: AM) */
+			uint8_t sb_month_mode : 1;	/* Month format (0: M/D, 1: D.M) */
+			uint8_t sb_wind_cup : 1;	/* Wind cup size (0: small, 1: large) */
+			uint8_t sb_rain_cup : 2;	/* Rain collector size (0: 0.01in, 1: 0.2mm, 2: 0.1mm) */
+			uint8_t sb_latitude : 1;	/* Latitude (0: S, 1: N) */
+			uint8_t sb_longitude : 1;	/* Longitude (0: W, 1: E) */
+		};
+		uint8_t setup_bits;			/* Raw setup bits */
 	};
 	uint8_t rain_start;		/* Rain season start (1 = January) */
 	uint8_t ar_period;		/* Archive period (minutes) */
