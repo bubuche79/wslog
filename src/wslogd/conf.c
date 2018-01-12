@@ -103,6 +103,11 @@ ws_getdriver(const char *str, enum ws_driver *driver)
 	ret = 0;
 	*driver = UNUSED;
 
+#if HAVE_VANTAGE
+	if (!strcmp(str, "vantage")) {
+		*driver = VANTAGE;
+	}
+#endif
 #if HAVE_WS23XX
 	if (!strcmp(str, "ws23xx")) {
 		*driver = WS23XX;
@@ -138,6 +143,9 @@ conf_init(struct ws_conf *cfg)
 
 	/* Default driver */
 	cfg->driver.freq = 0;
+#if HAVE_VANTAGE
+	cfg->driver.vantage.tty = "/dev/ttyUSB0";
+#endif
 #if HAVE_WS23XX
 	cfg->driver.ws23xx.tty = "/dev/ttyUSB0";
 #endif
@@ -185,7 +193,11 @@ conf_decode(void *p, const char *key, const char *value)
 		}
 	} else if (!strncmp(key, "driver.", 7)) {
 		if (!strcmp(key, "driver.freq")) {
-			ws_getint(value, &cfg->driver.freq);
+			ws_getlong(value, &cfg->driver.freq);
+#if HAVE_VANTAGE
+		} else if (!strcmp(key, "driver.vantage.tty")) {
+			cfg->driver.vantage.tty = strdup(value);
+#endif
 #if HAVE_WS23XX
 		} else if (!strcmp(key, "driver.ws23xx.tty")) {
 			cfg->driver.ws23xx.tty = strdup(value);

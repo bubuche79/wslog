@@ -8,9 +8,6 @@
 #include <errno.h>
 #include <time.h>
 #include <syslog.h>
-#ifdef DEBUG
-#include <stdio.h>
-#endif
 
 #include "board.h"
 #include "conf.h"
@@ -102,9 +99,9 @@ archive_init(struct itimerspec *it)
 	}
 
 #ifdef DEBUG
-	printf("archive.freq: %ld\n", it->it_interval.tv_sec);
-	printf("archive.delay: %ld\n", it->it_value.tv_sec);
-	printf("archive.hardware: %d\n", hw_archive);
+	syslog(LOG_INFO, "archive.freq: %ld\n", it->it_interval.tv_sec);
+	syslog(LOG_INFO, "archive.delay: %ld\n", it->it_value.tv_sec);
+	syslog(LOG_INFO, "archive.hardware: %d\n", hw_archive);
 #endif
 
 	freq = it->it_interval.tv_sec;
@@ -160,10 +157,6 @@ archive_main(void)
 	ssize_t arsz;
 	struct ws_archive arbuf;
 
-#ifdef DEBUG
-	printf("ARCHIVE: reading\n");
-#endif
-
 	if (hw_archive) {
 		if (drv_get_archive(&arbuf, 1) == -1) {
 			syslog(LOG_ERR, "drv_get_archive: %m");
@@ -177,7 +170,8 @@ archive_main(void)
 		goto error;
 	} else if (arsz > 0) {
 #ifdef DEBUG
-		printf("ARCHIVE read: %.2f°C %hhu%%\n", arbuf.data.temp, arbuf.data.humidity);
+		syslog(LOG_DEBUG, "Record: %.1f°C %hhu%%",
+				arbuf.data.temp, arbuf.data.humidity);
 #endif
 
 		/* Save to database */
@@ -187,9 +181,7 @@ archive_main(void)
 			}
 		}
 	} else {
-#ifdef DEBUG
-		printf("ARCHIVE no read\n");
-#endif
+		syslog(LOG_NOTICE, "No archive fetched");
 	}
 
 	return 0;

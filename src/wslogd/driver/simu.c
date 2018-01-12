@@ -71,7 +71,7 @@ simu_destroy(void)
 }
 
 int
-simu_get_itimer(struct itimerspec *it, int type)
+simu_get_itimer(struct itimerspec *it, enum ws_type type)
 {
 	int ret;
 

@@ -1,16 +1,17 @@
+/*
+ * Simulated device.
+ *
+ * Reads random data for a few sensors.
+ */
+
 #ifndef _SIMU_H
 #define _SIMU_H
 
 #include <time.h>
 #include <sys/types.h>
 
+#include "driver/driver.h"
 #include "dataset.h"
-
-/*
- * Simulated device.
- *
- * Reads from a file for a few sensors.
- */
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,7 +20,7 @@ extern "C" {
 int simu_init(void);
 int simu_destroy(void);
 
-int simu_get_itimer(struct itimerspec *it, int type);
+int simu_get_itimer(struct itimerspec *it, enum ws_type type);
 int simu_get_loop(struct ws_loop *p);
 ssize_t simu_get_archive(struct ws_archive *p, size_t nel);
 

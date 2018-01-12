@@ -152,7 +152,7 @@ ws23xx_destroy(void)
 }
 
 int
-ws23xx_get_itimer(struct itimerspec *it, int type)
+ws23xx_get_itimer(struct itimerspec *it, enum ws_timer type)
 {
 	uint8_t buf[8];
 

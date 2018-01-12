@@ -16,6 +16,12 @@ libwslog_a_SOURCES = \
 	board.h \
 	driver/driver.h
 
+if USE_VANTAGE
+libwslog_a_SOURCES += \
+	driver/vantage.c \
+	driver/vantage.h
+endif
+
 if USE_WS23XX
 libwslog_a_SOURCES += \
 	driver/ws23xx.c \

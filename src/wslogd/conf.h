@@ -11,49 +11,53 @@
 
 struct ws_conf
 {
-	uid_t uid;							/* effective user id */
-	gid_t gid;							/* effective group id */
-	const char *pid_file;				/* the daemon PID file */
-	int log_facility;					/* syslog facility */
-	int log_mask;						/* syslog priority mask */
+	uid_t uid;				/* effective user id */
+	gid_t gid;				/* effective group id */
+	const char *pid_file;			/* the daemon PID file */
+	int log_facility;			/* syslog facility */
+	int log_mask;				/* syslog priority mask */
 
 	struct
 	{
-		float latitude;					/* latitude */
-		float longitude;				/* longitude */
-		int altitude;					/* altitude (m) */
-		enum ws_driver driver;			/* station type */
+		float latitude;			/* latitude */
+		float longitude;		/* longitude */
+		int altitude;			/* altitude (m) */
+		enum ws_driver driver;		/* station type */
 	} station;
 
 	struct
 	{
-		int freq;						/* sensor frequency, in seconds */
+		long freq;			/* sensor frequency, in milliseconds */
 
 		struct
 		{
-			const char *tty;			/* tty device */
+			const char *tty;	/* tty device */
+		} vantage;
+		struct
+		{
+			const char *tty;	/* tty device */
 		} ws23xx;
 	} driver;
 
 	struct
 	{
-		int freq;						/* archive frequency, in seconds */
-		int delay;						/* archive delay, in seconds */
+		int freq;			/* archive frequency, in seconds */
+		int delay;			/* archive delay, in seconds */
 
 		struct
 		{
-			int enabled;				/* disabled flag */
-			const char *db;				/* database file */
+			int enabled;		/* disabled flag */
+			const char *db;		/* database file */
 		} sqlite;
 	} archive;
 
 	struct
 	{
-		int enabled;					/* disabled flag */
-		int https;						/* https flag */
-		const char *station;			/* station id */
-		const char *password;			/* account password */
-		int freq;						/* update frequency, in seconds */
+		int enabled;			/* disabled flag */
+		int https;			/* https flag */
+		const char *station;		/* station id */
+		const char *password;		/* account password */
+		int freq;			/* update frequency, in seconds */
 	} wunder;
 };
 

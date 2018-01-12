@@ -6,14 +6,17 @@
 #include <time.h>
 #include <errno.h>
 
+#ifdef HAVE_VANTAGE
+#include "driver/vantage.h"
+#endif
 #ifdef HAVE_WS23XX
 #include "driver/ws23xx.h"
 #endif
 #ifdef HAVE_SIMU
 #include "driver/simu.h"
 #endif
+#include "driver/driver.h"
 #include "conf.h"
-#include "driver.h"
 
 static enum ws_driver driver;
 
@@ -72,7 +75,7 @@ drv_destroy(void)
 }
 
 int
-drv_get_itimer(struct itimerspec *itimer, int type)
+drv_get_itimer(struct itimerspec *itimer, enum ws_timer type)
 {
 	int ret;
 

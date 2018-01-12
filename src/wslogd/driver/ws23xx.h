@@ -1,3 +1,7 @@
+/*
+ * Lacrosse Technology WS23XX support.
+ */
+
 #ifndef _WS23XX_H
 #define _WS23XX_H
 
@@ -6,10 +10,6 @@
 
 #include "dataset.h"
 
-/*
- * Lacrosse Technology WS23XX support.
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,7 +17,7 @@ extern "C" {
 int ws23xx_init(void);
 int ws23xx_destroy(void);
 
-int ws23xx_get_itimer(struct itimerspec *p, int type);
+int ws23xx_get_itimer(struct itimerspec *p, enum ws_timer type);
 int ws23xx_get_loop(struct ws_loop *p);
 ssize_t ws23xx_get_archive(struct ws_archive *p, size_t nel);
 
