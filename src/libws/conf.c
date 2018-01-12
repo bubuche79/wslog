@@ -117,6 +117,26 @@ ws_getint(const char *str, int *val)
 }
 
 DSO_EXPORT int
+ws_getlong(const char *str, long *val)
+{
+	char *eptr;
+	long res;
+
+	errno = 0;
+	res = strtol(str, &eptr, 10);
+
+	if ((res == LONG_MIN || res == LONG_MAX) && errno) {
+		return -1;
+	} else if (*eptr != 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*val = res;
+	return 0;
+}
+
+DSO_EXPORT int
 ws_getfloat(const char *str, float *val)
 {
 	char *eptr;

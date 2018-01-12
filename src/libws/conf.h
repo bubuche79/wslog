@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 int ws_getint(const char *str, int *val);
+int ws_getlong(const char *str, long *val);
 int ws_getbool(const char *str, int *val);
 int ws_getfloat(const char *str, float *val);
 
