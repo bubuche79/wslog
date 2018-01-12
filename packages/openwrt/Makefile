@@ -20,7 +20,7 @@ PKG_BUILD_PARALLEL:=1
 include $(INCLUDE_DIR)/package.mk
 
 define Build/Configure
-  $(call Build/Configure/Default,--enable-simu)
+  $(call Build/Configure/Default)
 endef
 
 define Package/wslog
