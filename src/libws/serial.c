@@ -116,17 +116,22 @@ ws_read_to(int fd, void *buf, size_t nbyte, long timeout)
 {
 	int ret;
 	fd_set readset;
-	struct timeval tv;
+	struct timeval tv, *ptv;
 
 	/* Wait for input */
 	do {
 		FD_ZERO(&readset);
 		FD_SET(fd, &readset);
 
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout - 1000 * tv.tv_sec) * 1000;
+		if (timeout) {
+			tv.tv_sec = timeout / 1000;
+			tv.tv_usec = (timeout - 1000 * tv.tv_sec) * 1000;
+			ptv = &tv;
+		} else {
+			ptv = NULL;
+		}
 
-		ret = select(fd + 1, &readset, NULL, NULL, &tv);
+		ret = select(fd + 1, &readset, NULL, NULL, ptv);
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
