@@ -37,9 +37,3 @@ Makefile.in
 *.lo
 *.so*
 
-check
-vantage
-ws23xx
-wslogc
-wslogd
-
