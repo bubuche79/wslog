@@ -29,6 +29,7 @@ libws_la_SOURCES += \
 	vantage/testing.c \
 	vantage/util.c \
 	vantage/util.h \
+	vantage/unit.c \
 	vantage/vantage.h
 endif
 

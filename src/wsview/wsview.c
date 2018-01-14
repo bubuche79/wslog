@@ -100,7 +100,7 @@ get_wind_dir(lua_State *L)
 	const char *res;
 
 	dir = lua_tonumber(L, 1);
-	res = ws_dir(dir);
+	res = ws_dir_deg(dir);
 
 	lua_pushstring(L, res);
 

@@ -20,8 +20,6 @@ static enum vantage_type wrd;		/* Console type */
 static struct vantage_cfg cfg;		/* Console configuration */
 static time_t current;			/* Last archive date */
 
-static const double pow10d[] = { 1.0, 10.0, 100.0, 1000.0 };
-
 static int
 vantage_lock(int fd)
 {
@@ -92,40 +90,6 @@ error:
 	return -1;
 }
 
-static double
-vantage_temp(int f, int scale)
-{
-	return (f / pow10d[scale] - 32) * 5 / 9;
-}
-
-static double
-vantage_pressure(int p, int scale)
-{
-	return (p / pow10d[scale]) / 0.02952998751;
-}
-
-static double
-vantage_rain(int ticks, int rain_cup)
-{
-	double r;
-
-	if (rain_cup == 0) {
-		r = 0.01 * 25.4;
-	} else if (rain_cup == 1) {
-		r = 0.2;
-	} else {
-		r = 0.1;
-	}
-
-	return r * ticks;
-}
-
-static double
-vantage_speed(int s)
-{
-	return s * 1.609344 / 1000;
-}
-
 static void
 vantage_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 {
@@ -179,7 +143,7 @@ vantage_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 int
 vantage_init(void)
 {
-	char ftime[32];
+	char ftime[20];
 	const char *tty = confp->driver.vantage.tty;
 
 	if ((fd = vantage_open(tty)) == -1) {

@@ -27,13 +27,13 @@ usage(FILE *std, int status)
 static void
 print_loop1(const struct ws_loop *p)
 {
-	char buf[32];
+	char buf[20];
 
 	localftime_r(buf, sizeof(buf), &p->time, "%F %T");
 
 	printf("%s %.1f°C %hhu%% %.1fm/s (%s) %.1fmm %.1f°C %hhu%%\n", buf, p->temp,
 			p->humidity, p->wind_speed,
-			p->wind_speed ? ws_dir(p->wind_dir) : "-", p->rain, p->temp_in,
+			p->wind_speed ? ws_dir_deg(p->wind_dir) : "-", p->rain, p->temp_in,
 			p->humidity_in);
 }
 

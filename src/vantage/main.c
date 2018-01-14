@@ -44,7 +44,7 @@ usage(FILE *out, int status)
 }
 
 static void
-usage_opt(FILE *out, int opt, int code)
+usage_opt(FILE *out, int opt, int status)
 {
 	switch (opt) {
 	case ':':
@@ -60,7 +60,7 @@ usage_opt(FILE *out, int opt, int code)
 		break;
 	}
 
-	exit(code);
+	exit(status);
 }
 
 static void
@@ -135,30 +135,6 @@ error:
 	return -1;
 }
 
-static double
-vantage_float(int16_t v, int scale)
-{
-	double pow10[] = { 1.0, 10.0, 100.0, 1000.0 };
-
-	return v / pow10[scale];
-}
-
-static double
-vantage_temp(int16_t f, int scale)
-{
-	double pow10[] = { 1.0, 10.0, 100.0, 1000.0 };
-
-	return (f / pow10[scale] - 32.0) * 5 / 9;
-}
-
-static double
-vantage_pressure(int16_t fp, int scale)
-{
-	double pow10[] = { 1.0, 10.0, 100.0, 1000.0 };
-
-	return (fp / pow10[scale]) / 0.02952998751;
-}
-
 static void
 print_rxcheck(const char *pref, const struct vantage_rxck *ck)
 {
@@ -170,22 +146,30 @@ print_rxcheck(const char *pref, const struct vantage_rxck *ck)
 }
 
 static void
-print_lps(const struct vantage_loop *lps)
+print_lps(const struct vantage_loop *l)
 {
-	printf("Temp: %.1f\n", vantage_temp(lps->temp, 1));
-	printf("Humidity: %d\n", lps->humidity);
-	printf("In temp: %.1f\n", vantage_temp(lps->in_temp, 1));
-	printf("Pressure: %.1f\n", vantage_pressure(lps->barometer, 3));
+	printf("Temp: %.1f°C\n", vantage_temp(l->temp, 1));
+	printf("Humidity: %d%%\n", l->humidity);
+	printf("In temp: %.1f°C\n", vantage_temp(l->in_temp, 1));
+	printf("Pressure: %.1fhPa\n", vantage_pressure(l->barometer, 3));
 }
 
 static void
-print_dmp(const struct vantage_dmp *dmp)
+print_dmp(const struct vantage_dmp *d)
 {
-	printf("Timestamp: %s\n", ctime(&dmp->tstamp));
-	printf("Temp: %.1f\n", vantage_temp(dmp->temp, 1));
-	printf("Humidity: %d\n", dmp->humidity);
-	printf("In temp: %.1f\n", vantage_temp(dmp->in_temp, 1));
-	printf("Pressure: %.1f\n", vantage_pressure(dmp->barometer, 3));
+	char ftime[20];
+
+	localftime_r(ftime, sizeof(ftime), &d->tstamp, "%F %T");
+
+	printf("Timestamp: %s\n", ftime);
+	printf("Temp: %.1f°C\n", vantage_temp(d->temp, 1));
+	printf("Humidity: %hhu%%\n", d->humidity);
+	printf("Pressure: %.1fhPa\n", vantage_pressure(d->barometer, 3));
+	printf("Wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed));
+	printf("Main wind direction: %s\n", vantage_dir(d->main_wind_dir));
+	printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed));
+	printf("In temp: %.1f°C\n", vantage_temp(d->in_temp, 1));
+	printf("In humidity: %hhu%%\n", d->in_humidity);
 }
 
 static void
@@ -213,7 +197,7 @@ main_info(int fd, int argc, char* const argv[])
 	time_t onboard_time;
 	struct vantage_cfg cfg;
 	struct vantage_rxck ck;
-	char buf[32];
+	char buf[20];
 
 	check_empty_cmdline(argc, argv);
 

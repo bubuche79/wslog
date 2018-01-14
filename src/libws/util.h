@@ -22,7 +22,8 @@ double ws_mph(double speed);
 double ws_in(double len);
 
 double round_scale(double v, int scale);
-const char *ws_dir(double dir);
+const char *ws_dir(int idx);
+const char *ws_dir_deg(int degree);
 
 size_t gmftime(char *s, size_t max, const time_t *timep, const char *fmt);
 size_t localftime_r(char *s, size_t max, const time_t *timep, const char *fmt);

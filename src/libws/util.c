@@ -13,7 +13,7 @@
 
 #define ZERO_K 273.15
 
-static const char *wind_dir[] =
+static const char *dir[] =
 {
 	"N",
 	"NNE",
@@ -30,7 +30,8 @@ static const char *wind_dir[] =
 	"W",
 	"WNW",
 	"NW",
-	"NNW"
+	"NNW",
+	"-"
 };
 
 static double
@@ -207,9 +208,19 @@ round_scale(double v, int scale)
 }
 
 DSO_EXPORT const char *
-ws_dir(double dir)
+ws_dir(int idx)
 {
-	return wind_dir[(int) (dir / 22.5)];
+	if (idx > 16) {
+		idx = 16;
+	}
+
+	return dir[idx];
+}
+
+DSO_EXPORT const char *
+ws_dir_deg(int degree)
+{
+	return ws_dir(degree / 22.5);
 }
 
 DSO_EXPORT size_t
