@@ -51,15 +51,15 @@ static const struct proc_def CMDS[] =
 	{ "CALFIX\n", IO_ACK },
 	{ "BAR=%d %d\n", IO_OK },
 	{ "BARDATA\n", IO_OK },
-	{ "CLRLOG\n", IO_ACK },
+	{ "CLRLOG\n", IO_ACK|IO_LONG_ACK },
 	{ "CLRALM\n", IO_OK_DONE },
 	{ "CLRCAL\n", IO_OK_DONE },
 	{ "CLRGRA\n", IO_OK_DONE },
-	{ "CLRVAR %d\n", IO_ACK },
-	{ "CLRHIGHS %d\n", IO_ACK },
-	{ "CLRLOWS %d\n", IO_ACK },
-	{ "CLRBITS\n", IO_ACK },
-	{ "CLRDATA\n", IO_ACK },
+	{ "CLRVAR %d\n", IO_ACK|IO_LONG_ACK },
+	{ "CLRHIGHS %d\n", IO_ACK|IO_LONG_ACK },
+	{ "CLRLOWS %d\n", IO_ACK|IO_LONG_ACK },
+	{ "CLRBITS\n", IO_ACK|IO_LONG_ACK },
+	{ "CLRDATA\n", IO_ACK|IO_LONG_ACK },
 	{ "BAUD %d\n", IO_OK },
 	{ "SETTIME\n", IO_ACK },
 	{ "GETTIME\n", IO_ACK },
@@ -118,31 +118,25 @@ error:
 }
 
 static int
-vantage_ack_ck(int fd, const uint8_t *ref, size_t reflen)
-{
-	return vantage_ack_ck_to(fd, ref, reflen, IO_TIMEOUT);
-}
-
-static int
-vantage_read_ack(int fd, int ack)
+vantage_read_ack_to(int fd, int ack, long timeout)
 {
 	int ret;
 
-	switch (ack & 0xF0) {
-	case IO_ACK:
-		ret = vantage_ack_ck(fd, ACK_ACK, sizeof(ACK_ACK));
+	switch (ack) {
+	case IO_TEST:
+		ret = vantage_ack_ck_to(fd, ACK_TEST, sizeof(ACK_TEST), timeout);
 		break;
 	case IO_OK:
-		ret = vantage_ack_ck(fd, ACK_OK, sizeof(ACK_OK));
-		break;
-	case IO_TEST:
-		ret = vantage_ack_ck(fd, ACK_TEST, sizeof(ACK_TEST));
+		ret = vantage_ack_ck_to(fd, ACK_OK, sizeof(ACK_OK), timeout);
 		break;
 	case IO_OK_DONE:
-		if (vantage_ack_ck(fd, ACK_OK, sizeof(ACK_OK)) == -1) {
+		if (vantage_ack_ck_to(fd, ACK_OK, sizeof(ACK_OK), timeout) == -1) {
 			goto error;
 		}
-		ret = vantage_ack_ck_to(fd, ACK_DONE, sizeof(ACK_DONE), IO_DONE_TIMEOUT);
+		ret = vantage_ack_ck_to(fd, ACK_DONE, sizeof(ACK_DONE), IO_LONG_TIMEOUT);
+		break;
+	case IO_ACK:
+		ret = vantage_ack_ck_to(fd, ACK_ACK, sizeof(ACK_ACK), timeout);
 		break;
 	default:
 		errno = EINVAL;
@@ -240,9 +234,14 @@ vantage_pwrite(int fd, int flags, const void *buf, size_t len)
 
 	/* Acknowledge */
 	if (flags & IO_ACK_MASK) {
+		long timeout = IO_TIMEOUT;
 		int ack = flags & IO_ACK_MASK;
 
-		if (vantage_read_ack(fd, ack) == -1) {
+		if (!(flags & IO_LONG_ACK)) {
+			timeout = IO_LONG_TIMEOUT;
+		}
+
+		if (vantage_read_ack_to(fd, ack, timeout) == -1) {
 			goto error;
 		}
 	}

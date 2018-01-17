@@ -9,17 +9,18 @@
 
 /* I/O mode */
 #define IO_CRC		0x0001
+#define IO_LONG_ACK	0x0002
 
 /* Acknowledge mode */
-#define IO_ACK		0x0010
+#define IO_TEST		0x0010
 #define IO_OK		0x0020
-#define IO_TEST		0x0030
-#define IO_OK_DONE	0x0040
+#define IO_OK_DONE	0x0030
+#define IO_ACK		0x0040
 #define IO_ACK_MASK	0x00F0
 
 /* I/O timeouts */
-#define IO_TIMEOUT	250	/* Default read timeout, in milliseconds */
-#define IO_DONE_TIMEOUT	2000	/* DONE acknowledge timeout, in milliseconds */
+#define IO_TIMEOUT	250		/* I/O timeout, in milliseconds */
+#define IO_LONG_TIMEOUT	60000		/* Long I/O timeout (ack), in milliseconds */
 
 enum vantage_cmd
 {
@@ -69,6 +70,14 @@ enum vantage_cmd
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+double vantage_float(int v, int scale);
+
+double vantage_temp(int f, int scale);
+double vantage_pressure(int inhg, int scale);
+double vantage_rain(int ticks, int rain_cup);
+double vantage_speed(int mph);
+const char *vantage_dir(int idx);
 
 const char *vantage_type_str(enum vantage_type t);
 

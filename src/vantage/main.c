@@ -12,7 +12,10 @@
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
-#define PROGNAME "vantage"
+#define PROGNAME 	"vantage"
+#define DMPLEN		64		/* Size of DMP buffer */
+
+static struct vantage_cfg cfg;
 
 static void
 usage(FILE *out, int status)
@@ -39,6 +42,9 @@ usage(FILE *out, int status)
 	fprintf(out, "   dmpaft time     download records after specified date and time\n");
 	fprintf(out, "   getee file      dump 4K EEPROM content\n");
 	fprintf(out, "   eebrd addr len  read binary data from EEPROM\n");
+	fprintf(out, "   clrlog          clear archive data\n");
+	fprintf(out, "   clrhighs [-dmy] clear daily, monthly or yearly high values\n");
+	fprintf(out, "   clrlows [-dmy]  clear daily, monthly or yearly low values\n");
 
 	exit(status);
 }
@@ -120,6 +126,7 @@ strtotime(const char *s, int sec)
 		fmt = "%Y-%m-%dT%H:%M:%S";
 	} else {
 		fmt = "%Y-%m-%dT%H:%M";
+		tm.tm_sec = 0;
 	}
 
 	if (strptime(s, fmt, &tm) == NULL) {
@@ -148,10 +155,18 @@ print_rxcheck(const char *pref, const struct vantage_rxck *ck)
 static void
 print_lps(const struct vantage_loop *l)
 {
-	printf("Temp: %.1f°C\n", vantage_temp(l->temp, 1));
-	printf("Humidity: %d%%\n", l->humidity);
-	printf("In temp: %.1f°C\n", vantage_temp(l->in_temp, 1));
+	printf("Temperature: %.1f°C\n", vantage_temp(l->temp, 1));
+	printf("Humidity: %hhu%%\n", l->humidity);
 	printf("Pressure: %.1fhPa\n", vantage_pressure(l->barometer, 3));
+	printf("Wind speed: %.1fm/s\n", vantage_speed(l->wind_speed));
+	printf("Wind direction: %d°\n", l->wind_dir);
+	printf("Dew point: %.0f°C\n", vantage_temp(l->dew_point, 0));
+	printf("Heat index: %.0f°C\n", vantage_temp(l->heat_index, 0));
+	printf("Wind chill: %.0f°C\n", vantage_temp(l->wind_chill, 0));
+	printf("Daily rain: %.1fmm\n", vantage_rain(l->daily_rain, cfg.sb_rain_cup));
+	printf("Rain rate: %1.fmm/hour\n", vantage_rain(l->rain_rate, cfg.sb_rain_cup));
+	printf("In temperature: %.1f°C\n", vantage_temp(l->in_temp, 1));
+	printf("In humidity: %hhu%%\n", l->in_humidity);
 }
 
 static void
@@ -162,13 +177,15 @@ print_dmp(const struct vantage_dmp *d)
 	localftime_r(ftime, sizeof(ftime), &d->tstamp, "%F %T");
 
 	printf("Timestamp: %s\n", ftime);
-	printf("Temp: %.1f°C\n", vantage_temp(d->temp, 1));
+	printf("Temperature: %.1f°C\n", vantage_temp(d->temp, 1));
 	printf("Humidity: %hhu%%\n", d->humidity);
 	printf("Pressure: %.1fhPa\n", vantage_pressure(d->barometer, 3));
 	printf("Wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed));
 	printf("Main wind direction: %s\n", vantage_dir(d->main_wind_dir));
 	printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed));
-	printf("In temp: %.1f°C\n", vantage_temp(d->in_temp, 1));
+	printf("Rain: %1.fmm\n", vantage_rain(d->rain, cfg.sb_rain_cup));
+	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup));
+	printf("In temperature: %.1f°C\n", vantage_temp(d->in_temp, 1));
 	printf("In humidity: %hhu%%\n", d->in_humidity);
 }
 
@@ -186,6 +203,46 @@ print_hex(uint16_t addr, void *buf, uint16_t len)
 
 		printf("\n");
 	}
+}
+
+static int
+dump_dmpx(int fd, time_t after)
+{
+	ssize_t i, sz;
+	struct vantage_dmp dmp[DMPLEN];
+
+	if (vantage_ee_cfg(fd, &cfg) == -1) {
+		fprintf(stderr, "vantage_ee_cfg: %s\n", strerror(errno));
+		goto error;
+	}
+
+	do {
+		if (after > 0) {
+			if ((sz = vantage_dmpaft(fd, dmp, DMPLEN, after)) == -1) {
+				fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
+				goto error;
+			}
+		} else {
+			if ((sz = vantage_dmp(fd, dmp, DMPLEN)) == -1) {
+				fprintf(stderr, "vantage_dmp: %s\n", strerror(errno));
+				goto error;
+			}
+		}
+
+		for (i = 0; i < sz; i++) {
+			print_dmp(&dmp[i]);
+			printf("\n");
+
+			if (after > 0) {
+				after = dmp[i].tstamp;
+			}
+		}
+	} while (sz == DMPLEN);
+
+	return 0;
+
+error:
+	return 1;
 }
 
 static int
@@ -462,6 +519,10 @@ main_lps(int fd, int argc, char* const argv[])
 	check_empty_opts(argc, argv);
 
 	/* Process sub-command */
+	if (vantage_ee_cfg(fd, &cfg) == -1) {
+		fprintf(stderr, "vantage_ee_cfg: %s\n", strerror(errno));
+		goto error;
+	}
 	if (vantage_lps(fd, LPS_LOOP2, lps, 1) == -1) {
 		fprintf(stderr, "vantage_lps: %s\n", strerror(errno));
 		goto error;
@@ -478,17 +539,12 @@ error:
 static int
 main_dmp(int fd, int argc, char* const argv[])
 {
-	struct vantage_dmp dmp;
-
 	check_empty_opts(argc, argv);
 
 	/* Process sub-command */
-	if (vantage_dmp(fd, &dmp, 1) == -1) {
-		fprintf(stderr, "vantage_dmp: %s\n", strerror(errno));
+	if (dump_dmpx(fd, 0) == -1) {
 		goto error;
 	}
-
-	print_dmp(&dmp);
 
 	return 0;
 
@@ -499,9 +555,8 @@ error:
 static int
 main_dmpaft(int fd, int argc, char* const argv[])
 {
-	const char *s;
 	time_t after;
-	struct vantage_dmp dmp;
+	const char *s;
 
 	check_empty_opts(argc, argv);
 
@@ -517,12 +572,9 @@ main_dmpaft(int fd, int argc, char* const argv[])
 	}
 
 	/* Process sub-command */
-	if (vantage_dmpaft(fd, &dmp, 1, after) == -1) {
-		fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
+	if (dump_dmpx(fd, after) == -1) {
 		goto error;
 	}
-
-	print_dmp(&dmp);
 
 	return 0;
 
@@ -595,6 +647,59 @@ main_clrlog(int fd, int argc, char* const argv[])
 	if (vantage_clrlog(fd) == -1) {
 		fprintf(stderr, "vantage_clrlog: %s\n", strerror(errno));
 		goto error;
+	}
+
+	return 0;
+
+error:
+	return 1;
+}
+
+static int
+main_clrhl(int fd, int high, int argc, char* const argv[])
+{
+	int i, c;
+	int clr[] = { 0, 0, 0 };
+
+	/* Parse sub-command */
+	while ((c = getopt(argc, argv, "dmy")) != -1) {
+		switch (c) {
+		case 'd':
+			clr[0] = 1;
+			break;
+		case 'm':
+			clr[1] = 1;
+			break;
+		case 'y':
+			clr[2] = 1;
+			break;
+		default:
+			usage_opt(stderr, c, 1);
+			break;
+		}
+	}
+
+	if (optind != argc) {
+		usage(stderr, 1);
+	}
+
+	/* Process sub-command */
+	for (i = 0; i < 3; i++) {
+		if (clr[i] == 0) {
+			continue;
+		}
+
+		if (high) {
+			if (vantage_clrhighs(fd, i) == -1) {
+				fprintf(stderr, "vantage_clrhighs %d: %s\n", i, strerror(errno));
+				goto error;
+			}
+		} else {
+			if (vantage_clrlows(fd, i) == -1) {
+				fprintf(stderr, "vantage_clrlows %d: %s\n", i, strerror(errno));
+				goto error;
+			}
+		}
 	}
 
 	return 0;
@@ -688,6 +793,10 @@ main(int argc, char * const argv[])
 		status = main_eebrd(fd, argc, argv);
 	} else if (strcmp("clrlog", cmd) == 0) {
 		status = main_clrlog(fd, argc, argv);
+	} else if (strcmp("clrhighs", cmd) == 0) {
+		status = main_clrhl(fd, 1, argc, argv);
+	} else if (strcmp("clrlows", cmd) == 0) {
+		status = main_clrhl(fd, 0, argc, argv);
 	} else {
 		fprintf(stderr, "%s: unknown command\n", cmd);
 	}

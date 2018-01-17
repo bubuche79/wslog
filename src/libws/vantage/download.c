@@ -6,7 +6,7 @@
 #include "config.h"
 #endif
 
-#if DEBUG
+#ifdef DEBUG
 #include <stdio.h>
 #endif
 #include <sys/types.h>
@@ -19,8 +19,9 @@
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
-#define DMP_SIZE	52
-#define PAGE_SIZE	265
+#define DMP_SIZE	52		/* Record size, in bytes */
+#define PAGE_SIZE	265		/* Page size, in bytes */
+#define REC_COUNT	5		/* Records per page */
 
 int8_t
 vantage_int8(const uint8_t *buf, uint16_t off)
@@ -174,7 +175,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+static ssize_t
 vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t offset)
 {
 	ssize_t sz;
@@ -194,7 +195,7 @@ vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t offset)
 		}
 
 		/* Decode page (5 records) */
-		for (j = offset; j < 5 && sz < nel; j++) {
+		for (j = offset; j < REC_COUNT && sz < nel; j++) {
 			uint8_t *r = buf + 1 + j * DMP_SIZE;
 
 			if (r[0] == 0xFF) {
@@ -202,6 +203,10 @@ vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t offset)
 			} else {
 				vantage_dmp_decode(&p[sz++], r);
 			}
+		}
+
+		if (sz == nel) {
+			byte = ESC;
 		}
 
 		/* Send ACK or ESC */
@@ -238,7 +243,7 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 {
 	size_t sz;
 	uint8_t buf[4];
-	int16_t page_cnt, offset;
+	uint16_t page_cnt, offset;
 
 	/* DMPAFT command */
 	if (vantage_proc(fd, DMPAFT) == -1) {
@@ -257,11 +262,11 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 		goto error;
 	}
 
-	page_cnt = vantage_int16(buf, 0);
-	offset = vantage_int16(buf, 2);
+	page_cnt = vantage_uint16(buf, 0);
+	offset = vantage_uint16(buf, 2);
 
-#if DEBUG
-	printf("DMPAFT: %d pages, record offset %d\n", page_cnt, offset);
+#ifdef DEBUG
+	printf("DMPAFT: %hu pages, record offset %hu\n", page_cnt, offset);
 #endif
 
 	/* Read archive records */
@@ -269,26 +274,25 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 		sz = 0;
 	} else {
 		uint8_t byte = ACK;
-		size_t rec_cnt = 5 * page_cnt - offset;
-
-		if (nel < rec_cnt) {
-			nel = rec_cnt;
-		}
+		size_t rec_cnt = REC_COUNT * page_cnt - offset;
 
 		/* ACK */
 		if (vantage_write(fd, &byte, 1) == -1) {
 			goto error;
 		}
 
-		if (vantage_read_pages(fd, p, nel, offset) == -1) {
-			goto error;
+		if (rec_cnt < nel) {
+			nel = rec_cnt;
 		}
 
-		sz = rec_cnt;
+		if ((sz = vantage_read_pages(fd, p, nel, offset)) == -1) {
+			goto error;
+		}
 	}
 
 	return sz;
 
 error:
+	// TODO: ESC
 	return -1;
 }
