@@ -109,7 +109,7 @@ vantage_dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 	uint8_t rec_type;
 #endif
 
-	dmp->tstamp = vantage_mktime(buf, 0, 1);
+	dmp->time = vantage_mktime(buf, 0, 1);
 	dmp->temp = vantage_int16(buf, 4);
 	dmp->hi_temp = vantage_int16(buf, 6);
 	dmp->lo_temp = vantage_int16(buf, 8);

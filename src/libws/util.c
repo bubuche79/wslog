@@ -244,47 +244,80 @@ localftime_r(char *s, size_t max, const time_t *timep, const char *fmt)
 DSO_EXPORT ssize_t
 strftimespec(char *s, size_t len, const struct timespec *ts, int width)
 {
-    size_t ret1;
-    int ret2;
-    long xsec;
-    struct tm t;
+	size_t ret1;
+	int ret2;
+	long xsec;
+	struct tm t;
 
-    if (localtime_r(&ts->tv_sec, &t) == NULL) {
-        return -1;
-    }
+	if (localtime_r(&ts->tv_sec, &t) == NULL) {
+		return -1;
+	}
 
-    ret1 = strftime(s, len, "%F %T", &t);
-    if (ret1 == 0) {
-    	return 0;
-    } else if (ret1 == (size_t) -1) {
-    	return -1;
-    }
+	ret1 = strftime(s, len, "%F %T", &t);
+	if (ret1 == 0) {
+		return 0;
+	} else if (ret1 == (size_t) -1) {
+		return -1;
+	}
 
 	xsec = ts->tv_nsec / (long) pow(10, 9 - width);
 	ret2 = snprintf(s + ret1, len - ret1, ".%0*ld", width, xsec);
-    if (ret2 == -1) {
-    	return -1;
-    }
+	if (ret2 == -1) {
+		return -1;
+	}
 
-    return ret1 + ret2;
+	return ret1 + ret2;
 }
 
-DSO_EXPORT int
-ws_dump(const char *pathname, const void *buf, size_t len)
+DSO_EXPORT ssize_t
+ws_read_all(const char *pathname, void *buf, size_t len)
 {
 	int fd;
+	ssize_t sz;
+
+	if ((fd = open(pathname, O_RDONLY)) == -1) {
+		goto error;
+	}
+	if ((sz = read(fd, buf, len)) == -1) {
+		goto error;
+	}
+	if (close(fd) == -1) {
+		goto error;
+	}
+
+	return sz;
+
+error:
+	if (fd != -1) {
+		(void) close(fd);
+	}
+	return -1;
+}
+
+DSO_EXPORT ssize_t
+ws_write_all(const char *pathname, const void *buf, size_t len)
+{
+	int fd;
+	ssize_t sz;
 
 	int flags = O_CREAT|O_TRUNC|O_WRONLY;
 	mode_t mode = S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH;
 
 	if ((fd = open(pathname, flags, mode)) == -1) {
-		return -1;
+		goto error;
+	}
+	if ((sz = write(fd, buf, len)) == -1) {
+		goto error;
+	}
+	if (close(fd) == -1) {
+		goto error;
 	}
 
-	if (write(fd, buf, len) < len) {
+	return sz;
+
+error:
+	if (fd != -1) {
 		(void) close(fd);
-		return -1;
 	}
-
-	return close(fd);
+	return -1;
 }

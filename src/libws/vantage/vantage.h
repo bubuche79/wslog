@@ -114,7 +114,7 @@ struct vantage_hilow
 
 struct vantage_dmp
 {
-	time_t tstamp;			/* Timestamp */
+	time_t time;			/* Timestamp */
 
 	int16_t temp;			/* Outside temperature (F°/10) */
 	int16_t hi_temp;		/* High outside temperature */
