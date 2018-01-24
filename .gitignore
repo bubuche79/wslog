@@ -26,6 +26,10 @@ Makefile.in
 /libtool
 /ltmain.sh
 
+# http://www.eclipse.org/
+.cproject
+.settings/
+
 # wslog
 .deps/
 .libs/
