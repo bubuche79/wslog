@@ -20,7 +20,7 @@ int vantage_destroy(void);
 
 int vantage_get_itimer(struct itimerspec *p, enum ws_timer type);
 int vantage_get_loop(struct ws_loop *p);
-ssize_t vantage_get_archive(struct ws_archive *p, size_t nel);
+ssize_t vantage_get_archive(struct ws_archive *p, size_t nel, time_t after);
 
 int vantage_set_artimer(long itmin, long next);
 

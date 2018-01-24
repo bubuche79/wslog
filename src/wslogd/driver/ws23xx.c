@@ -19,8 +19,8 @@
 #include "conf.h"
 #include "ws23xx.h"
 
-#define WF_ALL_IN	(WF_TEMP_IN|WF_HUMIDITY_IN|WF_PRESSURE|WF_BAROMETER)
-#define WF_ALL_HIST	(WF_PRESSURE|WF_TEMP_IN|WF_HUMIDITY_IN|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR)
+#define WF_ALL_IN	(WF_IN_TEMP|WF_IN_HUMIDITY|WF_PRESSURE|WF_BAROMETER)
+#define WF_ALL_HIST	(WF_PRESSURE|WF_IN_TEMP|WF_IN_HUMIDITY|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR)
 
 struct ws23xx_io
 {
@@ -103,10 +103,10 @@ ws23xx_hw_limits(struct ws_loop *p, int log)
 
 	/* Indoor sensors */
 	if (p->temp_in < -9.9 || 59.9 < p->temp) {
-		p->wl_mask &= ~WF_TEMP_IN;
+		p->wl_mask &= ~WF_IN_TEMP;
 	}
 	if (p->humidity < 1 || 99 < p->humidity) {
-		p->wl_mask &= ~WF_HUMIDITY_IN;
+		p->wl_mask &= ~WF_IN_HUMIDITY;
 	}
 	if (p->pressure < 760 || 1099 < p->pressure) {
 		p->wl_mask &= ~WF_PRESSURE;
@@ -291,7 +291,7 @@ ws23xx_get_loop(struct ws_loop *p)
 	switch (cnx_type) {
 	case 0:				/* cable */
 	case 15:			/* wireless */
-		p->wl_mask |= WF_TEMP|WF_HUMIDITY|WF_RAIN|WF_DEW_POINT;
+		p->wl_mask |= WF_TEMP|WF_HUMIDITY|WF_RAIN_FALL|WF_DEW_POINT;
 
 		if (!(wind_invalid || wind_overflow)) {
 			p->wl_mask |= WF_WIND_SPEED|WF_WIND_DIR|WF_WINDCHILL;
@@ -318,8 +318,9 @@ error:
 	return -1;
 }
 
+// TODO: handle after argument
 ssize_t
-ws23xx_get_archive(struct ws_archive *ar, size_t nel)
+ws23xx_get_archive(struct ws_archive *ar, size_t nel, time_t after)
 {
 	ssize_t i, res;
 	struct ws23xx_ar arbuf[nel];
@@ -340,22 +341,25 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel)
 
 	/* Copy values */
 	for (i = 0; i < res; i++) {
-		ar[i].data.time = arbuf[i].tstamp;
+		ar[i].time = arbuf[i].tstamp;
 
-		ar[i].data.wl_mask = WF_ALL_HIST;
-		ar[i].data.pressure = arbuf[i].pressure;
-		ar[i].data.temp_in = arbuf[i].temp_in;
-		ar[i].data.humidity_in = arbuf[i].humidity_in;
-		ar[i].data.temp = arbuf[i].temp;
-		ar[i].data.humidity = arbuf[i].humidity;
-		ar[i].data.wind_speed = arbuf[i].wind_speed;
-		ar[i].data.wind_dir = arbuf[i].wind_dir;
+		ar[i].wl_mask = WF_ALL_HIST;
+#if 0
+		ar[i].pressure = arbuf[i].pressure;
+#endif
+		ar[i].in_temp = arbuf[i].temp_in;
+		ar[i].in_humidity = arbuf[i].humidity_in;
+		ar[i].temp = arbuf[i].temp;
+		ar[i].humidity = arbuf[i].humidity;
+		ar[i].avg_wind_speed = arbuf[i].wind_speed;
+		ar[i].avg_wind_dir = arbuf[i].wind_dir;
 
-		ws23xx_hw_limits(&ar[i].data, 0);
+		// TODO
+//		ws23xx_hw_limits(&ar[i], 0);
 
 		/* History limits (seems to differ from hardware limits) */
-		if (69.7 < ar[i].data.temp) {
-			ar[i].data.wl_mask &= ~WF_TEMP;
+		if (69.7 < ar[i].temp) {
+			ar[i].wl_mask &= ~WF_TEMP;
 		}
 	}
 

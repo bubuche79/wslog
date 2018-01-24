@@ -29,6 +29,7 @@ get_current(lua_State *L)
 
 	struct lua_table fields[] =
 	{
+#if 0
 		{ "pressure", ws_get_pressure },
 		{ "barometer", ws_get_barometer },
 		{ "temp", ws_get_temp },
@@ -44,6 +45,7 @@ get_current(lua_State *L)
 		{ "heat_index", ws_get_heat_index },
 		{ "temp_in", ws_get_temp_in },
 		{ "humidity_in", ws_get_humidity_in }
+#endif
 	};
 
 	/* Read shared board */

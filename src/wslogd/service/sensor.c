@@ -4,9 +4,6 @@
 
 #include <time.h>
 #include <syslog.h>
-#ifdef DEBUG
-#include <stdio.h>
-#endif
 
 #include "board.h"
 #include "conf.h"
@@ -39,7 +36,6 @@ sensor_init(struct itimerspec *it)
 	 */
 	if (confp->driver.freq == 0) {
 		if (drv_get_itimer(it, WS_ITIMER_LOOP) == -1) {
-			syslog(LOG_ERR, "drv_get_itimer: %m");
 			goto error;
 		}
 	} else {
@@ -47,8 +43,8 @@ sensor_init(struct itimerspec *it)
 	}
 
 #ifdef DEBUG
-	printf("driver.freq: %ld\n", it->it_interval.tv_sec);
-	printf("driver.delay: %ld\n", it->it_value.tv_sec);
+	syslog(LOG_INFO, "driver.freq: %ld\n", it->it_interval.tv_sec);
+	syslog(LOG_INFO, "driver.delay: %ld\n", it->it_value.tv_sec);
 #endif
 
 	syslog(LOG_INFO, "%s: done", __func__);
@@ -64,20 +60,15 @@ sensor_main(void)
 {
 	struct ws_loop buf;
 
-#if DEBUG
-	printf("SENSOR: reading\n");
-#endif
-
 	time(&buf.time);
 
 	/* Read sensors */
 	if (drv_get_loop(&buf) == -1) {
-		syslog(LOG_ERR, "clock_gettime: %m");
 		goto error;
 	}
 
 	/* Compute derived measures */
-	ws_calc(&buf);
+//	ws_calc(&buf);
 
 	/* Push loop event in board */
 	if (sensor_push(&buf) == -1) {
@@ -86,7 +77,8 @@ sensor_main(void)
 	}
 
 #if DEBUG
-	printf("SENSOR read: %.2f°C %hhu%%\n", buf.temp, buf.humidity);
+	syslog(LOG_DEBUG, "Record: %.1f°C %hhu%% %.1fhPa",
+			buf.temp, buf.humidity, buf.barometer);
 #endif
 
 	return 0;

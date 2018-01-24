@@ -68,7 +68,7 @@ print_ar(size_t nel)
 		p = board_peek_ar(i);
 
 		if (p != NULL) {
-			print_loop1(&p->data);
+//			print_loop1(&p->data);
 		}
 
 		i++;

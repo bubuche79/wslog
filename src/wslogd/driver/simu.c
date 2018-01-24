@@ -71,7 +71,7 @@ simu_destroy(void)
 }
 
 int
-simu_get_itimer(struct itimerspec *it, enum ws_type type)
+simu_get_itimer(struct itimerspec *it, enum ws_timer type)
 {
 	int ret;
 
@@ -116,7 +116,7 @@ simu_get_loop(struct ws_loop *p)
 }
 
 ssize_t
-simu_get_archive(struct ws_archive *p, size_t nel)
+simu_get_archive(struct ws_archive *p, size_t nel, time_t after)
 {
 	errno = ENOTSUP;
 	return -1;

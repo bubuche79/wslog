@@ -74,3 +74,6 @@ EXTRA_wslogd_DEPENDENCIES = \
 
 dist_sysconf_DATA = \
 	wslogd.conf
+
+dist_data_DATA = \
+	sqlite.sql

@@ -18,14 +18,6 @@
 #define RAIN_PERIOD 900
 #define WF_ISSET(mask, flag) (((mask) & (flag)) == (flag))
 
-#if 0
-struct ws_func
-{
-	int (*get) (const struct ws_loop *, double *);
-	int (*set) (struct ws_loop *, double);
-};
-#endif
-
 struct ws_aggr
 {
 	struct aggr_data aggr;
@@ -34,25 +26,11 @@ struct ws_aggr
 };
 
 #if 0
-static struct ws_func fn[] =
+static int
+ws_isset(const struct ws_archive *p, int flag)
 {
-	{ ws_get_pressure, ws_set_pressure },
-	{ ws_get_altimeter, ws_set_altimeter },
-	{ ws_get_barometer, ws_set_barometer },
-	{ ws_get_temp, ws_set_temp },
-	{ ws_get_humidity, ws_set_humidity },
-	{ ws_get_wind_speed, ws_set_wind_speed },
-	{ ws_get_wind_dir, ws_set_wind_dir },
-	{ ws_get_wind_gust_speed, ws_set_wind_gust_speed },
-	{ ws_get_wind_gust_dir, ws_set_wind_gust_dir },
-	{ ws_get_rain, ws_set_rain },
-	{ ws_get_rain_rate, ws_set_rain_rate },
-	{ ws_get_dew_point, ws_set_dew_point },
-	{ ws_get_windchill, ws_set_windchill },
-	{ ws_get_heat_index, ws_set_heat_index },
-	{ ws_get_temp_in, ws_set_temp_in },
-	{ ws_get_humidity_in, ws_set_humidity_in }
-};
+	return (p->wl_mask & flag) == flag;
+}
 #endif
 
 static int
@@ -100,205 +78,246 @@ ws_set_uint8(uint32_t *mask, int flag, uint8_t *value, double v)
 }
 
 int
-ws_get_pressure(const struct ws_loop *p, double *v)
+ws_get_barometer(const struct ws_archive *p, double *v)
+{
+	return ws_get(p->wl_mask, WF_BAROMETER, p->barometer, v);
+}
+
+#if 0
+int
+ws_get_pressure(const struct ws_archive *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_PRESSURE, p->pressure, v);
 }
 
 int
-ws_get_altimeter(const struct ws_loop *p, double *v)
+ws_get_altimeter(const struct ws_archive *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_ALTIMETER, p->altimeter, v);
 }
+#endif
 
 int
-ws_get_barometer(const struct ws_loop *p, double *v)
-{
-	return ws_get(p->wl_mask, WF_BAROMETER, p->barometer, v);
-}
-
-int
-ws_get_temp(const struct ws_loop *p, double *v)
+ws_get_temp(const struct ws_archive *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_TEMP, p->temp, v);
 }
 
 int
-ws_get_humidity(const struct ws_loop *p, double *v)
+ws_get_hi_temp(const struct ws_archive *p, double *v)
+{
+	return ws_get(p->wl_mask, WF_HI_TEMP, p->hi_temp, v);
+}
+
+int
+ws_get_lo_temp(const struct ws_archive *p, double *v)
+{
+	return ws_get(p->wl_mask, WF_LO_TEMP, p->lo_temp, v);
+}
+
+int
+ws_get_humidity(const struct ws_archive *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_HUMIDITY, p->humidity, v);
 }
 
 int
-ws_get_wind_speed(const struct ws_loop *p, double *v)
+ws_get_wind_speed(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND_SPEED, p->wind_speed, v);
+	return ws_get(p->wl_mask, WF_WIND_SPEED, p->avg_wind_speed, v);
 }
 
 int
-ws_get_wind_dir(const struct ws_loop *p, double *v)
+ws_get_wind_dir(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND_DIR, p->wind_dir, v);
+	return ws_get(p->wl_mask, WF_WIND_DIR, p->avg_wind_dir, v);
 }
 
 int
-ws_get_wind_gust_speed(const struct ws_loop *p, double *v)
+ws_get_wind_samples(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND_GUST_SPEED, p->wind_gust_speed, v);
+	return ws_get(p->wl_mask, WF_WIND_SAMPLES, p->wind_samples, v);
 }
 
 int
-ws_get_wind_gust_dir(const struct ws_loop *p, double *v)
+ws_get_hi_wind_speed(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_WIND_GUST_DIR, p->wind_gust_dir, v);
+	return ws_get(p->wl_mask, WF_HI_WIND_SPEED, p->hi_wind_speed, v);
 }
 
 int
-ws_get_rain(const struct ws_loop *p, double *v)
+ws_get_hi_wind_dir(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_RAIN, p->rain, v);
+	return ws_get(p->wl_mask, WF_HI_WIND_DIR, p->hi_wind_dir, v);
 }
 
 int
-ws_get_rain_rate(const struct ws_loop *p, double *v)
+ws_get_rain(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_RAIN_RATE, p->rain_rate, v);
+	return ws_get(p->wl_mask, WF_RAIN_FALL, p->rain_fall, v);
 }
 
 int
-ws_get_dew_point(const struct ws_loop *p, double *v)
+ws_get_hi_rain_rate(const struct ws_archive *p, double *v)
+{
+	return ws_get(p->wl_mask, WF_HI_RAIN_RATE, p->hi_rain_rate, v);
+}
+
+int
+ws_get_dew_point(const struct ws_archive *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_DEW_POINT, p->dew_point, v);
 }
 
 int
-ws_get_windchill(const struct ws_loop *p, double *v)
+ws_get_windchill(const struct ws_archive *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_WINDCHILL, p->windchill, v);
 }
 
 int
-ws_get_heat_index(const struct ws_loop *p, double *v)
+ws_get_heat_index(const struct ws_archive *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_HEAT_INDEX, p->heat_index, v);
 }
 
 int
-ws_get_temp_in(const struct ws_loop *p, double *v)
+ws_get_in_temp(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_TEMP_IN, p->temp_in, v);
+	return ws_get(p->wl_mask, WF_IN_TEMP, p->in_temp, v);
 }
 
 int
-ws_get_humidity_in(const struct ws_loop *p, double *v)
+ws_get_in_humidity(const struct ws_archive *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_HUMIDITY_IN, p->humidity_in, v);
+	return ws_get(p->wl_mask, WF_IN_HUMIDITY, p->in_humidity, v);
 }
 
 int
-ws_set_pressure(struct ws_loop *p, double v)
+ws_set_barometer(struct ws_archive *p, double v)
+{
+	return ws_set_float(&p->wl_mask, WF_BAROMETER, &p->barometer, v);
+}
+
+#if 0
+int
+ws_set_pressure(struct ws_archive *p, double v)
 {
 	return ws_set_float(&p->wl_mask, WF_PRESSURE, &p->pressure, v);
 }
 
 int
-ws_set_altimeter(struct ws_loop *p, double v)
+ws_set_altimeter(struct ws_archive *p, double v)
 {
 	return ws_set_float(&p->wl_mask, WF_ALTIMETER, &p->altimeter, v);
 }
+#endif
 
 int
-ws_set_barometer(struct ws_loop *p, double v)
-{
-	return ws_set_float(&p->wl_mask, WF_BAROMETER, &p->barometer, v);
-}
-
-int
-ws_set_temp(struct ws_loop *p, double v)
+ws_set_temp(struct ws_archive *p, double v)
 {
 	return ws_set_float(&p->wl_mask, WF_TEMP, &p->temp, v);
 }
 
 int
-ws_set_humidity(struct ws_loop *p, double v)
+ws_set_hi_temp(struct ws_archive *p, double v)
+{
+	return ws_set_float(&p->wl_mask, WF_HI_TEMP, &p->hi_temp, v);
+}
+
+int
+ws_set_lo_temp(struct ws_archive *p, double v)
+{
+	return ws_set_float(&p->wl_mask, WF_LO_TEMP, &p->lo_temp, v);
+}
+
+int
+ws_set_humidity(struct ws_archive *p, double v)
 {
 	return ws_set_uint8(&p->wl_mask, WF_HUMIDITY, &p->humidity, v);
 }
 
 int
-ws_set_wind_speed(struct ws_loop *p, double v)
+ws_set_wind_speed(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_WIND_SPEED, &p->wind_speed, v);
+	return ws_set_float(&p->wl_mask, WF_WIND_SPEED, &p->avg_wind_speed, v);
 }
 
 int
-ws_set_wind_dir(struct ws_loop *p, double v)
+ws_set_wind_dir(struct ws_archive *p, double v)
 {
-	return ws_set_uint16(&p->wl_mask, WF_WIND_DIR, &p->wind_dir, v);
+	return ws_set_uint16(&p->wl_mask, WF_WIND_DIR, &p->avg_wind_dir, v);
 }
 
 int
-ws_set_wind_gust_speed(struct ws_loop *p, double v)
+ws_set_wind_samples(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_WIND_GUST_SPEED, &p->wind_gust_speed, v);
+	return ws_set_uint16(&p->wl_mask, WF_WIND_SAMPLES, &p->wind_samples, v);
 }
 
 int
-ws_set_wind_gust_dir(struct ws_loop *p, double v)
+ws_set_hi_wind_speed(struct ws_archive *p, double v)
 {
-	return ws_set_uint16(&p->wl_mask, WF_WIND_GUST_DIR, &p->wind_gust_dir, v);
+	return ws_set_float(&p->wl_mask, WF_HI_WIND_SPEED, &p->hi_wind_speed, v);
 }
 
 int
-ws_set_rain(struct ws_loop *p, double v)
+ws_set_hi_wind_dir(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_RAIN, &p->rain, v);
+	return ws_set_uint16(&p->wl_mask, WF_HI_WIND_DIR, &p->hi_wind_dir, v);
 }
 
 int
-ws_set_rain_rate(struct ws_loop *p, double v)
+ws_set_rain(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_RAIN_RATE, &p->rain_rate, v);
+	return ws_set_float(&p->wl_mask, WF_RAIN_FALL, &p->rain_fall, v);
 }
 
 int
-ws_set_dew_point(struct ws_loop *p, double v)
+ws_set_hi_rain_rate(struct ws_archive *p, double v)
+{
+	return ws_set_float(&p->wl_mask, WF_HI_RAIN_RATE, &p->hi_rain_rate, v);
+}
+
+int
+ws_set_dew_point(struct ws_archive *p, double v)
 {
 	return ws_set_float(&p->wl_mask, WF_DEW_POINT, &p->dew_point, v);
 }
 
 int
-ws_set_windchill(struct ws_loop *p, double v)
+ws_set_windchill(struct ws_archive *p, double v)
 {
 	return ws_set_float(&p->wl_mask, WF_WINDCHILL, &p->windchill, v);
 }
 
 int
-ws_set_heat_index(struct ws_loop *p, double v)
+ws_set_heat_index(struct ws_archive *p, double v)
 {
 	return ws_set_float(&p->wl_mask, WF_HEAT_INDEX, &p->heat_index, v);
 }
 
 int
-ws_set_temp_in(struct ws_loop *p, double v)
+ws_set_in_temp(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_TEMP_IN, &p->temp_in, v);
+	return ws_set_float(&p->wl_mask, WF_IN_TEMP, &p->in_temp, v);
 }
 
 int
-ws_set_humidity_in(struct ws_loop *p, double v)
+ws_set_in_humidity(struct ws_archive *p, double v)
 {
-	return ws_set_uint8(&p->wl_mask, WF_HUMIDITY_IN, &p->humidity_in, v);
+	return ws_set_uint8(&p->wl_mask, WF_IN_HUMIDITY, &p->in_humidity, v);
 }
 
 static int
-is_settable(const struct ws_loop *p, int mask, int flag)
+is_settable(const struct ws_archive *p, int mask, int flag)
 {
 	return (p->wl_mask & (mask | flag)) == flag;
 }
 
+#if 0
 static void
-calc_barometer(struct ws_loop *p)
+calc_barometer(struct ws_archive *p)
 {
 	if (is_settable(p, WF_BAROMETER, WF_PRESSURE | WF_TEMP)) {
 		p->wl_mask |= WF_BAROMETER;
@@ -307,25 +326,26 @@ calc_barometer(struct ws_loop *p)
 }
 
 static void
-calc_altimeter(struct ws_loop *p)
+calc_altimeter(struct ws_archive *p)
 {
 	if (is_settable(p, WF_ALTIMETER, WF_PRESSURE)) {
 		p->wl_mask |= WF_ALTIMETER;
 		p->altimeter = ws_altimeter(p->pressure, confp->station.altitude);
 	}
 }
+#endif
 
 static void
-calc_windchill(struct ws_loop *p)
+calc_windchill(struct ws_archive *p)
 {
 	if (is_settable(p, WF_WINDCHILL, WF_WIND_SPEED | WF_TEMP)) {
 		p->wl_mask |= WF_WINDCHILL;
-		p->windchill = ws_windchill(p->temp, p->wind_speed);
+		p->windchill = ws_windchill(p->temp, p->avg_wind_speed);
 	}
 }
 
 static void
-calc_dewpoint(struct ws_loop *p)
+calc_dewpoint(struct ws_archive *p)
 {
 	if (is_settable(p, WF_DEW_POINT, WF_TEMP | WF_HUMIDITY)) {
 		p->wl_mask |= WF_DEW_POINT;
@@ -334,7 +354,7 @@ calc_dewpoint(struct ws_loop *p)
 }
 
 static void
-calc_heat_index(struct ws_loop *p)
+calc_heat_index(struct ws_archive *p)
 {
 	if (is_settable(p, WF_HEAT_INDEX, WF_TEMP | WF_HUMIDITY)) {
 		p->wl_mask |= WF_HEAT_INDEX;
@@ -374,21 +394,20 @@ calc_aggr(int field, int algo, time_t ref, double *v)
 
 	return aggr_finalize(&adbuf, v);
 }
-#endif
 
 static void
-calc_rain_rate(struct ws_loop *p)
+calc_rain_rate(struct ws_archive *p)
 {
-	if (!ws_isset(p, WF_RAIN_RATE)) {
+	if (!ws_isset(p, WF_HI_RAIN_RATE)) {
 		int i, ticks;
 		double rain_sum = 0;
 		const struct ws_loop *prev;
 
 		ticks = 0;
 
-		if (ws_isset(p, WF_RAIN)) {
+		if (ws_isset(p, WF_RAIN_FALL)) {
 			ticks = 1;
-			rain_sum += p->rain;
+			rain_sum += p->rain_fall;
 		}
 
 		i = 0;
@@ -398,7 +417,7 @@ calc_rain_rate(struct ws_loop *p)
 			if (prev->time + RAIN_PERIOD < p->time) {
 				prev = NULL;
 			} else {
-				if (ws_isset(prev, WF_RAIN)) {
+				if (ws_isset(prev, WF_RAIN_FALL)) {
 					ticks = 1;
 					rain_sum += prev->rain;
 				}
@@ -408,18 +427,13 @@ calc_rain_rate(struct ws_loop *p)
 		}
 
 		if (ticks) {
-			p->wl_mask |= WF_RAIN_RATE;
+			p->wl_mask |= WF_HI_RAIN_RATE;
 			// TODO: to be improved, as RAIN_PERIOD depends on interval
-			p->rain_rate = 3600 * rain_sum / RAIN_PERIOD;
+			p->hi_rain_rate = 3600 * rain_sum / RAIN_PERIOD;
 		}
 	}
 }
-
-int
-ws_isset(const struct ws_loop *p, int flag)
-{
-	return (p->wl_mask & flag) == flag;
-}
+#endif
 
 /**
  * Calculate missing fields from {@code p}.
@@ -428,16 +442,17 @@ ws_isset(const struct ws_loop *p, int flag)
  * are computed using LOOP history (rain rate, for example).
  */
 void
-ws_calc(struct ws_loop *p)
+ws_calc(struct ws_archive *p)
 {
-	calc_barometer(p);
-	calc_altimeter(p);
+//	calc_barometer(p);
+//	calc_altimeter(p);
 	calc_windchill(p);
 	calc_dewpoint(p);
 	calc_heat_index(p);
-	calc_rain_rate(p);
+//	calc_rain_rate(p);
 }
 
+#if 0
 static void
 aggr_update_all(struct ws_aggr *arr, size_t nel, const struct ws_loop *p)
 {
@@ -452,7 +467,7 @@ aggr_update_all(struct ws_aggr *arr, size_t nel, const struct ws_loop *p)
 }
 
 static void
-aggr_finalize_all(struct ws_aggr *arr, size_t nel, struct ws_loop *p)
+aggr_finalize_all(struct ws_aggr *arr, size_t nel, struct ws_archive *p)
 {
 	size_t j;
 	double value;
@@ -463,6 +478,7 @@ aggr_finalize_all(struct ws_aggr *arr, size_t nel, struct ws_loop *p)
 		}
 	}
 }
+#endif
 
 /**
  * Compute software archive, with real-time sensor data.
@@ -477,6 +493,7 @@ aggr_finalize_all(struct ws_aggr *arr, size_t nel, struct ws_loop *p)
 ssize_t
 ws_aggr(struct ws_archive *p, int freq)
 {
+#if 0
 	size_t i, nel;
 	const struct ws_loop *prev;
 	time_t now;
@@ -542,4 +559,6 @@ ws_aggr(struct ws_archive *p, int freq)
 	}
 
 	return (i == 0) ? 0 : 1;
+#endif
+	return 0;
 }

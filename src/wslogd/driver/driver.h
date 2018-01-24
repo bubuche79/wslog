@@ -35,7 +35,8 @@ int drv_destroy(void);
 
 int drv_get_itimer(struct itimerspec *p, enum ws_timer);
 int drv_get_loop(struct ws_loop *p);
-ssize_t drv_get_archive(struct ws_archive *p, size_t nel);
+
+ssize_t drv_get_archive(struct ws_archive *p, size_t nel, time_t after);
 
 int drv_set_artimer(long itmin, long next);
 

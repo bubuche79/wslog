@@ -20,9 +20,9 @@ extern "C" {
 int simu_init(void);
 int simu_destroy(void);
 
-int simu_get_itimer(struct itimerspec *it, enum ws_type type);
+int simu_get_itimer(struct itimerspec *it, enum ws_timer type);
 int simu_get_loop(struct ws_loop *p);
-ssize_t simu_get_archive(struct ws_archive *p, size_t nel);
+ssize_t simu_get_archive(struct ws_archive *p, size_t nel, time_t after);
 
 #ifdef __cplusplus
 }

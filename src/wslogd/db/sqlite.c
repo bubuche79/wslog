@@ -2,10 +2,9 @@
 #include "config.h"
 #endif
 
-#include <math.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <time.h>
 #include <errno.h>
 #include <syslog.h>
 #include <sqlite3.h>
@@ -18,65 +17,43 @@
 #include "wslogd.h"
 #include "sqlite.h"
 
-#define SQL_CREATE \
-	"CREATE TABLE ws_archive ( " \
-	"  time INTEGER NOT NULL, " \
-	"  interval INTEGER NOT NULL, " \
-	"  pressure REAL, " \
-	"  barometer REAL, " \
-	"  temp REAL, " \
-	"  humidity INTEGER, " \
-	"  wind_speed REAL, " \
-	"  wind_dir INTEGER, " \
-	"  wind_gust_speed REAL, " \
-	"  wind_gust_dir INTEGER, " \
-	"  rain REAL, " \
-	"  rain_rate REAL, " \
-	"  dew_point REAL, " \
-	"  windchill REAL, " \
-	"  heat_index REAL, " \
-	"  temp_in REAL, " \
-	"  humidity_in INTEGER, " \
-	"  PRIMARY KEY (time)" \
-	") "
-
-#define SQL_INSERT \
-	"INSERT INTO ws_archive " \
-	"VALUES " \
-	"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-
-#define SQL_SELECT \
-	"SELECT * FROM ws_archive ORDER BY time DESC LIMIT ?"
+#define SQL_MAX		1024
+#define SQL_TABLE	"ws_archive"
+#define SQL_CREATE	"sqlite.sql" //"/usr/share/wslog/"
 
 struct ws_db
 {
 	const char *col_name;
 	int col_type;
-	int (*get) (const struct ws_loop *, double *);
-	int (*set) (struct ws_loop *, double);
+	int (*get) (const struct ws_archive *, double *);
+	int (*set) (struct ws_archive *, double);
+	int ignore;
 };
 
-static sqlite3 *db;
-static sqlite3_stmt *stmt;
+static sqlite3 *db;			/* Database handle */
+static sqlite3_stmt *stmt;		/* Insert prepared statement */
 
 static struct ws_db columns[] =
 {
-	{ "pressure", SQLITE_FLOAT, ws_get_pressure, ws_set_pressure },
-//	{ "altimeter", SQLITE_FLOAT, ws_get_altimeter, ws_set_altimeter },
+	{ "time", SQLITE_INTEGER },
+	{ "interval", SQLITE_INTEGER },
 	{ "barometer", SQLITE_FLOAT, ws_get_barometer, ws_set_barometer },
 	{ "temp", SQLITE_FLOAT, ws_get_temp, ws_set_temp },
+	{ "lo_temp", SQLITE_FLOAT, ws_get_lo_temp, ws_set_lo_temp },
+	{ "hi_temp", SQLITE_FLOAT, ws_get_hi_temp, ws_set_hi_temp },
 	{ "humidity", SQLITE_INTEGER, ws_get_humidity, ws_set_humidity },
-	{ "wind_speed", SQLITE_FLOAT, ws_get_wind_speed, ws_set_wind_speed },
-	{ "wind_dir", SQLITE_INTEGER, ws_get_wind_dir, ws_set_wind_dir },
-	{ "wind_gust_speed", SQLITE_FLOAT, ws_get_wind_gust_speed, ws_set_wind_gust_speed },
-	{ "wind_gust_dir", SQLITE_INTEGER, ws_get_wind_gust_dir, ws_set_wind_gust_dir },
-	{ "rain", SQLITE_FLOAT, ws_get_rain, ws_set_rain },
-	{ "rain_rate", SQLITE_FLOAT, ws_get_rain_rate, ws_set_rain_rate },
+	{ "avg_wind_speed", SQLITE_FLOAT, ws_get_wind_speed, ws_set_wind_speed },
+	{ "avg_wind_dir", SQLITE_INTEGER, ws_get_wind_dir, ws_set_wind_dir },
+	{ "wind_samples", SQLITE_INTEGER, ws_get_wind_samples, ws_set_wind_samples },
+	{ "hi_wind_speed", SQLITE_FLOAT, ws_get_hi_wind_speed, ws_set_hi_wind_speed },
+	{ "hi_wind_dir", SQLITE_INTEGER, ws_get_hi_wind_dir, ws_set_hi_wind_dir },
+	{ "rain_fall", SQLITE_FLOAT, ws_get_rain, ws_set_rain },
+	{ "hi_rain_rate", SQLITE_FLOAT, ws_get_hi_rain_rate, ws_set_hi_rain_rate },
 	{ "dew_point", SQLITE_FLOAT, ws_get_dew_point, ws_set_dew_point },
 	{ "windchill", SQLITE_FLOAT, ws_get_windchill, ws_set_windchill },
 	{ "heat_index", SQLITE_FLOAT, ws_get_heat_index, ws_set_heat_index },
-	{ "temp_in", SQLITE_FLOAT, ws_get_temp_in, ws_set_temp_in },
-	{ "humidity_in", SQLITE_INTEGER, ws_get_humidity_in, ws_set_humidity_in }
+	{ "in_temp", SQLITE_FLOAT, ws_get_in_temp, ws_set_in_temp },
+	{ "in_humidity", SQLITE_INTEGER, ws_get_in_humidity, ws_set_in_humidity }
 };
 
 static size_t columns_nel = array_size(columns);
@@ -87,8 +64,58 @@ sqlite_log(const char *fn, int code)
 	syslog(LOG_ERR, "%s: %s", fn, sqlite3_errstr(code));
 }
 
+static char *
+sql_columns(char *buf, size_t len)
+{
+	int i;
+	char *p = buf;
+
+	for (i = 0; i < columns_nel; i++) {
+		if (i > 0) {
+			p = stpncpy(p, ", ", len - (buf - p));
+		}
+
+		p = stpncpy(p, columns[i].col_name, len - (buf - p));
+	}
+
+	return p;
+}
+
+static void
+sql_insert(char *buf, size_t len)
+{
+	int i;
+	char *p = buf;
+
+	p = stpncpy(p, "INSERT INTO " SQL_TABLE " (", len - (buf - p));
+
+	p = sql_columns(p, len - (buf - p));
+
+	p = stpncpy(p, ") VALUES (", len - (buf - p));
+
+	for (i = 0; i < columns_nel; i++) {
+		if (i > 0) {
+			p = stpncpy(p, ", ", len - (buf - p));
+		}
+
+		p = stpncpy(p, "?", len - (buf - p));
+	}
+
+	p = stpncpy(p, ")", len - (buf - p));
+}
+
+static void
+sql_select(char *buf, size_t len)
+{
+	char *p = buf;
+
+	p = stpncpy(p, "SELECT ", len - (buf - p));
+	p = sql_columns(p, len - (buf - p));
+	p = stpncpy(p, "FROM " SQL_TABLE " ORDER BY time DESC LIMIT ?", len - (buf - p));
+}
+
 static int
-stmt_insert(const struct ws_archive *p)
+sqlite_stmt_insert(const struct ws_archive *p)
 {
 	int ret;
 	int i, bind_index;
@@ -102,7 +129,7 @@ stmt_insert(const struct ws_archive *p)
 	/* Bind variables */
 	bind_index = 1;
 
-	ret = sqlite3_bind_int64(stmt, bind_index++, p->data.time);
+	ret = sqlite3_bind_int64(stmt, bind_index++, p->time);
 	if (SQLITE_OK != ret) {
 		sqlite_log("sqlite3_bind_int64", ret);
 		goto error;
@@ -113,10 +140,10 @@ stmt_insert(const struct ws_archive *p)
 		goto error;
 	}
 
-	for (i = 0; i < columns_nel; i++) {
+	for (i = 2; i < columns_nel; i++) {
 		double value;
 
-		if (columns[i].get(&p->data, &value) == 0) {
+		if (columns[i].get(p, &value) == 0) {
 			switch (columns[i].col_type) {
 			case SQLITE_INTEGER:
 				ret = sqlite3_bind_int(stmt, bind_index, value);
@@ -158,8 +185,9 @@ int
 sqlite_init(void)
 {
 	int ret;
-	struct stat buf;
+	struct stat sbuf;
 	int oflag = 0;
+	char sqlbuf[SQL_MAX];
 	const char* dbfile = confp->archive.sqlite.db;
 
 	/* Clear */
@@ -173,7 +201,7 @@ sqlite_init(void)
 	}
 
 	/* Open database */
-	ret = stat(dbfile, &buf);
+	ret = stat(dbfile, &sbuf);
 	if (ret == -1) {
 		if (errno == ENOENT) {
 			oflag |= SQLITE_OPEN_CREATE;
@@ -193,7 +221,14 @@ sqlite_init(void)
 
 	/* Create schema */
 	if (oflag & SQLITE_OPEN_CREATE) {
-		ret = sqlite3_exec(db, SQL_CREATE, NULL, NULL, NULL);
+		const char *sqlfile = SQL_CREATE;
+
+		if (ws_read_all(sqlfile, sqlbuf, sizeof(sqlbuf)) == -1) {
+			syslog(LOG_ERR, "ws_read_all %s: %m", sqlfile);
+			goto error;
+		}
+
+		ret = sqlite3_exec(db, sqlbuf, NULL, NULL, NULL);
 		if (ret != SQLITE_OK) {
 			sqlite_log("sqlite3_exec", ret);
 			goto error;
@@ -201,7 +236,9 @@ sqlite_init(void)
 	}
 
 	/* Prepare statement */
-	ret = sqlite3_prepare_v2(db, SQL_INSERT, -1, &stmt, NULL);
+	sql_insert(sqlbuf, sizeof(sqlbuf));
+
+	ret = sqlite3_prepare_v2(db, sqlbuf, -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		sqlite_log("sqlite3_prepare_v2", ret);
 		goto error;
@@ -223,7 +260,7 @@ sqlite_insert(const struct ws_archive *p, size_t nel)
 	size_t i;
 
 	for (i = 0; i < nel; i++) {
-		if (stmt_insert(&p[i]) == -1) {
+		if (sqlite_stmt_insert(&p[i]) == -1) {
 			return -1;
 		}
 	}
@@ -232,13 +269,13 @@ sqlite_insert(const struct ws_archive *p, size_t nel)
 }
 
 static void
-fetch_loop_columns(struct ws_loop *p, sqlite3_stmt *stmt, int col_index)
+fetch_loop_columns(struct ws_archive *p, sqlite3_stmt *stmt, int col_index)
 {
 	int i;
 
 	p->wl_mask = 0;
 
-	for (i = 0; i < columns_nel; i++) {
+	for (i = 2; i < columns_nel; i++) {
 		int type;
 		double value;
 
@@ -266,9 +303,13 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 {
 	int i, ret;
 	sqlite3_stmt *query;
+	char sqlbuf[SQL_MAX];
 
 	/* Prepare query */
-	ret = sqlite3_prepare_v2(db, SQL_SELECT, -1, &query, NULL);
+	query = NULL;
+
+	sql_select(sqlbuf, sizeof(SQL_MAX));
+	ret = sqlite3_prepare_v2(db, sqlbuf, -1, &query, NULL);
 	if (ret != SQLITE_OK) {
 		sqlite_log("sqlite3_prepare_v2", ret);
 		goto error;
@@ -287,10 +328,10 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 	while(i < nel && sqlite3_step(query) == SQLITE_ROW) {
 		int col_idx = 0;
 
-		p[i].data.time = sqlite3_column_int64(query, col_idx++);
+		p[i].time = sqlite3_column_int64(query, col_idx++);
 		p[i].interval = sqlite3_column_int(query, col_idx++);
 
-		fetch_loop_columns(&p->data, query, col_idx);
+		fetch_loop_columns(&p[i], query, col_idx);
 
 		i++;
 	}

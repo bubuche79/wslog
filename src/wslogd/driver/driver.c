@@ -29,6 +29,11 @@ drv_init(void)
 
 	switch (driver)
 	{
+#ifdef HAVE_VANTAGE
+	case VANTAGE:
+		ret = vantage_init();
+		break;
+#endif
 #ifdef HAVE_WS23XX
 	case WS23XX:
 		ret = ws23xx_init();
@@ -55,6 +60,11 @@ drv_destroy(void)
 
 	switch (driver)
 	{
+#ifdef HAVE_VANTAGE
+	case VANTAGE:
+		ret = vantage_destroy();
+		break;
+#endif
 #ifdef HAVE_WS23XX
 	case WS23XX:
 		ret = ws23xx_destroy();
@@ -81,6 +91,11 @@ drv_get_itimer(struct itimerspec *itimer, enum ws_timer type)
 
 	switch (driver)
 	{
+#ifdef HAVE_VANTAGE
+	case VANTAGE:
+		ret = vantage_get_itimer(itimer, type);
+		break;
+#endif
 #ifdef HAVE_WS23XX
 	case WS23XX:
 		ret = ws23xx_get_itimer(itimer, type);
@@ -107,6 +122,11 @@ drv_get_loop(struct ws_loop *loop)
 
 	switch (driver)
 	{
+#ifdef HAVE_VANTAGE
+	case VANTAGE:
+		ret = vantage_get_loop(loop);
+		break;
+#endif
 #ifdef HAVE_WS23XX
 	case WS23XX:
 		ret = ws23xx_get_loop(loop);
@@ -127,20 +147,25 @@ drv_get_loop(struct ws_loop *loop)
 }
 
 ssize_t
-drv_get_archive(struct ws_archive *ar, size_t nel)
+drv_get_archive(struct ws_archive *ar, size_t nel, time_t after)
 {
 	ssize_t ret;
 
 	switch (driver)
 	{
+#ifdef HAVE_VANTAGE
+	case VANTAGE:
+		ret = vantage_get_archive(ar, nel, after);
+		break;
+#endif
 #ifdef HAVE_WS23XX
 	case WS23XX:
-		ret = ws23xx_get_archive(ar, nel);
+		ret = ws23xx_get_archive(ar, nel, after);
 		break;
 #endif
 #ifdef HAVE_SIMU
 	case SIMU:
-		ret = simu_get_archive(ar, nel);
+		ret = simu_get_archive(ar, nel, after);
 		break;
 #endif
 	default:

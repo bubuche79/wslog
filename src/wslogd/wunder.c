@@ -29,7 +29,7 @@ struct ws_http
 struct ws_wunder
 {
 	const char *param;
-	int (*get) (const struct ws_loop *, double *);
+	int (*get) (const struct ws_archive *, double *);
 	double (*conv) (double);
 };
 
@@ -76,7 +76,7 @@ curl_log(const char *fn, CURLcode code)
 }
 
 static int
-wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
+wunder_url(char *str, size_t len, CURL *h, const struct ws_archive *p)
 {
 	int ret;
 	char ctime[22];					/* date utc */
@@ -89,11 +89,11 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 		{ "humidity", ws_get_humidity, NULL },
 		{ "windspeedmph", ws_get_wind_speed, ws_mph },
 		{ "winddir", ws_get_wind_dir, NULL },
-		{ "windgustmph", ws_get_wind_gust_speed, ws_mph },
-		{ "windgustdir", ws_get_wind_gust_dir, NULL },
+		{ "windgustmph", ws_get_hi_wind_speed, ws_mph },
+		{ "windgustdir", ws_get_hi_wind_dir, NULL },
 		{ "dewptf", ws_get_dew_point, ws_fahrenheit },
-		{ "indoortempf", ws_get_temp_in, ws_fahrenheit },
-		{ "indoorhumidity", ws_get_humidity_in, NULL }
+		{ "indoortempf", ws_get_in_temp, ws_fahrenheit },
+		{ "indoorhumidity", ws_get_in_humidity, NULL }
 	};
 
 	arr_nel = array_size(arr);
@@ -175,7 +175,7 @@ wunder_perform(const struct ws_archive *p)
 		CURLcode code;
 		char url[512];
 
-		if (wunder_url(url, sizeof(url), curl, &p->data) == -1) {
+		if (wunder_url(url, sizeof(url), curl, p) == -1) {
 			goto error;
 		}
 

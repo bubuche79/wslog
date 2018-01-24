@@ -15,15 +15,18 @@
 #include "service/util.h"
 #include "service/archive.h"
 
-#define ARCHIVE_INTERVAL 300			/* default archive interval */
+#define ARCHIVE_INTERVAL 300		/* Default archive interval */
+#define AR_LEN 64			/* Archive buffer size */
 
-static enum ws_driver driver;			/* driver */
-static int freq;						/* archive frequency */
-static int hw_archive;					/* hardware archive */
+static enum ws_driver driver;		/* Driver */
+static int freq;			/* Archive frequency */
+static int hw_archive;			/* Hardware archive */
+static time_t current;			/* Last known console archive record */
 
-static ssize_t
-board_put(struct ws_archive *ar)
+static int
+board_put(struct ws_archive *ar, size_t nel)
 {
+	size_t i;
 	ssize_t ret;
 
 	if (board_lock() == -1) {
@@ -31,15 +34,17 @@ board_put(struct ws_archive *ar)
 		goto error;
 	}
 
-	if (hw_archive) {
-		ret = 1;
-	} else {
-		ret = ws_aggr(ar, freq);
-	}
+	for (i = 0; i < nel; i++) {
+		if (hw_archive) {
+			ret = 1;
+		} else {
+			ret = ws_aggr(&ar[i], freq);
+		}
 
-	if (ret) {
-		ws_calc(&ar->data);
-		board_push_ar(ar);
+		if (ret) {
+			ws_calc(&ar[i]);
+			board_push_ar(&ar[i]);
+		}
 	}
 
 	if (board_unlock() == -1) {
@@ -47,7 +52,7 @@ board_put(struct ws_archive *ar)
 		goto error;
 	}
 
-	return ret;
+	return 0;
 
 error:
 	return -1;
@@ -70,13 +75,13 @@ archive_init(struct itimerspec *it)
 			hw_archive = 0;
 			itimer_set(it, ARCHIVE_INTERVAL);
 		} else {
-			syslog(LOG_ERR, "drv_get_itimer: %m");
 			goto error;
 		}
 	}
 	if (confp->archive.freq == 0) {
 		/* Set above */
 	} else {
+		// TODO: mismatch conf/console
 		itimer_set(it, confp->archive.freq);
 	}
 
@@ -108,7 +113,7 @@ archive_init(struct itimerspec *it)
 
 	if (confp->archive.sqlite.enabled) {
 		ssize_t ret;
-		struct ws_archive arbuf;
+		struct ws_archive arbuf[AR_LEN];
 
 		/* Initialize database */
 		if (sqlite_init() == -1) {
@@ -116,31 +121,37 @@ archive_init(struct itimerspec *it)
 		}
 
 		/* Load last archive from database */
-		ret = sqlite_select_last(&arbuf, 1);
+		ret = sqlite_select_last(arbuf, 1);
 		if (ret == -1) {
 			goto error;
 		} else if (ret > 0) {
-//			time_t last;
-//			time_t interval;
-//
-//			last = arbuf.time;
-//			interval = it->it_interval.tv_sec;
+			ssize_t sz;
 
-//			/* Fetch missing archives from device */
-//			drv_archive_open();
-//			drv_archive_next(&arbuf);
-//
-//			while (arbuf.time > last) {
-//
-//				drv_archive_next(&arbuf);
-//			}
+			current = arbuf[0].time;
 
-			// TODO: take care that this puts entries in shared map
-			// and that may trigger wunder updates
-//			if (board_put(&arbuf, 1, 0) == -1) {
-//				goto error;
-//			}
+			do {
+				sz = drv_get_archive(arbuf, AR_LEN, current);
+				if (sz == -1) {
+					goto error;
+				} else if (sz > 0) {
+					if (board_put(arbuf, sz) == -1) {
+						goto error;
+					}
+
+					/* Save to database */
+					if (confp->archive.sqlite.enabled) {
+						if (sqlite_insert(arbuf, sz) == -1) {
+							goto error;
+						}
+					}
+
+					/* Next start point */
+					current = arbuf[sz - 1].time;
+				}
+			} while (sz == AR_LEN);
 		}
+	} else {
+		// TODO: pick last archive record timestamp (idem in final else above)
 	}
 
 	syslog(LOG_INFO, "%s: done", __func__);
@@ -158,20 +169,19 @@ archive_main(void)
 	struct ws_archive arbuf;
 
 	if (hw_archive) {
-		if (drv_get_archive(&arbuf, 1) == -1) {
-			syslog(LOG_ERR, "drv_get_archive: %m");
+		if (drv_get_archive(&arbuf, 1, current) == -1) {
 			goto error;
 		}
 	}
 
 	/* Update board */
-	arsz = board_put(&arbuf);
+	arsz = board_put(&arbuf, 1);
 	if (arsz == -1) {
 		goto error;
 	} else if (arsz > 0) {
 #ifdef DEBUG
-		syslog(LOG_DEBUG, "Record: %.1f°C %hhu%%",
-				arbuf.data.temp, arbuf.data.humidity);
+		syslog(LOG_DEBUG, "Record: %.1f°C %hhu%% %.1fhPa",
+				arbuf.temp, arbuf.humidity, arbuf.barometer);
 #endif
 
 		/* Save to database */
@@ -180,6 +190,8 @@ archive_main(void)
 				goto error;
 			}
 		}
+
+		current = arbuf.time;
 	} else {
 		syslog(LOG_NOTICE, "No archive fetched");
 	}

@@ -65,12 +65,18 @@ error:
 }
 
 static time_t
-vantage_ar_current(int fd)
+vantage_rec_last(int fd)
 {
 	ssize_t sz;
 	time_t after;
 	struct vantage_dmp buf;
 
+	/*
+	 * Hopefully, there is one archive record in the last archive record
+	 * period. If this is not the case, try again with max archive record
+	 * delay (120 minutes). And then fall back on current timestamp (there
+	 * is no archive record).
+	 */
 	after = time(NULL) - cfg.ar_period * 60;
 
 	do {
@@ -80,8 +86,9 @@ vantage_ar_current(int fd)
 		}
 
 		if (sz > 0) {
-			after = buf.tstamp;
+			after = buf.time;
 		}
+		// TODO
 	} while (sz > 0);
 
 	return after;
@@ -93,51 +100,51 @@ error:
 static void
 vantage_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 {
-	p->data.time = d->tstamp;
+	p->time = d->time;
 
 	/* Handle dash values */
 	if (d->temp != INT16_MAX) {
-		p->data.wl_mask |= WF_TEMP;
-		p->data.temp = vantage_temp(d->temp, 1);
+		p->wl_mask |= WF_TEMP;
+		p->temp = vantage_temp(d->temp, 1);
 	}
 	if (d->humidity != UINT8_MAX) {
-		p->data.wl_mask |= WF_HUMIDITY;
-		p->data.humidity = d->humidity;
+		p->wl_mask |= WF_HUMIDITY;
+		p->humidity = d->humidity;
 	}
 	if (d->barometer != 0) {
-		p->data.wl_mask |= WF_BAROMETER;
-		p->data.barometer = vantage_pressure(d->barometer, 1);
+		p->wl_mask |= WF_BAROMETER;
+		p->barometer = vantage_pressure(d->barometer, 1);
 	}
 
 	if (d->in_temp != INT16_MAX) {
-		p->data.wl_mask |= WF_TEMP_IN;
-		p->data.temp_in = vantage_temp(d->in_temp, 1);
+		p->wl_mask |= WF_IN_TEMP;
+		p->in_temp = vantage_temp(d->in_temp, 1);
 	}
 	if (d->in_humidity != UINT8_MAX) {
-		p->data.wl_mask |= WF_HUMIDITY_IN;
-		p->data.humidity_in = d->in_humidity;
+		p->wl_mask |= WF_IN_HUMIDITY;
+		p->in_humidity = d->in_humidity;
 	}
 
 	if (d->avg_wind_speed != UINT8_MAX) {
-		p->data.wl_mask |= WF_WIND_SPEED;
-		p->data.wind_speed = vantage_speed(d->avg_wind_speed);
+		p->wl_mask |= WF_WIND_SPEED;
+		p->avg_wind_speed = vantage_speed(d->avg_wind_speed);
 	}
 	if (d->main_wind_dir != UINT8_MAX) {
-		p->data.wl_mask |= WF_WIND_DIR;
-		p->data.wind_dir= d->main_wind_dir;
+		p->wl_mask |= WF_WIND_DIR;
+		p->avg_wind_dir= d->main_wind_dir;
 	}
 	if (d->hi_wind_speed != UINT8_MAX) {
-		p->data.wl_mask |= WF_WIND_GUST_SPEED;
-		p->data.wind_gust_speed = vantage_speed(d->hi_wind_speed);
+		p->wl_mask |= WF_HI_WIND_SPEED;
+		p->hi_wind_speed = vantage_speed(d->hi_wind_speed);
 	}
 	if (d->hi_wind_dir != UINT8_MAX) {
-		p->data.wl_mask |= WF_WIND_GUST_DIR;
-		p->data.wind_gust_dir= d->hi_wind_dir;
+		p->wl_mask |= WF_HI_WIND_DIR;
+		p->hi_wind_dir = d->hi_wind_dir;
 	}
 
-	p->data.wl_mask |= WF_RAIN|WF_RAIN_RATE;
-	p->data.rain = vantage_rain(d->rain, cfg.sb_rain_cup);
-	p->data.rain_rate = vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup);
+	p->wl_mask |= WF_RAIN_FALL|WF_HI_RAIN_RATE;
+	p->rain_fall = vantage_rain(d->rain, cfg.sb_rain_cup);
+	p->hi_rain_rate = vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup);
 }
 
 int
@@ -151,11 +158,11 @@ vantage_init(void)
 		goto error;
 	}
 
-	/* Read console configuration */
 	if (vantage_lock(fd) == -1) {
 		goto error;
 	}
 
+	/* Read console configuration */
 	if (vantage_wrd(fd, &wrd) == -1) {
 		syslog(LOG_ERR, "vantage_wrd: %m");
 		goto error;
@@ -165,8 +172,8 @@ vantage_init(void)
 		goto error;
 	}
 
-	/* Compute last archive timestamp */
-	if ((current = vantage_ar_current(fd)) == -1) {
+	/* Compute last archive record timestamp */
+	if ((current = vantage_rec_last(fd)) == -1) {
 		goto error;
 	}
 
@@ -218,7 +225,7 @@ vantage_get_itimer(struct itimerspec *it, enum ws_timer type)
 	} else if (WS_ITIMER_ARCHIVE == type) {
 		it->it_interval.tv_sec = cfg.ar_period * 60;
 		it->it_interval.tv_nsec = 0;
-		it->it_value.tv_sec = current + it->it_interval.tv_sec - time(NULL) + 10;
+		it->it_value.tv_sec = current + it->it_interval.tv_sec + 10;
 		it->it_value.tv_nsec = 0;
 	} else {
 		errno = EINVAL;
@@ -239,7 +246,7 @@ vantage_get_loop(struct ws_loop *p)
 }
 
 ssize_t
-vantage_get_archive(struct ws_archive *p, size_t nel)
+vantage_get_archive(struct ws_archive *p, size_t nel, time_t after)
 {
 	ssize_t i, sz;
 	struct vantage_dmp buf[nel];
@@ -248,22 +255,18 @@ vantage_get_archive(struct ws_archive *p, size_t nel)
 		goto error;
 	}
 
-	if ((sz = vantage_dmpaft(fd, buf, nel, current)) == -1) {
+	if ((sz = vantage_dmpaft(fd, buf, nel, after)) == -1) {
 		syslog(LOG_ERR, "vantage_dmpaft: %m");
+		goto error;
+	}
+
+	if (vantage_unlock(fd) == -1) {
 		goto error;
 	}
 
 	/* Convert data */
 	for (i = 0; i < sz; i++) {
 		vantage_ar_dmp(&p[i], &buf[i]);
-	}
-
-	if (sz > 0) {
-		current = buf[sz-1].tstamp;
-	}
-
-	if (vantage_unlock(fd) == -1) {
-		return -1;
 	}
 
 	return sz;

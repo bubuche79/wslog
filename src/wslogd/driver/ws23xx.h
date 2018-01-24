@@ -19,7 +19,7 @@ int ws23xx_destroy(void);
 
 int ws23xx_get_itimer(struct itimerspec *p, enum ws_timer type);
 int ws23xx_get_loop(struct ws_loop *p);
-ssize_t ws23xx_get_archive(struct ws_archive *p, size_t nel);
+ssize_t ws23xx_get_archive(struct ws_archive *p, size_t nel, time_t after);
 
 int ws23xx_set_artimer(long itmin, long next);
 
