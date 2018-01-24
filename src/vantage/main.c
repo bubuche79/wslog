@@ -13,6 +13,7 @@
 #include "libws/vantage/vantage.h"
 
 #define PROGNAME 	"vantage"
+#define RECORDS_COUNT	2560		/* Number of archive records */
 #define DMPLEN		64		/* Size of DMP buffer */
 
 static struct vantage_cfg cfg;
@@ -174,7 +175,7 @@ print_dmp(const struct vantage_dmp *d)
 {
 	char ftime[20];
 
-	localftime_r(ftime, sizeof(ftime), &d->tstamp, "%F %T");
+	localftime_r(ftime, sizeof(ftime), &d->time, "%F %T");
 
 	printf("Timestamp: %s\n", ftime);
 	printf("Temperature: %.1f°C\n", vantage_temp(d->temp, 1));
@@ -187,6 +188,20 @@ print_dmp(const struct vantage_dmp *d)
 	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup));
 	printf("In temperature: %.1f°C\n", vantage_temp(d->in_temp, 1));
 	printf("In humidity: %hhu%%\n", d->in_humidity);
+}
+
+static void
+print_dmp_all(const struct vantage_dmp *d, size_t nel)
+{
+	size_t i;
+
+	for (i = 0; i < nel; i++) {
+		if (i > 0) {
+			printf("\n");
+		}
+
+		print_dmp(&d[i]);
+	}
 }
 
 static void
@@ -203,46 +218,6 @@ print_hex(uint16_t addr, void *buf, uint16_t len)
 
 		printf("\n");
 	}
-}
-
-static int
-dump_dmpx(int fd, time_t after)
-{
-	ssize_t i, sz;
-	struct vantage_dmp dmp[DMPLEN];
-
-	if (vantage_ee_cfg(fd, &cfg) == -1) {
-		fprintf(stderr, "vantage_ee_cfg: %s\n", strerror(errno));
-		goto error;
-	}
-
-	do {
-		if (after > 0) {
-			if ((sz = vantage_dmpaft(fd, dmp, DMPLEN, after)) == -1) {
-				fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
-				goto error;
-			}
-		} else {
-			if ((sz = vantage_dmp(fd, dmp, DMPLEN)) == -1) {
-				fprintf(stderr, "vantage_dmp: %s\n", strerror(errno));
-				goto error;
-			}
-		}
-
-		for (i = 0; i < sz; i++) {
-			print_dmp(&dmp[i]);
-			printf("\n");
-
-			if (after > 0) {
-				after = dmp[i].tstamp;
-			}
-		}
-	} while (sz == DMPLEN);
-
-	return 0;
-
-error:
-	return 1;
 }
 
 static int
@@ -539,24 +514,49 @@ error:
 static int
 main_dmp(int fd, int argc, char* const argv[])
 {
+	size_t sz, buflen;
+	struct vantage_dmp *buf;
+
 	check_empty_opts(argc, argv);
 
-	/* Process sub-command */
-	if (dump_dmpx(fd, 0) == -1) {
+	buflen = RECORDS_COUNT;
+	buf = NULL;
+
+	if ((buf = malloc(RECORDS_COUNT * sizeof(*buf))) == NULL) {
+		fprintf(stderr, "malloc: %s\n", strerror(errno));
 		goto error;
 	}
+
+	/* Process sub-command */
+	if (vantage_ee_cfg(fd, &cfg) == -1) {
+		fprintf(stderr, "vantage_ee_cfg: %s\n", strerror(errno));
+		goto error;
+	}
+	if ((sz = vantage_dmp(fd, buf, buflen)) == -1) {
+		fprintf(stderr, "vantage_dmp: %s\n", strerror(errno));
+		goto error;
+	}
+
+	print_dmp_all(buf, sz);
+
+	free(buf);
 
 	return 0;
 
 error:
+	if (buf != NULL) {
+		free(buf);
+	}
 	return 1;
 }
 
 static int
 main_dmpaft(int fd, int argc, char* const argv[])
 {
+	ssize_t sz;
 	time_t after;
 	const char *s;
+	struct vantage_dmp dmp[DMPLEN];
 
 	check_empty_opts(argc, argv);
 
@@ -572,9 +572,22 @@ main_dmpaft(int fd, int argc, char* const argv[])
 	}
 
 	/* Process sub-command */
-	if (dump_dmpx(fd, after) == -1) {
+	if (vantage_ee_cfg(fd, &cfg) == -1) {
+		fprintf(stderr, "vantage_ee_cfg: %s\n", strerror(errno));
 		goto error;
 	}
+
+	do {
+		if ((sz = vantage_dmpaft(fd, dmp, DMPLEN, after)) == -1) {
+			fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
+			goto error;
+		}
+
+		print_dmp_all(dmp, sz);
+
+		/* Next start point */
+		after = dmp[sz - 1].time;
+	} while (sz == DMPLEN);
 
 	return 0;
 
@@ -602,7 +615,12 @@ main_getee(int fd, int argc, char* const argv[])
 		goto error;
 	}
 
-	return ws_dump(file, buf, sizeof(buf));
+	if (ws_write_all(file, buf, sizeof(buf)) == -1) {
+		fprintf(stderr, "ws_write_all: %s\n", strerror(errno));
+		goto error;
+	}
+
+	return 0;
 
 error:
 	return 1;
