@@ -6,6 +6,9 @@
 #include <syslog.h>
 #include <errno.h>
 
+#include "libws/util.h"
+
+#include "conf.h"
 #include "driver/driver.h"
 #include "driver/simu.h"
 
@@ -15,9 +18,11 @@
 #define PERIOD_FACTOR		4
 
 #define LOOP_INTERVAL		10
-#define ARCHIVE_INTERVAL	300
+#define ARCHIVE_INTERVAL	30
 
-static struct timespec simu_delay;
+static int hw_archive;
+static struct timespec io_delay;
+
 static volatile int simu_index;
 
 static double
@@ -29,9 +34,9 @@ simu_sin(double from, double to, int idx)
 }
 
 static int
-simu_io()
+simu_io_delay()
 {
-	return clock_nanosleep(CLOCK_REALTIME, 0, &simu_delay, NULL);
+	return clock_nanosleep(CLOCK_REALTIME, 0, &io_delay, NULL);
 }
 
 static void
@@ -66,14 +71,14 @@ simu_init(void)
 {
 	simu_index = 0;
 
-	simu_delay.tv_sec = IODELAY / 1000;
-	simu_delay.tv_nsec = IODELAY - simu_delay.tv_sec;
+	hw_archive = confp->driver.simu.hw_archive;
+	ws_timespec(&io_delay, confp->driver.simu.io_delay);
 
-	if (simu_io() == -1) {
+	if (simu_io_delay() == -1) {
 		return -1;
 	}
 
-	syslog(LOG_NOTICE, "simulator device initialized");
+	syslog(LOG_NOTICE, "Simulator device initialized");
 
 	return 0;
 }
@@ -81,7 +86,7 @@ simu_init(void)
 int
 simu_destroy(void)
 {
-	if (simu_io() == -1) {
+	if (simu_io_delay() == -1) {
 		return -1;
 	}
 
@@ -93,7 +98,7 @@ simu_get_itimer(struct itimerspec *it, enum ws_timer type)
 {
 	int ret;
 
-	if (simu_io() == -1) {
+	if (simu_io_delay() == -1) {
 		return -1;
 	}
 

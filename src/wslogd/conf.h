@@ -11,53 +11,58 @@
 
 struct ws_conf
 {
-	uid_t uid;				/* effective user id */
-	gid_t gid;				/* effective group id */
-	const char *pid_file;			/* the daemon PID file */
-	int log_facility;			/* syslog facility */
-	int log_mask;				/* syslog priority mask */
+	uid_t uid;				/* Effective user id */
+	gid_t gid;				/* Effective group id */
+	const char *pid_file;			/* The daemon PID file */
+	int log_facility;			/* Syslog facility */
+	int log_mask;				/* Syslog priority mask */
 
 	struct
 	{
-		float latitude;			/* latitude */
-		float longitude;		/* longitude */
-		int altitude;			/* altitude (m) */
-		enum ws_driver driver;		/* station type */
+		float latitude;			/* Latitude */
+		float longitude;		/* Longitude */
+		int altitude;			/* Altitude (m) */
+		enum ws_driver driver;		/* Station type */
 	} station;
 
 	struct
 	{
-		long freq;			/* sensor frequency, in milliseconds */
+		long freq;			/* Sensor frequency, in milliseconds */
 
 		struct
 		{
-			const char *tty;	/* tty device */
+			const char *tty;	/* TTY device */
 		} vantage;
 		struct
 		{
-			const char *tty;	/* tty device */
+			const char *tty;	/* TTY device */
 		} ws23xx;
+		struct
+		{
+			int hw_archive;		/* Turn on hardware archive */
+			int io_delay;		/* I/O delay, in milliseconds */
+		} simu;
 	} driver;
 
 	struct
 	{
-		int freq;			/* archive frequency, in seconds */
-		int delay;			/* archive delay, in seconds */
+		int freq;			/* Archive frequency, in seconds */
+		int delay;			/* Archive delay, in seconds */
 
 		struct
 		{
-			int enabled;		/* disabled flag */
-			const char *db;		/* database file */
+			int enabled;		/* Enabled flag */
+			const char *db;		/* Database file */
 		} sqlite;
 	} archive;
 
 	struct
 	{
-		int enabled;			/* disabled flag */
-		int https;			/* https flag */
-		const char *station;		/* station id */
-		const char *password;		/* account password */
-		int freq;			/* update frequency, in seconds */
+		int enabled;			/* Enabled flag */
+		int https;			/* HTTPS flag */
+		const char *station;		/* Station id */
+		const char *password;		/* Account password */
+		int freq;			/* Update frequency, in seconds */
 	} wunder;
 };
 

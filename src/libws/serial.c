@@ -16,6 +16,7 @@
 #include <fcntl.h>
 
 #include "defs/dso.h"
+#include "libws/util.h"
 #include "libws/serial.h"
 
 static struct termios oldio;
@@ -27,9 +28,7 @@ msleep(long ms)
 {
 	struct timespec ts;
 
-	ts.tv_sec = ms / 1000;
-	ts.tv_nsec = (ms % 1000) * 1000 * 1000;
-
+	ws_timespec(&ts, ms);
 	nanosleep(&ts, NULL);
 }
 

@@ -23,7 +23,7 @@
 struct ws_http
 {
 	char *buf;
-	size_t len;							/* used size */
+	size_t len;			/* used size */
 };
 
 struct ws_wunder
@@ -32,6 +32,22 @@ struct ws_wunder
 	int (*get) (const struct ws_archive *, double *);
 	double (*conv) (double);
 };
+
+static struct ws_wunder params[] =
+{
+	{ "baromin", ws_get_barometer, ws_inhg },
+	{ "tempf", ws_get_temp, ws_fahrenheit },
+	{ "humidity", ws_get_humidity, NULL },
+	{ "windspeedmph", ws_get_wind_speed, ws_mph },
+	{ "winddir", ws_get_wind_dir, NULL },
+	{ "windgustmph", ws_get_hi_wind_speed, ws_mph },
+	{ "windgustdir", ws_get_hi_wind_dir, NULL },
+	{ "dewptf", ws_get_dew_point, ws_fahrenheit },
+	{ "indoortempf", ws_get_in_temp, ws_fahrenheit },
+	{ "indoorhumidity", ws_get_in_humidity, NULL }
+};
+
+static size_t params_nel = array_size(params);
 
 static void
 http_init(struct ws_http *s)
@@ -79,30 +95,14 @@ static int
 wunder_url(char *str, size_t len, CURL *h, const struct ws_archive *p)
 {
 	int ret;
-	char ctime[22];					/* date utc */
-	size_t i, arr_nel;
-
-	struct ws_wunder arr[] =
-	{
-		{ "baromin", ws_get_barometer, ws_inhg },
-		{ "tempf", ws_get_temp, ws_fahrenheit },
-		{ "humidity", ws_get_humidity, NULL },
-		{ "windspeedmph", ws_get_wind_speed, ws_mph },
-		{ "winddir", ws_get_wind_dir, NULL },
-		{ "windgustmph", ws_get_hi_wind_speed, ws_mph },
-		{ "windgustdir", ws_get_hi_wind_dir, NULL },
-		{ "dewptf", ws_get_dew_point, ws_fahrenheit },
-		{ "indoortempf", ws_get_in_temp, ws_fahrenheit },
-		{ "indoorhumidity", ws_get_in_humidity, NULL }
-	};
-
-	arr_nel = array_size(arr);
+	char ftime[22];			/* date utc */
+	size_t i;
 
 	/* Convert date */
-	gmftime(ctime, sizeof(ctime), &p->time, "%F %T");
+	gmftime(ftime, sizeof(ftime), &p->time, "%F %T");
 
 	/* URL encode parameters */
-	char *dateutc = curl_easy_escape(h, ctime, 0);
+	char *dateutc = curl_easy_escape(h, ftime, 0);
 	char *password = curl_easy_escape(h, confp->wunder.password, 0);
 
 	/* Compute GET request */
@@ -127,18 +127,18 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_archive *p)
 	curl_free(dateutc);
 	curl_free(password);
 
-	for (i = 0; i < arr_nel; i++) {
+	for (i = 0; i < params_nel; i++) {
 		double value;
 
-		if (arr[i].get(p, &value) == 0) {
+		if (params[i].get(p, &value) == 0) {
 			int ret;
 
-			if (arr[i].conv != NULL) {
-				value = arr[i].conv(value);
+			if (params[i].conv != NULL) {
+				value = params[i].conv(value);
 			}
 
 			/* Add parameter */
-			ret = snprintf(str, len, "&%s=%f", arr[i].param, value);
+			ret = snprintf(str, len, "&%s=%f", params[i].param, value);
 			if (ret == -1) {
 				syslog(LOG_ERR, "snprintf: %m");
 				goto error;
@@ -180,7 +180,7 @@ wunder_perform(const struct ws_archive *p)
 		}
 
 #ifdef DEBUG
-		printf("WUNDER: %s\n", url);
+		syslog(LOG_NOTICE, "Wunder: %s", url);
 #endif
 
 		/* Set request option */

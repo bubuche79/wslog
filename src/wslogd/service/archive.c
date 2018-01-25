@@ -112,7 +112,7 @@ archive_init(struct itimerspec *it)
 #endif
 
 	freq = it->it_interval.tv_sec;
-	current = 1262304000000;
+	current = 1262304000;
 
 	if (confp->archive.sqlite.enabled) {
 		ssize_t sz;
@@ -135,7 +135,7 @@ archive_init(struct itimerspec *it)
 			current = arbuf[0].time;
 
 			localftime_r(ftime, sizeof(ftime), &current, "%F %T");
-			syslog(LOG_NOTICE, "last db record: %s", ftime);
+			syslog(LOG_NOTICE, "Last db record: %s", ftime);
 		}
 
 		/* Load console records after that point */
@@ -159,13 +159,13 @@ archive_init(struct itimerspec *it)
 				}
 			} while (sz == AR_LEN);
 
-			syslog(LOG_NOTICE, "fetched %ld records", total);
+			syslog(LOG_NOTICE, "Fetched %zd records", total);
 		}
 	} else {
 		// TODO: pick last archive record timestamp (idem in final else above)
 	}
 
-	syslog(LOG_INFO, "archive service ready");
+	syslog(LOG_INFO, "Archive service ready");
 
 	return 0;
 

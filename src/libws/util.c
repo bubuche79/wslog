@@ -321,3 +321,10 @@ error:
 	}
 	return -1;
 }
+
+DSO_EXPORT void
+ws_timespec(struct timespec *ts, long ms)
+{
+	ts->tv_sec = ms / 1000;
+	ts->tv_nsec = ms - 1000 * ts->tv_sec;
+}

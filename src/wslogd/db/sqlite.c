@@ -140,16 +140,37 @@ sql_select(char *buf, size_t len)
 }
 
 static int
+sqlite_execute()
+{
+	int ret;
+	int reset = 1;
+
+	if ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
+		sqlite_log("sqlite3_step", ret);
+		goto error;
+	}
+
+	reset = 0;
+
+	if ((ret = sqlite3_reset(stmt)) != SQLITE_OK) {
+		sqlite_log("sqlite3_reset", ret);
+		goto error;
+	}
+
+	return 0;
+
+error:
+	if (reset) {
+		(void) sqlite3_reset(stmt);
+	}
+	return -1;
+}
+
+static int
 sqlite_stmt_insert(const struct ws_archive *p)
 {
 	int ret;
 	int i, bind_index;
-
-	ret = sqlite3_reset(stmt);
-	if (SQLITE_OK != ret) {
-		sqlite_log("sqlite3_reset", ret);
-		goto error;
-	}
 
 	/* Bind variables */
 	bind_index = 1;
@@ -193,9 +214,7 @@ sqlite_stmt_insert(const struct ws_archive *p)
 
 	/* Execute statement */
 	if (!dry_run) {
-		ret = sqlite3_step(stmt);
-		if (ret != SQLITE_DONE) {
-			sqlite_log("sqlite3_step", ret);
+		if (sqlite_execute() == -1) {
 			goto error;
 		}
 	}
@@ -285,11 +304,14 @@ sqlite_insert(const struct ws_archive *p, size_t nel)
 
 	for (i = 0; i < nel; i++) {
 		if (sqlite_stmt_insert(&p[i]) == -1) {
-			return -1;
+			goto error;
 		}
 	}
 
-	return nel;
+	return i;
+
+error:
+	return -1;
 }
 
 static void
