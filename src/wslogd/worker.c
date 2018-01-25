@@ -372,8 +372,6 @@ worker_main(int *halt)
 		return -1;
 	}
 
-	syslog(LOG_INFO, "drv_init: done");
-
 	/* Startup initialization */
 	if (startup) {
 		if (pthread_sigmask(SIG_BLOCK, &set, NULL) == -1) {

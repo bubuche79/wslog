@@ -21,6 +21,8 @@
 #define SQL_TABLE	"ws_archive"
 #define SQL_CREATE	"sqlite.sql" //"/usr/share/wslog/"
 
+#define bufsz(buf, p, len) ((len) - ((p) - (buf)))
+
 struct ws_db
 {
 	const char *col_name;
@@ -61,7 +63,7 @@ static size_t columns_nel = array_size(columns);
 static void
 sqlite_log(const char *fn, int code)
 {
-	syslog(LOG_ERR, "%s: %s", fn, sqlite3_errstr(code));
+	syslog(LOG_ERR, "%s: %s (%d)", fn, sqlite3_errstr(code), code);
 }
 
 static char *
@@ -72,46 +74,69 @@ sql_columns(char *buf, size_t len)
 
 	for (i = 0; i < columns_nel; i++) {
 		if (i > 0) {
-			p = stpncpy(p, ", ", len - (buf - p));
+			p = stpncpy(p, ", ", bufsz(buf, p, len));
 		}
 
-		p = stpncpy(p, columns[i].col_name, len - (buf - p));
+		p = stpncpy(p, columns[i].col_name, bufsz(buf, p, len));
 	}
 
 	return p;
 }
 
-static void
+static ssize_t
+sql_create(char *buf, size_t len)
+{
+	ssize_t sz;
+	const char* sqlfile = SQL_CREATE;
+
+	if ((sz = ws_read_all(sqlfile, buf, len)) == -1) {
+		syslog(LOG_ERR, "ws_read_all %s: %m", sqlfile);
+		goto error;
+	}
+
+	buf[sz] = 0;
+
+	return sz;
+
+error:
+	return -1;
+}
+
+static ssize_t
 sql_insert(char *buf, size_t len)
 {
 	int i;
 	char *p = buf;
 
-	p = stpncpy(p, "INSERT INTO " SQL_TABLE " (", len - (buf - p));
+	p = stpncpy(p, "INSERT INTO " SQL_TABLE " (", bufsz(buf, p, len));
 
-	p = sql_columns(p, len - (buf - p));
+	p = sql_columns(p, bufsz(buf, p, len));
 
-	p = stpncpy(p, ") VALUES (", len - (buf - p));
+	p = stpncpy(p, ") VALUES (", bufsz(buf, p, len));
 
 	for (i = 0; i < columns_nel; i++) {
 		if (i > 0) {
-			p = stpncpy(p, ", ", len - (buf - p));
+			p = stpncpy(p, ", ", bufsz(buf, p, len));
 		}
 
-		p = stpncpy(p, "?", len - (buf - p));
+		p = stpncpy(p, "?", bufsz(buf, p, len));
 	}
 
-	p = stpncpy(p, ")", len - (buf - p));
+	p = stpncpy(p, ")", bufsz(buf, p, len));
+
+	return p - buf;
 }
 
-static void
+static size_t
 sql_select(char *buf, size_t len)
 {
 	char *p = buf;
 
-	p = stpncpy(p, "SELECT ", len - (buf - p));
-	p = sql_columns(p, len - (buf - p));
-	p = stpncpy(p, "FROM " SQL_TABLE " ORDER BY time DESC LIMIT ?", len - (buf - p));
+	p = stpncpy(p, "SELECT ", bufsz(buf, p, len));
+	p = sql_columns(p, bufsz(buf, p, len));
+	p = stpncpy(p, " FROM " SQL_TABLE " ORDER BY time DESC LIMIT ?", bufsz(buf, p, len));
+
+	return p - buf;
 }
 
 static int
@@ -184,11 +209,11 @@ error:
 int
 sqlite_init(void)
 {
-	int ret;
+	int sz, ret;
 	struct stat sbuf;
 	int oflag = 0;
 	char sqlbuf[SQL_MAX];
-	const char* dbfile = confp->archive.sqlite.db;
+	const char *dbfile = confp->archive.sqlite.db;
 
 	/* Clear */
 	db = NULL;
@@ -221,10 +246,7 @@ sqlite_init(void)
 
 	/* Create schema */
 	if (oflag & SQLITE_OPEN_CREATE) {
-		const char *sqlfile = SQL_CREATE;
-
-		if (ws_read_all(sqlfile, sqlbuf, sizeof(sqlbuf)) == -1) {
-			syslog(LOG_ERR, "ws_read_all %s: %m", sqlfile);
+		if (sql_create(sqlbuf, sizeof(sqlbuf)) == -1) {
 			goto error;
 		}
 
@@ -236,13 +258,15 @@ sqlite_init(void)
 	}
 
 	/* Prepare statement */
-	sql_insert(sqlbuf, sizeof(sqlbuf));
+	sz = sql_insert(sqlbuf, sizeof(sqlbuf));
 
-	ret = sqlite3_prepare_v2(db, sqlbuf, -1, &stmt, NULL);
+	ret = sqlite3_prepare_v2(db, sqlbuf, sz, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		sqlite_log("sqlite3_prepare_v2", ret);
 		goto error;
 	}
+
+	syslog(LOG_INFO, "sqlite %s: connected", dbfile);
 
 	return 0;
 
@@ -307,8 +331,8 @@ sqlite_select_last(struct ws_archive *p, size_t nel)
 
 	/* Prepare query */
 	query = NULL;
+	sql_select(sqlbuf, sizeof(sqlbuf));
 
-	sql_select(sqlbuf, sizeof(SQL_MAX));
 	ret = sqlite3_prepare_v2(db, sqlbuf, -1, &query, NULL);
 	if (ret != SQLITE_OK) {
 		sqlite_log("sqlite3_prepare_v2", ret);

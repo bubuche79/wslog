@@ -309,12 +309,12 @@ ws_set_in_humidity(struct ws_archive *p, double v)
 	return ws_set_uint8(&p->wl_mask, WF_IN_HUMIDITY, &p->in_humidity, v);
 }
 
-static int
-is_settable(const struct ws_archive *p, int mask, int flag)
-{
-	return (p->wl_mask & (mask | flag)) == flag;
-}
-
+//static int
+//is_settable(const struct ws_archive *p, int mask, int flag)
+//{
+//	return (p->wl_mask & (mask | flag)) == flag;
+//}
+//
 #if 0
 static void
 calc_barometer(struct ws_archive *p)
@@ -335,32 +335,32 @@ calc_altimeter(struct ws_archive *p)
 }
 #endif
 
-static void
-calc_windchill(struct ws_archive *p)
-{
-	if (is_settable(p, WF_WINDCHILL, WF_WIND_SPEED | WF_TEMP)) {
-		p->wl_mask |= WF_WINDCHILL;
-		p->windchill = ws_windchill(p->temp, p->avg_wind_speed);
-	}
-}
-
-static void
-calc_dewpoint(struct ws_archive *p)
-{
-	if (is_settable(p, WF_DEW_POINT, WF_TEMP | WF_HUMIDITY)) {
-		p->wl_mask |= WF_DEW_POINT;
-		p->dew_point = ws_dewpoint(p->temp, p->humidity);
-	}
-}
-
-static void
-calc_heat_index(struct ws_archive *p)
-{
-	if (is_settable(p, WF_HEAT_INDEX, WF_TEMP | WF_HUMIDITY)) {
-		p->wl_mask |= WF_HEAT_INDEX;
-		p->heat_index = ws_heat_index(p->temp, p->humidity);
-	}
-}
+//static void
+//calc_windchill(struct ws_archive *p)
+//{
+//	if (is_settable(p, WF_WINDCHILL, WF_WIND_SPEED | WF_TEMP)) {
+//		p->wl_mask |= WF_WINDCHILL;
+//		p->windchill = ws_windchill(p->temp, p->avg_wind_speed);
+//	}
+//}
+//
+//static void
+//calc_dewpoint(struct ws_archive *p)
+//{
+//	if (is_settable(p, WF_DEW_POINT, WF_TEMP | WF_HUMIDITY)) {
+//		p->wl_mask |= WF_DEW_POINT;
+//		p->dew_point = ws_dewpoint(p->temp, p->humidity);
+//	}
+//}
+//
+//static void
+//calc_heat_index(struct ws_archive *p)
+//{
+//	if (is_settable(p, WF_HEAT_INDEX, WF_TEMP | WF_HUMIDITY)) {
+//		p->wl_mask |= WF_HEAT_INDEX;
+//		p->heat_index = ws_heat_index(p->temp, p->humidity);
+//	}
+//}
 
 #if 0
 static int
@@ -446,9 +446,9 @@ ws_calc(struct ws_archive *p)
 {
 //	calc_barometer(p);
 //	calc_altimeter(p);
-	calc_windchill(p);
-	calc_dewpoint(p);
-	calc_heat_index(p);
+//	calc_windchill(p);
+//	calc_dewpoint(p);
+//	calc_heat_index(p);
 //	calc_rain_rate(p);
 }
 

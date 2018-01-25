@@ -9,6 +9,8 @@
 #include <time.h>
 #include <syslog.h>
 
+#include "libws/util.h"
+
 #include "board.h"
 #include "conf.h"
 #include "db/sqlite.h"
@@ -52,7 +54,7 @@ board_put(struct ws_archive *ar, size_t nel)
 		goto error;
 	}
 
-	return 0;
+	return nel;
 
 error:
 	return -1;
@@ -110,9 +112,10 @@ archive_init(struct itimerspec *it)
 #endif
 
 	freq = it->it_interval.tv_sec;
+	current = 1262304000000;
 
 	if (confp->archive.sqlite.enabled) {
-		ssize_t ret;
+		ssize_t sz;
 		struct ws_archive arbuf[AR_LEN];
 
 		/* Initialize database */
@@ -120,41 +123,49 @@ archive_init(struct itimerspec *it)
 			goto error;
 		}
 
-		/* Load last archive from database */
-		ret = sqlite_select_last(arbuf, 1);
-		if (ret == -1) {
+		/* Timestamp of last database record */
+		sz = sqlite_select_last(arbuf, 1);
+		if (sz == -1) {
 			goto error;
-		} else if (ret > 0) {
-			ssize_t sz;
+		}
+
+		if (sz > 0) {
+			char ftime[20];
 
 			current = arbuf[0].time;
 
+			localftime_r(ftime, sizeof(ftime), &current, "%F %T");
+			syslog(LOG_NOTICE, "last db record: %s", ftime);
+		}
+
+		/* Load console records after that point */
+		if (hw_archive) {
+			ssize_t total = 0;
+
 			do {
 				sz = drv_get_archive(arbuf, AR_LEN, current);
+
 				if (sz == -1) {
 					goto error;
 				} else if (sz > 0) {
-					if (board_put(arbuf, sz) == -1) {
+					if (sqlite_insert(arbuf, sz) == -1) {
 						goto error;
 					}
 
-					/* Save to database */
-					if (confp->archive.sqlite.enabled) {
-						if (sqlite_insert(arbuf, sz) == -1) {
-							goto error;
-						}
-					}
+					total += sz;
 
 					/* Next start point */
 					current = arbuf[sz - 1].time;
 				}
 			} while (sz == AR_LEN);
+
+			syslog(LOG_NOTICE, "fetched %ld records", total);
 		}
 	} else {
 		// TODO: pick last archive record timestamp (idem in final else above)
 	}
 
-	syslog(LOG_INFO, "%s: done", __func__);
+	syslog(LOG_INFO, "archive service ready");
 
 	return 0;
 

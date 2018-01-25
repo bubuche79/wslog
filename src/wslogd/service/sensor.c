@@ -47,7 +47,7 @@ sensor_init(struct itimerspec *it)
 	syslog(LOG_INFO, "driver.delay: %ld\n", it->it_value.tv_sec);
 #endif
 
-	syslog(LOG_INFO, "%s: done", __func__);
+	syslog(LOG_INFO, "sensor service ready");
 
 	return 0;
 
@@ -68,7 +68,7 @@ sensor_main(void)
 	}
 
 	/* Compute derived measures */
-//	ws_calc(&buf);
+	//	ws_calc(&buf);
 
 	/* Push loop event in board */
 	if (sensor_push(&buf) == -1) {
