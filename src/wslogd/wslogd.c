@@ -48,7 +48,7 @@ loop_init(void)
 	option = LOG_PID | (one_process_mode ? LOG_PERROR : 0);
 
 	openlog(PROGNAME, option, confp->log_facility);
-	(void) setlogmask(confp->log_mask);
+	(void) setlogmask(LOG_UPTO(confp->log_level));
 
 	return 0;
 }

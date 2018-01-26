@@ -15,7 +15,7 @@ struct ws_conf
 	gid_t gid;				/* Effective group id */
 	const char *pid_file;			/* The daemon PID file */
 	int log_facility;			/* Syslog facility */
-	int log_mask;				/* Syslog priority mask */
+	int log_level;				/* Syslog level */
 
 	struct
 	{
@@ -32,6 +32,7 @@ struct ws_conf
 		struct
 		{
 			const char *tty;	/* TTY device */
+//			speed_t baud;		/* Console baud rate */
 		} vantage;
 		struct
 		{
@@ -40,7 +41,7 @@ struct ws_conf
 		struct
 		{
 			int hw_archive;		/* Turn on hardware archive */
-			int io_delay;		/* I/O delay, in milliseconds */
+			long io_delay;		/* I/O delay, in milliseconds */
 		} simu;
 	} driver;
 
@@ -75,6 +76,8 @@ extern "C" {
 int ws_getuid(const char *str, uid_t *uid);
 int ws_getgid(const char *str, gid_t *gid);
 int ws_getdriver(const char *str, enum ws_driver *driver);
+int ws_getlevel(const char *str, int *level);
+int ws_getfacility(const char *str, int *facility);
 
 int conf_load(const char *path);
 void conf_free(void);

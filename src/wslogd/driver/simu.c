@@ -12,13 +12,13 @@
 #include "driver/driver.h"
 #include "driver/simu.h"
 
-#define IODELAY			250
+#define IO_DELAY		250
 #define PI			3.1415926535897932384626433832795
 #define RAD			(PI/180.0)
 #define PERIOD_FACTOR		4
 
 #define LOOP_INTERVAL		10
-#define ARCHIVE_INTERVAL	30
+#define ARCHIVE_INTERVAL	300
 
 static int hw_archive;
 static struct timespec io_delay;
@@ -69,10 +69,17 @@ simu_archive(struct ws_archive *p, int idx)
 int
 simu_init(void)
 {
+	long delay;
+
 	simu_index = 0;
 
 	hw_archive = confp->driver.simu.hw_archive;
-	ws_timespec(&io_delay, confp->driver.simu.io_delay);
+	delay = confp->driver.simu.io_delay;
+
+	if (delay== 0) {
+		delay = IO_DELAY;
+	}
+	ws_timespec(&io_delay, delay);
 
 	if (simu_io_delay() == -1) {
 		return -1;
