@@ -12,9 +12,14 @@ extern "C" {
 #endif
 
 int sqlite_init(void);
+int sqlite_destroy(void);
+
+int sqlite_begin();
+int sqlite_commit();
+int sqlite_rollback();
+
 ssize_t sqlite_insert(const struct ws_archive *p, size_t nel);
 ssize_t sqlite_select_last(struct ws_archive *p, size_t nel);
-int sqlite_destroy(void);
 
 #ifdef __cplusplus
 }

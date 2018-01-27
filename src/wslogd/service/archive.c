@@ -60,6 +60,52 @@ error:
 	return -1;
 }
 
+static int
+bulk_fetch()
+{
+	ssize_t sz, total;
+	struct ws_archive arbuf[AR_LEN];
+
+	/* Start transaction */
+	if (sqlite_begin() == -1) {
+		return -1;
+	}
+
+	total = 0;
+
+	/* Fetch records, and save them into database */
+	do {
+		sz = drv_get_archive(arbuf, AR_LEN, current);
+
+		if (sz == -1) {
+			goto error;
+		} else if (sz > 0) {
+			if (sqlite_insert(arbuf, sz) == -1) {
+				goto error;
+			}
+
+			total += sz;
+
+			/* Next start point */
+			current = arbuf[sz - 1].time;
+		}
+	} while (sz == AR_LEN);
+
+	/* Commit */
+	if (sqlite_commit() == -1) {
+		goto error;
+	}
+
+	syslog(LOG_NOTICE, "Fetched %zd missed records", total);
+
+	return 0;
+
+error:
+	(void) sqlite_rollback();
+
+	return -1;
+}
+
 int
 archive_init(struct itimerspec *it)
 {
@@ -112,11 +158,11 @@ archive_init(struct itimerspec *it)
 #endif
 
 	freq = it->it_interval.tv_sec;
-	current = 1262304000;
+	current = 1514764800;
 
 	if (confp->archive.sqlite.enabled) {
 		ssize_t sz;
-		struct ws_archive arbuf[AR_LEN];
+		struct ws_archive arbuf;
 
 		/* Initialize database */
 		if (sqlite_init() == -1) {
@@ -124,7 +170,7 @@ archive_init(struct itimerspec *it)
 		}
 
 		/* Timestamp of last database record */
-		sz = sqlite_select_last(arbuf, 1);
+		sz = sqlite_select_last(&arbuf, 1);
 		if (sz == -1) {
 			goto error;
 		}
@@ -132,7 +178,7 @@ archive_init(struct itimerspec *it)
 		if (sz > 0) {
 			char ftime[20];
 
-			current = arbuf[0].time;
+			current = arbuf.time;
 
 			localftime_r(ftime, sizeof(ftime), &current, "%F %T");
 			syslog(LOG_NOTICE, "Last db record: %s", ftime);
@@ -140,26 +186,9 @@ archive_init(struct itimerspec *it)
 
 		/* Load console records after that point */
 		if (hw_archive) {
-			ssize_t total = 0;
-
-			do {
-				sz = drv_get_archive(arbuf, AR_LEN, current);
-
-				if (sz == -1) {
-					goto error;
-				} else if (sz > 0) {
-					if (sqlite_insert(arbuf, sz) == -1) {
-						goto error;
-					}
-
-					total += sz;
-
-					/* Next start point */
-					current = arbuf[sz - 1].time;
-				}
-			} while (sz == AR_LEN);
-
-			syslog(LOG_NOTICE, "Fetched %zd records", total);
+			if (bulk_fetch() == -1) {
+				goto error;
+			}
 		}
 	} else {
 		// TODO: pick last archive record timestamp (idem in final else above)
@@ -191,8 +220,11 @@ archive_main(void)
 		goto error;
 	} else if (arsz > 0) {
 #ifdef DEBUG
-		syslog(LOG_DEBUG, "Record: %.1f°C %hhu%% %.1fhPa",
-				arbuf.temp, arbuf.humidity, arbuf.barometer);
+		char ftime[20];
+
+		localftime_r(ftime, sizeof(ftime), &arbuf.time, "%F %T");
+		syslog(LOG_DEBUG, "Record: %s %.1f°C %hhu%% %.1fhPa",
+				ftime, arbuf.temp, arbuf.humidity, arbuf.barometer);
 #endif
 
 		/* Save to database */

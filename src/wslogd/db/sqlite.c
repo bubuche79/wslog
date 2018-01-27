@@ -140,7 +140,7 @@ sql_select(char *buf, size_t len)
 }
 
 static int
-sqlite_execute()
+sqlite_step()
 {
 	int ret;
 	int reset = 1;
@@ -214,7 +214,7 @@ sqlite_stmt_insert(const struct ws_archive *p)
 
 	/* Execute statement */
 	if (!dry_run) {
-		if (sqlite_execute() == -1) {
+		if (sqlite_step() == -1) {
 			goto error;
 		}
 	}
@@ -223,6 +223,20 @@ sqlite_stmt_insert(const struct ws_archive *p)
 
 error:
 	return -1;
+}
+
+static int
+sqlite_exec(const char *stmt)
+{
+	int ret;
+
+	ret = sqlite3_exec(db, stmt, NULL, NULL, NULL);
+	if (ret != SQLITE_OK) {
+		sqlite_log("sqlite3_exec", ret);
+		return -1;
+	}
+
+	return 0;
 }
 
 int
@@ -295,6 +309,55 @@ error:
 		db = NULL;
 	}
 	return -1;
+}
+
+int
+sqlite_destroy(void)
+{
+	int ret;
+	int status;
+
+	status = 0;
+
+	ret = sqlite3_finalize(stmt);
+	if (ret != SQLITE_OK) {
+		status = -1;
+		sqlite_log("sqlite3_finalize", ret);
+	}
+
+	if (db != NULL) {
+		ret = sqlite3_close_v2(db);
+		if (ret != SQLITE_OK) {
+			status = -1;
+			sqlite_log("sqlite3_close_v2", ret);
+		}
+	}
+
+	ret = sqlite3_shutdown();
+	if (ret != SQLITE_OK) {
+		status = -1;
+		sqlite_log("sqlite3_shutdown", ret);
+	}
+
+	return status;
+}
+
+int
+sqlite_begin()
+{
+	return sqlite_exec("BEGIN");
+}
+
+int
+sqlite_commit()
+{
+	return sqlite_exec("COMMIT");
+}
+
+int
+sqlite_rollback()
+{
+	return sqlite_exec("ROLLBACK");
 }
 
 ssize_t
@@ -400,35 +463,4 @@ error:
 	(void) sqlite3_finalize(query);
 
 	return -1;
-}
-
-int
-sqlite_destroy(void)
-{
-	int ret;
-	int status;
-
-	status = 0;
-
-	ret = sqlite3_finalize(stmt);
-	if (ret != SQLITE_OK) {
-		status = -1;
-		sqlite_log("sqlite3_finalize", ret);
-	}
-
-	if (db != NULL) {
-		ret = sqlite3_close_v2(db);
-		if (ret != SQLITE_OK) {
-			status = -1;
-			sqlite_log("sqlite3_close_v2", ret);
-		}
-	}
-
-	ret = sqlite3_shutdown();
-	if (ret != SQLITE_OK) {
-		status = -1;
-		sqlite_log("sqlite3_shutdown", ret);
-	}
-
-	return status;
 }
