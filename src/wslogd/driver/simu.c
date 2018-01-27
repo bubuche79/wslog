@@ -6,6 +6,7 @@
 #include <syslog.h>
 #include <errno.h>
 
+#include "defs/std.h"
 #include "libws/util.h"
 
 #include "conf.h"
@@ -23,14 +24,39 @@
 static int hw_archive;
 static struct timespec io_delay;
 
-static volatile int simu_index;
-
 static double
-simu_sin(double from, double to, int idx)
+simu_sin(double from, double to, time_t time)
 {
 	double range = (to - from) / 2;
 
-	return from + range + sin(idx * RAD / PERIOD_FACTOR) * range;
+	return from + range + sin(time * RAD / PERIOD_FACTOR) * range;
+}
+
+static time_t
+simu_next(time_t time, long delay)
+{
+	time_t r;
+
+	r = roundup(time, delay);
+
+	if (r == time) {
+		r += delay;
+	}
+
+	return r;
+}
+
+static void
+simu_timer(struct itimerspec *it, long delay)
+{
+	time_t now;
+
+	time(&now);
+
+	it->it_interval.tv_nsec = 0;
+	it->it_interval.tv_sec = delay;
+	it->it_value.tv_sec = delay - now % delay;
+	it->it_value.tv_nsec = 0;
 }
 
 static int
@@ -42,25 +68,25 @@ simu_io_delay()
 static void
 simu_loop(struct ws_loop *p, int idx)
 {
-	p->pressure = simu_sin(950, 1020, idx);
+	p->barometer = simu_sin(950, 1020, idx);
 	p->temp = simu_sin(15, 25, idx);
 	p->humidity = simu_sin(60, 80, idx);
 	p->wind_speed = simu_sin(0, 2, idx);
 	p->wind_dir = simu_sin(225, 315, idx);
 
 	/* Supported sensors */
-	p->wl_mask = WF_PRESSURE|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
+	p->wl_mask = WF_BAROMETER|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
 }
 
 static void
-simu_archive(struct ws_archive *p, int idx)
+simu_archive(struct ws_archive *p, time_t time)
 {
-	time(&p->time);
-	p->barometer = simu_sin(950, 1020, idx);
-	p->temp = simu_sin(15, 25, idx);
-	p->humidity = simu_sin(60, 80, idx);
-	p->avg_wind_speed = simu_sin(0, 2, idx);
-	p->avg_wind_dir = simu_sin(225, 315, idx);
+	p->time = time;
+	p->barometer = simu_sin(950, 1020, time);
+	p->temp = simu_sin(15, 25, time);
+	p->humidity = simu_sin(60, 80, time);
+	p->avg_wind_speed = simu_sin(0, 2, time);
+	p->avg_wind_dir = simu_sin(225, 315, time);
 
 	/* Supported sensors */
 	p->wl_mask = WF_BAROMETER|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
@@ -70,8 +96,6 @@ int
 simu_init(void)
 {
 	long delay;
-
-	simu_index = 0;
 
 	hw_archive = confp->driver.simu.hw_archive;
 	delay = confp->driver.simu.io_delay;
@@ -112,17 +136,11 @@ simu_get_itimer(struct itimerspec *it, enum ws_timer type)
 	switch (type)
 	{
 	case WS_ITIMER_LOOP:
-		it->it_interval.tv_nsec = 0;
-		it->it_interval.tv_sec = LOOP_INTERVAL;
-		it->it_value.tv_sec = 0;
-		it->it_value.tv_nsec = 0;
+		simu_timer(it, LOOP_INTERVAL);
 		ret = 0;
 		break;
 	case WS_ITIMER_ARCHIVE:
-		it->it_interval.tv_nsec = 0;
-		it->it_interval.tv_sec = ARCHIVE_INTERVAL;
-		it->it_value.tv_sec = 0;
-		it->it_value.tv_nsec = 0;
+		simu_timer(it, ARCHIVE_INTERVAL);
 		ret = 0;
 		break;
 	default:
@@ -137,12 +155,10 @@ simu_get_itimer(struct itimerspec *it, enum ws_timer type)
 int
 simu_get_loop(struct ws_loop *p)
 {
-	int idx = simu_index;
+	time_t now;
 
-	simu_loop(p, idx);
-
-	/* Next simulator index */
-	simu_index = (idx + 1) % (360 * PERIOD_FACTOR);
+	time(&now);
+	simu_loop(p, now);
 
 	return 0;
 }
@@ -150,12 +166,18 @@ simu_get_loop(struct ws_loop *p)
 ssize_t
 simu_get_archive(struct ws_archive *p, size_t nel, time_t after)
 {
-	int idx = simu_index;
+	int i;
+	time_t now;
+	time_t artime;
 
-	simu_archive(p, idx);
+	time(&now);
+	artime = simu_next(after, ARCHIVE_INTERVAL);
 
-	/* Next simulator index */
-	simu_index = (idx + 1) % (360 * PERIOD_FACTOR);
+	for (i = 0; i < nel && artime <= now; i++) {
+		simu_archive(&p[i], artime);
 
-	return 1;
+		artime += ARCHIVE_INTERVAL;
+	}
+
+	return i;
 }
