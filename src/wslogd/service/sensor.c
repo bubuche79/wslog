@@ -77,7 +77,7 @@ sensor_main(void)
 	}
 
 #if DEBUG
-	syslog(LOG_DEBUG, "Record: %.1f°C %hhu%% %.1fhPa",
+	syslog(LOG_DEBUG, "Sensor: %.1f°C %hhu%% %.1fhPa",
 			buf.temp, buf.humidity, buf.barometer);
 #endif
 
