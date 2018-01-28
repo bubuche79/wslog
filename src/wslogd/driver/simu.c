@@ -20,6 +20,7 @@
 
 #define LOOP_INTERVAL		10
 #define ARCHIVE_INTERVAL	300
+#define ARCHIVE_DELAY		1
 
 static int hw_archive;
 static struct timespec io_delay;
@@ -123,11 +124,11 @@ simu_get_itimer(struct itimerspec *it, enum ws_timer type)
 	switch (type)
 	{
 	case WS_ITIMER_LOOP:
-		ws_itimer_delay(it, LOOP_INTERVAL);
+		ws_itimer_delay(it, LOOP_INTERVAL, 0);
 		ret = 0;
 		break;
 	case WS_ITIMER_ARCHIVE:
-		ws_itimer_delay(it, ARCHIVE_INTERVAL);
+		ws_itimer_delay(it, ARCHIVE_INTERVAL, ARCHIVE_DELAY);
 		ret = 0;
 		break;
 	default:

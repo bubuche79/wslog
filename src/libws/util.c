@@ -330,14 +330,14 @@ ws_time_ms(struct timespec *ts, long ms)
 }
 
 DSO_EXPORT void
-ws_itimer_delay(struct itimerspec *it, long sec)
+ws_itimer_delay(struct itimerspec *it, long freq, long delay)
 {
 	time_t now;
 
 	time(&now);
 
 	it->it_interval.tv_nsec = 0;
-	it->it_interval.tv_sec = sec;
-	it->it_value.tv_sec = sec - now % sec;
+	it->it_interval.tv_sec = freq;
+	it->it_value.tv_sec = (freq - now % freq) + delay;
 	it->it_value.tv_nsec = 0;
 }

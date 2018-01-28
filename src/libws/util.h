@@ -33,7 +33,7 @@ ssize_t ws_read_all(const char *pathname, void *buf, size_t len);
 ssize_t ws_write_all(const char *pathname, const void *buf, size_t len);
 
 void ws_time_ms(struct timespec *p, long ms);
-void ws_itimer_delay(struct itimerspec *it, long sec);
+void ws_itimer_delay(struct itimerspec *it, long freq, long delay);
 
 #ifdef __cplusplus
 }

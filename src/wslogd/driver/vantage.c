@@ -16,6 +16,8 @@
 #include "driver/vantage.h"
 #include "conf.h"
 
+#define ARCHIVE_DELAY	15		/* Delay before fetching new record */
+
 static int fd;				/* Device file */
 static pthread_mutex_t mutex;		/* Thread locking */
 
@@ -117,13 +119,12 @@ error:
 #endif
 
 static void
-vantage_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
+conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 {
 	p->time = d->time;
 	p->interval = cfg.ar_period * 60;
 	p->wl_mask = 0;
 
-	/* Handle dash values */
 	if (d->temp != INT16_MAX) {
 		p->wl_mask |= WF_TEMP;
 		p->temp = vantage_temp(d->temp, 1);
@@ -177,11 +178,11 @@ vantage_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 }
 
 static void
-vantage_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
+conv_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 {
+	time(&p->time);
 	p->wl_mask = 0;
 
-	/* Handle dash values */
 	if (d->temp != INT16_MAX) {
 		p->wl_mask |= WF_TEMP;
 		p->temp = vantage_temp(d->temp, 1);
@@ -204,13 +205,23 @@ vantage_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 		p->in_humidity = d->in_humidity;
 	}
 
-	if (d->wind_speed != UINT8_MAX) {
-		p->wl_mask |= WF_WIND_SPEED;
-		p->wind_speed = vantage_speed(d->wind_speed);
-	}
 	if (d->wind_dir != 0) {
-		p->wl_mask |= WF_WIND_DIR;
+		p->wl_mask |= WF_WIND_SPEED | WF_WIND_DIR;
+		p->wind_speed = vantage_speed(d->wind_speed);
 		p->wind_dir= d->wind_dir;
+	}
+
+	if (d->dew_point != INT8_MAX) {
+		p->wl_mask |= WF_DEW_POINT;
+		p->dew_point = vantage_temp(d->dew_point, 0);
+	}
+	if (d->wind_chill != INT8_MAX) {
+		p->wl_mask |= WF_WINDCHILL;
+		p->windchill = vantage_temp(d->wind_chill, 0);
+	}
+	if (d->heat_index != INT8_MAX) {
+		p->wl_mask |= WF_HEAT_INDEX;
+		p->windchill = vantage_temp(d->heat_index, 0);
 	}
 
 	p->wl_mask |= WF_RAIN_FALL|WF_HI_RAIN_RATE;
@@ -300,7 +311,7 @@ vantage_get_itimer(struct itimerspec *it, enum ws_timer type)
 //		syslog(LOG_NOTICE, "last archive: %s", ftime);
 
 		// TODO: check that archives are generated at rounded timestamps
-		ws_itimer_delay(it, cfg.ar_period * 60);
+		ws_itimer_delay(it, cfg.ar_period * 60, ARCHIVE_DELAY);
 	} else {
 		errno = EINVAL;
 		goto error;
@@ -330,7 +341,7 @@ vantage_get_loop(struct ws_loop *p)
 		goto error;
 	}
 
-	vantage_curr_lps(p, &lbuf);
+	conv_curr_lps(p, &lbuf);
 
 	return 0;
 
@@ -361,7 +372,7 @@ vantage_get_archive(struct ws_archive *p, size_t nel, time_t after)
 
 	/* Convert data */
 	for (i = 0; i < sz; i++) {
-		vantage_ar_dmp(&p[i], &buf[i]);
+		conv_ar_dmp(&p[i], &buf[i]);
 	}
 
 	return sz;

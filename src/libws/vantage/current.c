@@ -23,7 +23,7 @@ static void
 vantage_loop_decode(struct vantage_loop *loop, const uint8_t *buf)
 {
 	loop->bar_trend = vantage_int8(buf, 3);
-	loop->barometer = vantage_int16(buf, 7);
+	loop->barometer = vantage_uint16(buf, 7);
 	loop->in_temp = vantage_int16(buf, 9);
 	loop->in_humidity = vantage_uint8(buf, 11);
 	loop->temp = vantage_int16(buf, 12);
@@ -70,6 +70,8 @@ vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel)
 	uint8_t buf[LOOP_SIZE];
 	long timeout;
 
+	timeout = 0;
+
 	if (type & LPS_LOOP) {
 		errno = EINVAL;
 		goto error;
@@ -100,8 +102,11 @@ vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel)
 	return sz;
 
 error:
-	if (sz > 0) {
-		// TODO: cancel
+	if (timeout > 0) {
+		uint8_t cr = CR;
+
+		/* Cancel */
+		(void) vantage_write(fd, &cr, 1);
 	}
 
 	return -1;

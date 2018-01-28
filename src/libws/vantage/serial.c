@@ -53,8 +53,10 @@ vantage_wakeup(int fd)
 		} else if (sz == bufsz) {
 			if (memcmp(buf, resp, sz) == 0) {
 				break;
-			} else {
-				errno = EIO;
+			}
+
+			/* Sometimes console sends { CR LF CR }, retry */
+			if (tcflush(fd, TCIFLUSH) == -1) {
 				goto error;
 			}
 		}

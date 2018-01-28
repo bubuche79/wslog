@@ -74,7 +74,7 @@ struct vantage_rxck
 struct vantage_loop
 {
 	int8_t bar_trend;		/* 3-hour barometer trend */
-	int16_t barometer;		/* Barometer (Hg/1000) */
+	uint16_t barometer;		/* Barometer (Hg/1000) */
 	int16_t in_temp;		/* Inside temperature (F°/10) */
 	uint8_t in_humidity;		/* Inside humidity (%) */
 	int16_t temp;			/* Outside temperature */
