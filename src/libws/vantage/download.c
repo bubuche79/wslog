@@ -265,7 +265,7 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 	page_cnt = vantage_uint16(buf, 0);
 	offset = vantage_uint16(buf, 2);
 
-#ifdef DEBUG
+#if DEBUG >= 1
 	printf("DMPAFT: %hu pages, record offset %hu\n", page_cnt, offset);
 #endif
 

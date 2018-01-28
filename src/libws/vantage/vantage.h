@@ -76,7 +76,7 @@ struct vantage_loop
 	int8_t bar_trend;		/* 3-hour barometer trend */
 	int16_t barometer;		/* Barometer (Hg/1000) */
 	int16_t in_temp;		/* Inside temperature (F°/10) */
-	int8_t in_humidity;		/* Inside humidity (%) */
+	uint8_t in_humidity;		/* Inside humidity (%) */
 	int16_t temp;			/* Outside temperature */
 	uint8_t wind_speed;		/* Wind speed (mph) */
 	uint16_t wind_dir;		/* Wind direction (1 - 360°) */
@@ -85,7 +85,7 @@ struct vantage_loop
 	uint16_t wind_gust_10m;		/* 10-minutes wind gust speed (mph/10) */
 	uint16_t wind_gust_dir_10m;	/* 10-minutes wind gust direction (mph/10) */
 	int16_t dew_point;		/* Dew point (F°) */
-	int8_t humidity;		/* Outside humidity */
+	uint8_t humidity;		/* Outside humidity */
 	int16_t heat_index;		/* Heat index (F°) */
 	int16_t wind_chill;		/* Wind chill (F°) */
 	int16_t thsw_chill;		/* THSW index (F°) */

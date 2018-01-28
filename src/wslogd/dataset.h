@@ -61,33 +61,33 @@ enum
  */
 struct ws_loop
 {
-	time_t time;			/* data time */
-	uint32_t wl_mask;		/* fields mask */
+	time_t time;			/* Data time */
+	uint32_t wl_mask;		/* Fields mask */
 
-	float pressure;			/* absolute pressure (hPa) */
-	float barometer;		/* barometer, sea level pressure (hPa) */
-	float altimeter;		/* altimeter, altitude corrected pressure (hPa) */
-	float temp;			/* Temperature (°C) */
-	uint8_t humidity; 		/* humidity (%) */
-	float wind_speed;		/* wind speed (m/s) */
-	uint16_t wind_dir;		/* wind direction (°) */
-	float wind_gust_speed;		/* wind gust (m/s) */
-	uint16_t wind_gust_dir;		/* wind gust direction (°) */
-	float rain;			/* sample rain (mm) */
-	float rain_rate;		/* high rain rate (mm/hr) */
+	float barometer;		/* Barometer, sea level pressure (hPa) */
 #if 0
-	float rain_1h;			/* accumulated rain in the past hour (mm) */
-	float rain_24h;			/* accumulated rain in the past 24 hours (mm) */
-	float sample_et;		/* sample evapotranspiration (mm) */
-	uint16_t radiation;		/* solar radiation (W/m³) */
+	float pressure;			/* Absolute pressure (hPa) */
+	float altimeter;		/* altimeter, altitude corrected pressure (hPa) */
+#endif
+	float temp;			/* Temperature (°C) */
+	uint8_t humidity; 		/* Humidity (%) */
+	float wind_speed;		/* Wind speed (m/s) */
+	uint16_t wind_dir;		/* Wind direction (°) */
+	float rain_day;			/* Daily rain (mm) */
+	float rain_rate;		/* High rain rate (mm/hr) */
+#if 0
+	float rain_1h;			/* Accumulated rain in the past hour (mm) */
+	float rain_24h;			/* Accumulated rain in the past 24 hours (mm) */
+	float sample_et;		/* Sample evapotranspiration (mm) */
+	uint16_t radiation;		/* Solar radiation (W/m³) */
 	float uv;			/* UV index */
 #endif
-	float dew_point; 		/* dew point (°C) */
-	float windchill;		/* windchill temperature (°C) */
-	float heat_index;		/* head index (°C) */
+	float dew_point; 		/* Dew point (°C) */
+	float windchill;		/* Windchill temperature (°C) */
+	float heat_index;		/* Heat index (°C) */
 
-	float temp_in;			/* indoor temperature (°C) */
-	uint8_t humidity_in;		/* indoor humidity (%) */
+	float in_temp;			/* Indoor temperature (°C) */
+	uint8_t in_humidity;		/* Indoor humidity (%) */
 };
 
 struct ws_archive

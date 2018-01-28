@@ -25,11 +25,10 @@ static int freq;			/* Archive frequency */
 static int hw_archive;			/* Hardware archive */
 static time_t current;			/* Last known console archive record */
 
-static int
+static ssize_t
 board_put(struct ws_archive *ar, size_t nel)
 {
 	size_t i;
-	ssize_t ret;
 
 	if (board_lock() == -1) {
 		syslog(LOG_CRIT, "board_lock: %m");
@@ -37,6 +36,8 @@ board_put(struct ws_archive *ar, size_t nel)
 	}
 
 	for (i = 0; i < nel; i++) {
+		int ret;
+
 		if (hw_archive) {
 			ret = 1;
 		} else {
@@ -205,20 +206,26 @@ error:
 int
 archive_main(void)
 {
-	ssize_t arsz;
+	ssize_t sz;
 	struct ws_archive arbuf;
 
 	if (hw_archive) {
-		if (drv_get_archive(&arbuf, 1, current) == -1) {
+		if ((sz = drv_get_archive(&arbuf, 1, current)) == -1) {
 			goto error;
 		}
+
+		if (sz > 0) {
+			current = arbuf.time;
+		}
+	} else {
+		sz = 1;
 	}
 
 	/* Update board */
-	arsz = board_put(&arbuf, 1);
-	if (arsz == -1) {
+	sz = board_put(&arbuf, sz);
+	if (sz == -1) {
 		goto error;
-	} else if (arsz > 0) {
+	} else if (sz > 0) {
 #ifdef DEBUG
 		char ftime[20];
 
@@ -229,12 +236,10 @@ archive_main(void)
 
 		/* Save to database */
 		if (confp->archive.sqlite.enabled) {
-			if (sqlite_insert(&arbuf, 1) == -1) {
+			if (sqlite_insert(&arbuf, sz) == -1) {
 				goto error;
 			}
 		}
-
-		current = arbuf.time;
 	} else {
 		syslog(LOG_NOTICE, "No archive fetched");
 	}

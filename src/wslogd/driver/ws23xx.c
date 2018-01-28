@@ -102,15 +102,15 @@ ws23xx_hw_limits(struct ws_loop *p, int log)
 	}
 
 	/* Indoor sensors */
-	if (p->temp_in < -9.9 || 59.9 < p->temp) {
+	if (p->in_temp < -9.9 || 59.9 < p->temp) {
 		p->wl_mask &= ~WF_IN_TEMP;
 	}
 	if (p->humidity < 1 || 99 < p->humidity) {
 		p->wl_mask &= ~WF_IN_HUMIDITY;
 	}
-	if (p->pressure < 760 || 1099 < p->pressure) {
-		p->wl_mask &= ~WF_PRESSURE;
-	}
+//	if (p->pressure < 760 || 1099 < p->pressure) {
+//		p->wl_mask &= ~WF_PRESSURE;
+//	}
 
 	/* Compare against previous mask */
 	if (log && prev_mask != p->wl_mask) {
@@ -230,11 +230,11 @@ ws23xx_get_loop(struct ws_loop *p)
 
 	struct ws23xx_io io[] =
 	{
-		{ 0x346, WS23XX_TEMP, 4, &p->temp_in },
+		{ 0x346, WS23XX_TEMP, 4, &p->in_temp },
 		{ 0x373, WS23XX_TEMP, 4, &p->temp },
 		{ 0x3a0, WS23XX_TEMP, 4, &p->windchill },
 		{ 0x3ce, WS23XX_TEMP, 4, &p->dew_point },
-		{ 0x3fb, WS23XX_HUMIDITY, 2, &p->humidity_in },
+		{ 0x3fb, WS23XX_HUMIDITY, 2, &p->in_humidity },
 		{ 0x419, WS23XX_HUMIDITY, 2, &p->humidity },
 #if 0
 		{ 0x497, WS23XX_RAIN, 6, &p->rain_24h },
@@ -246,7 +246,7 @@ ws23xx_get_loop(struct ws_loop *p)
 		{ 0x529, WS23XX_SPEED, 3, &p->wind_speed },
 		{ 0x52c, WS23XX_WIND_DIR, 1, &p->wind_dir },
 		{ 0x54d, WS23XX_CONNECTION, 1, &cnx_type },
-		{ 0x5d8, WS23XX_PRESSURE, 5, &p->pressure },
+//		{ 0x5d8, WS23XX_PRESSURE, 5, &p->pressure },
 		{ 0x5e2, WS23XX_PRESSURE, 5, &p->barometer }
 	};
 
@@ -299,7 +299,7 @@ ws23xx_get_loop(struct ws_loop *p)
 
 		/* Skip first value */
 		if (total_rain != -1.0) {
-			p->rain = total_rain_now - total_rain;
+//			p->rain = total_rain_now - total_rain;
 		}
 		total_rain = total_rain_now;
 		break;

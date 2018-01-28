@@ -28,7 +28,7 @@ msleep(long ms)
 {
 	struct timespec ts;
 
-	ws_timespec(&ts, ms);
+	ws_time_ms(&ts, ms);
 	nanosleep(&ts, NULL);
 }
 

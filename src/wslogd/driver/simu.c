@@ -46,19 +46,6 @@ simu_next(time_t time, long delay)
 	return r;
 }
 
-static void
-simu_timer(struct itimerspec *it, long delay)
-{
-	time_t now;
-
-	time(&now);
-
-	it->it_interval.tv_nsec = 0;
-	it->it_interval.tv_sec = delay;
-	it->it_value.tv_sec = delay - now % delay;
-	it->it_value.tv_nsec = 0;
-}
-
 static int
 simu_io_delay()
 {
@@ -103,7 +90,7 @@ simu_init(void)
 	if (delay== 0) {
 		delay = IO_DELAY;
 	}
-	ws_timespec(&io_delay, delay);
+	ws_time_ms(&io_delay, delay);
 
 	if (simu_io_delay() == -1) {
 		return -1;
@@ -136,11 +123,11 @@ simu_get_itimer(struct itimerspec *it, enum ws_timer type)
 	switch (type)
 	{
 	case WS_ITIMER_LOOP:
-		simu_timer(it, LOOP_INTERVAL);
+		ws_itimer_delay(it, LOOP_INTERVAL);
 		ret = 0;
 		break;
 	case WS_ITIMER_ARCHIVE:
-		simu_timer(it, ARCHIVE_INTERVAL);
+		ws_itimer_delay(it, ARCHIVE_INTERVAL);
 		ret = 0;
 		break;
 	default:

@@ -323,8 +323,21 @@ error:
 }
 
 DSO_EXPORT void
-ws_timespec(struct timespec *ts, long ms)
+ws_time_ms(struct timespec *ts, long ms)
 {
 	ts->tv_sec = ms / 1000;
 	ts->tv_nsec = ms - 1000 * ts->tv_sec;
+}
+
+DSO_EXPORT void
+ws_itimer_delay(struct itimerspec *it, long sec)
+{
+	time_t now;
+
+	time(&now);
+
+	it->it_interval.tv_nsec = 0;
+	it->it_interval.tv_sec = sec;
+	it->it_value.tv_sec = sec - now % sec;
+	it->it_value.tv_nsec = 0;
 }

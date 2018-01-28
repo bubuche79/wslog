@@ -33,8 +33,8 @@ print_loop1(const struct ws_loop *p)
 
 	printf("%s %.1f°C %hhu%% %.1fm/s (%s) %.1fmm %.1f°C %hhu%%\n", buf, p->temp,
 			p->humidity, p->wind_speed,
-			p->wind_speed ? ws_dir_deg(p->wind_dir) : "-", p->rain, p->temp_in,
-			p->humidity_in);
+			p->wind_speed ? ws_dir_deg(p->wind_dir) : "-",
+			p->rain_day, p->in_temp, p->in_humidity);
 }
 
 static void
