@@ -268,7 +268,7 @@ vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...)
 	bufsz = vsnprintf(buf, sizeof(buf), CMDS[cmd].fmt, ap);
 	va_end(ap);
 
-#ifdef DEBUG
+#if DEBUG >= 2
 	printf("%*s\n", bufsz, buf);
 #endif
 
