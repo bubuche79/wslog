@@ -44,7 +44,7 @@ vantage_rain(int ticks, int rain_cup)
 double
 vantage_speed(int s)
 {
-	return s * 1.609344 / 3600;
+	return s * 1.609344 / 3.6;
 }
 
 const char *
