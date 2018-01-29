@@ -89,6 +89,12 @@ vantage_ee_cfg(int fd, struct vantage_cfg *p)
 	p->rain_start = vantage_uint8(buf, 0x2C - 0x01);
 	p->ar_period = vantage_uint8(buf, 0x2D - 0x01);
 
+	if (vantage_eebrd(fd, 0xFFC, buf, 1) == -1) {
+		goto error;
+	}
+
+	p->log_avg = vantage_uint8(buf, 0);
+
 	return 0;
 
 error:

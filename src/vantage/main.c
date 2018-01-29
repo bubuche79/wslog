@@ -278,7 +278,8 @@ main_info(int fd, int argc, char* const argv[])
 	printf("  Wind cup size: %s\n", cfg.sb_wind_cup ? "large" : "small");
 	printf("  Rain collector size: %s\n", (cfg.sb_rain_cup == 0 ? "0.01 in" : (cfg.sb_rain_cup == 1 ? "0.2 mm" : "0.1 mm")));
 	printf("  Rain season start: %d\n", cfg.rain_start);
-	printf("  Time (onboard): %s\n\n", buf);
+	printf("  Time (onboard): %s\n", buf);
+	printf("  Temperature logging: %s\n\n", (cfg.log_avg ? "end" : "average"));
 
 	printf("Station info:\n");
 	printf("  Latitude (onboard): %.1f°\n", vantage_float(cfg.latitude, 1));

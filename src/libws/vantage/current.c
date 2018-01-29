@@ -14,7 +14,7 @@
 #include "libws/vantage/vantage.h"
 
 #define LOOP_SIZE 	97		/* 99 bytes with CRC */
-#define LOOP_DELAY 	2000
+#define LOOP_DELAY 	2000		/* LOOP delay between packets */
 
 #define LPS_DELAY 	2500		/* LPS delay between packets */
 #define LPS_MASK	0x03		/* LOOP and LOOP2 packets */

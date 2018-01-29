@@ -60,6 +60,7 @@ struct vantage_cfg
 	};
 	uint8_t rain_start;		/* Rain season start (1 = January) */
 	uint8_t ar_period;		/* Archive period (minutes) */
+	uint8_t log_avg;		/* Temperature logging (0: average, >0: end) */
 };
 
 struct vantage_rxck
