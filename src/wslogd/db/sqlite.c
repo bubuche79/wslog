@@ -19,7 +19,7 @@
 
 #define SQL_MAX		1024
 #define SQL_TABLE	"ws_archive"
-#define SQL_CREATE	"sqlite.sql" //"/usr/share/wslog/"
+#define SQL_CREATE	"/usr/share/wslog/sqlite.sql"
 
 #define bufsz(buf, p, len) ((len) - ((p) - (buf)))
 

@@ -51,6 +51,8 @@ define Package/wslog/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/ws23xx $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/wslogc $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/wslogd $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/usr/share/wslog
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/share/wslog/sqlite.sql $(1)/usr/share/wslog
 endef
 
 define Package/wslog/postinst
