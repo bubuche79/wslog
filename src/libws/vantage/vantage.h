@@ -60,6 +60,11 @@ struct vantage_cfg
 	};
 	uint8_t rain_start;		/* Rain season start (1 = January) */
 	uint8_t ar_period;		/* Archive period (minutes) */
+	int8_t temp_cal;		/* Temperature calibration */
+	int8_t humidity_cal;		/* Humidity calibration */
+	int16_t dir_cal;		/* Wind direction calibration */
+	int8_t in_temp_cal;		/* Indoor temperature calibration */
+	int8_t in_humidity_cal;		/* Indoor humidity calibration */
 	uint8_t log_avg;		/* Temperature logging (0: average, >0: end) */
 };
 
@@ -83,15 +88,15 @@ struct vantage_loop
 	uint16_t wind_dir;		/* Wind direction (1 - 360°) */
 	uint16_t wind_avg_10m;		/* 10-minutes average wind speed (mph/10) */
 	uint16_t wind_avg_2m;		/* 2-minutes average wind speed (mph/10) */
-	uint16_t wind_gust_10m;		/* 10-minutes wind gust speed (mph/10) */
-	uint16_t wind_gust_dir_10m;	/* 10-minutes wind gust direction (mph/10) */
+	uint16_t wind_hi_10m;		/* 10-minutes wind gust speed (mph/10) */
+	uint16_t wind_hi_dir_10m;	/* 10-minutes wind gust direction (mph/10) */
 	int16_t dew_point;		/* Dew point (F°) */
 	uint8_t humidity;		/* Outside humidity */
 	int16_t heat_index;		/* Heat index (F°) */
 	int16_t wind_chill;		/* Wind chill (F°) */
-	int16_t thsw_chill;		/* THSW index (F°) */
+	int16_t thsw_idx;		/* THSW index (F°) */
 	int16_t rain_rate;		/* Rain rate (clicks/hour) */
-	int8_t uv;			/* UV index */
+	uint8_t uv_idx;			/* UV index */
 	int16_t solar_rad;		/* Solar radiation (W/m²) */
 	int16_t storm_rain;		/* Storm rain (clicks) */
 	time_t storm_start;		/* Start date of storm */

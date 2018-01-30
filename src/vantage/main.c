@@ -156,18 +156,51 @@ print_rxcheck(const char *pref, const struct vantage_rxck *ck)
 static void
 print_lps(const struct vantage_loop *l)
 {
+	char ss_time[20];
+
+	localftime_r(ss_time, sizeof(ss_time), &l->storm_start, "%F %T");
+
 	printf("Temperature: %.1f°C\n", vantage_temp(l->temp, 1));
 	printf("Humidity: %hhu%%\n", l->humidity);
-	printf("Pressure: %.1fhPa\n", vantage_pressure(l->barometer, 3));
-	printf("Wind speed: %.1fm/s\n", vantage_speed(l->wind_speed));
-	printf("Wind direction: %d°\n", l->wind_dir);
+	printf("Bar trend: %hhd\n", l->bar_trend);
+	printf("Barometer: %.1fhPa\n", vantage_pressure(l->barometer, 3));
+	if (l->wind_dir > 0) {
+		printf("Wind speed: %.1fm/s\n", vantage_speed(l->wind_speed, 0));
+		printf("Wind direction: %d°\n", l->wind_dir);
+	}
+	printf("2-min average wind speed: %.1fm/s\n", vantage_speed(l->wind_avg_2m, 1));
+	printf("10-min average wind speed: %.1fm/s\n", vantage_speed(l->wind_avg_10m, 1));
+	printf("10-min high wind speed: %.1fm/s\n", vantage_speed(l->wind_hi_10m, 1));
+	printf("Direction of 10-min high wind speed: %d°\n", l->wind_hi_dir_10m);
 	printf("Dew point: %.0f°C\n", vantage_temp(l->dew_point, 0));
 	printf("Heat index: %.0f°C\n", vantage_temp(l->heat_index, 0));
 	printf("Wind chill: %.0f°C\n", vantage_temp(l->wind_chill, 0));
-	printf("Daily rain: %.1fmm\n", vantage_rain(l->daily_rain, cfg.sb_rain_cup));
+	if (l->thsw_idx != UINT8_MAX) {
+		printf("THSW index: %.0f°C\n", vantage_temp(l->thsw_idx, 0));
+	}
+	if (l->uv_idx != UINT8_MAX) {
+		printf("UV index: %hhd\n", l->uv_idx);
+	}
+	if (l->solar_rad != INT16_MAX) {
+		printf("Solar radiation: %hdw/m²\n", l->solar_rad);
+	}
 	printf("Rain rate: %1.fmm/hour\n", vantage_rain(l->rain_rate, cfg.sb_rain_cup));
-	printf("In temperature: %.1f°C\n", vantage_temp(l->in_temp, 1));
-	printf("In humidity: %hhu%%\n", l->in_humidity);
+	printf("Storm rate: %1.fmm/hour\n", vantage_rain(l->storm_rain, cfg.sb_rain_cup));
+	printf("Start date of current storm: %s\n", ss_time);
+	printf("Daily rain: %.1fmm\n", vantage_rain(l->daily_rain, cfg.sb_rain_cup));
+	printf("Last 15-min rain: %.1fmm\n", vantage_rain(l->last_15m_rain, cfg.sb_rain_cup));
+	printf("Last hour rain: %.1fmm\n", vantage_rain(l->last_1h_rain, cfg.sb_rain_cup));
+	printf("Last 24-hour rain: %.1fmm\n", vantage_rain(l->last_24h_rain, cfg.sb_rain_cup));
+	if (l->daily_et != 0) {
+		printf("Daily ET: %.1fmm\n", vantage_meter(l->daily_et, 3) / 1000.0);
+	}
+	printf("Inside temperature: %.1f°C\n", vantage_temp(l->in_temp, 1));
+	printf("Inside humidity: %hhu%%\n", l->in_humidity);
+	printf("User-entered barometric offset: %.1fhPa\n", vantage_pressure(l->barometer_off, 3));
+	printf("Barometric calibration number: %.1fhPa\n", vantage_pressure(l->barometer_cal, 3));
+	printf("Barometric sensor raw reading: %.1fhPa\n", vantage_pressure(l->barometer_raw, 3));
+	printf("Absolute barometric pressure: %.1fhPa\n", vantage_pressure(l->barometer_abs, 3));
+	printf("Altimeter setting: %.1fhPa\n", vantage_pressure(l->altimeter_opts, 3));
 }
 
 static void
@@ -181,9 +214,9 @@ print_dmp(const struct vantage_dmp *d)
 	printf("Temperature: %.1f°C\n", vantage_temp(d->temp, 1));
 	printf("Humidity: %hhu%%\n", d->humidity);
 	printf("Pressure: %.1fhPa\n", vantage_pressure(d->barometer, 3));
-	printf("Wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed));
+	printf("Wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed, 0));
 	printf("Main wind direction: %s\n", vantage_dir(d->main_wind_dir));
-	printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed));
+	printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed, 0));
 	printf("Rain: %1.fmm\n", vantage_rain(d->rain, cfg.sb_rain_cup));
 	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup));
 	printf("In temperature: %.1f°C\n", vantage_temp(d->in_temp, 1));

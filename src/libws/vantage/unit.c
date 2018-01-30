@@ -42,9 +42,15 @@ vantage_rain(int ticks, int rain_cup)
 }
 
 double
-vantage_speed(int s)
+vantage_meter(int inch, int scale)
 {
-	return s * 1.609344 / 3.6;
+	return (inch / pow10d[scale]) * 25.4 / 1000;
+}
+
+double
+vantage_speed(int mph, int scale)
+{
+	return (mph / pow10d[scale]) * 1.609344 / 3.6;
 }
 
 const char *

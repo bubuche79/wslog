@@ -76,7 +76,8 @@ double vantage_float(int v, int scale);
 double vantage_temp(int f, int scale);
 double vantage_pressure(int inhg, int scale);
 double vantage_rain(int ticks, int rain_cup);
-double vantage_speed(int mph);
+double vantage_meter(int inch, int scale);
+double vantage_speed(int mph, int scale);
 const char *vantage_dir(int idx);
 
 const char *vantage_type_str(enum vantage_type t);

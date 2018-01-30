@@ -88,6 +88,11 @@ vantage_ee_cfg(int fd, struct vantage_cfg *p)
 	p->setup_bits = vantage_uint8(buf, 0x2B - 0x01);
 	p->rain_start = vantage_uint8(buf, 0x2C - 0x01);
 	p->ar_period = vantage_uint8(buf, 0x2D - 0x01);
+	p->in_temp_cal = vantage_int8(buf, 0x32 - 0x01);
+	p->temp_cal = vantage_int8(buf, 0x34 - 0x01);
+	p->in_humidity_cal = vantage_int8(buf, 0x44 - 0x01);
+	p->humidity_cal = vantage_int8(buf, 0x45 - 0x01);
+	p->dir_cal = vantage_int16(buf, 0x4D - 0x01);
 
 	if (vantage_eebrd(fd, 0xFFC, buf, 1) == -1) {
 		goto error;
