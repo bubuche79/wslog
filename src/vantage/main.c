@@ -196,6 +196,7 @@ print_lps(const struct vantage_loop *l)
 	}
 	printf("Inside temperature: %.1f°C\n", vantage_temp(l->in_temp, 1));
 	printf("Inside humidity: %hhu%%\n", l->in_humidity);
+	printf("Barometric reduction method: %hhd\n", l->barometer_algo);
 	printf("User-entered barometric offset: %.1fhPa\n", vantage_pressure(l->barometer_off, 3));
 	printf("Barometric calibration number: %.1fhPa\n", vantage_pressure(l->barometer_cal, 3));
 	printf("Barometric sensor raw reading: %.1fhPa\n", vantage_pressure(l->barometer_raw, 3));

@@ -29,6 +29,11 @@
 #include "service/sensor.h"
 #include "worker.h"
 
+#define ST_DONE 	0
+#define ST_INIT		1
+#define ST_ERROR 	2
+#define ST_RUNNING	3
+
 struct worker
 {
 	int w_signo;			/* Signal number */
@@ -113,7 +118,7 @@ sigthread_main(void *arg)
 
 	dt = (struct worker *) arg;
 
-	dt->w_status = -1;
+	dt->w_status = ST_RUNNING;
 
 	/* Blocked signals */
 	(void) sigemptyset(&set);
@@ -149,12 +154,13 @@ sigthread_main(void *arg)
 		return NULL;
 	}
 
-	dt->w_status = 0;
+	dt->w_status = ST_DONE;
 
 	return NULL;
 
 error:
 	errsv = errno;
+	dt->w_status = ST_ERROR;
 	(void) timer_delete(&timer);
 	(void) dt->w_destroy();
 
@@ -227,6 +233,10 @@ threads_start(void)
 #endif
 
 	threads_count();
+
+	for (i = 0; i < threads_nel; i++) {
+		threads[i].w_status = ST_INIT;
+	}
 
 	/* Signal */
 #ifndef HAVE_SIGTHREADID
@@ -323,8 +333,10 @@ threads_kill(void)
 	for (i = 0; i < threads_nel; i++) {
 		struct worker *dt = &threads[i];
 
-		if (sigthread_kill(dt) == -1) {
-			ret = -1;
+		if (dt->w_status != ST_INIT) {
+			if (sigthread_kill(dt) == -1) {
+				ret = -1;
+			}
 		}
 	}
 
@@ -337,7 +349,7 @@ worker_destroy(void)
 	int ret = 0;
 
 	threads_kill();
-	syslog(LOG_INFO, "threads stopped");
+	syslog(LOG_INFO, "Threads stopped");
 
 	/* Shutdown requested */
 	if (shutdown_pending) {
@@ -346,7 +358,7 @@ worker_destroy(void)
 			ret = -1;
 		}
 
-		syslog(LOG_INFO, "resources released");
+		syslog(LOG_INFO, "Resources released");
 	}
 
 	if (drv_destroy() == -1) {

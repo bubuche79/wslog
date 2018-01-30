@@ -77,7 +77,6 @@ bulk_fetch()
 	/* Fetch records, and save them into database */
 	do {
 		sz = drv_get_archive(arbuf, AR_LEN, current);
-
 		if (sz == -1) {
 			goto error;
 		} else if (sz > 0) {
