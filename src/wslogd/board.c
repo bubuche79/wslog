@@ -17,29 +17,29 @@
 
 #include "board.h"
 
-#define SHM_NAME "/wslog"			/* shared memory object name */
-#define SHM_SIZE (16*1024)			/* shared memory size */
+#define SHM_NAME "/wslog"		/* Shared memory object name */
+#define SHM_SIZE (16*1024)		/* Shared memory size */
 
 struct shm_buf
 {
-	size_t off;						/* offset to buffer */
-	size_t sz;						/* max number of elements */
+	size_t off;			/* Offset to buffer */
+	size_t sz;			/* Max number of elements */
 
-	size_t nel;						/* number of elements */
-	size_t idx;						/* next index */
+	size_t nel;			/* Number of elements */
+	size_t idx;			/* next index */
 };
 
 struct shm_board
 {
 	pthread_mutex_t mutex;
 
-	struct shm_buf loop;			/* loop array */
-	struct shm_buf ar;				/* archive array */
+	struct shm_buf loop;		/* Loop array */
+	struct shm_buf ar;		/* Archive array */
 };
 
-static int shmflag = 0;				/* open flag */
-static size_t shmlen = 0;			/* shared memory size */
-static void *shmbufp = MAP_FAILED;	/* shared memory */
+static int shmflag = 0;			/* Open flag */
+static size_t shmlen = 0;		/* Shared memory size */
+static void *shmbufp = MAP_FAILED;	/* Shared memory */
 
 struct shm_board *boardp = NULL;
 

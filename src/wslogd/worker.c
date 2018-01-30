@@ -31,15 +31,15 @@
 
 struct worker
 {
-	int w_signo;									/* signal number */
-	struct itimerspec w_itimer;						/* interval timer */
-	int (*w_action) (void);							/* action on signal */
+	int w_signo;			/* Signal number */
+	struct itimerspec w_itimer;	/* Interval timer */
+	int (*w_action) (void);		/* Action on signal */
 	int (*w_destroy) (void);
 
 	timer_t w_timer;
-	pthread_t w_thread;								/* thread id */
-	int w_failures;									/* number of failures */
-	int w_status;									/* exit status */
+	pthread_t w_thread;		/* Thread id */
+	int w_failures;			/* Number of failures */
+	int w_status;			/* Exit status */
 };
 
 static int startup = 1;
@@ -47,11 +47,11 @@ static int startup = 1;
 static volatile sig_atomic_t shutdown_pending;
 static volatile sig_atomic_t hangup_pending;
 
-static struct worker threads[4];					/* daemon threads */
-static size_t threads_nel;							/* number of elements */
+static struct worker threads[4];	/* Daemon threads */
+static size_t threads_nel;		/* Number of elements */
 
-static struct itimerspec *rt_itimer;				/* real time timer */
-static struct itimerspec *ar_itimer;				/* archive timer */
+static struct itimerspec *rt_itimer;	/* Real time timer */
+static struct itimerspec *ar_itimer;	/* Archive timer */
 
 static void
 sig_set(sigset_t *set)
