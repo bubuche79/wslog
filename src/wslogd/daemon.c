@@ -7,6 +7,7 @@
 #endif
 
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
@@ -27,11 +28,11 @@ static int
 close_fds(void)
 {
 	int fd;
-	int fdmax;
+	struct rlimit rlim;
 
-	fdmax = sysconf(_SC_OPEN_MAX);
+	getrlimit(RLIMIT_NOFILE, &rlim);
 
-	for (fd = 0; fd < fdmax; fd++) {
+	for (fd = 3; fd < rlim.rlim_cur; fd++) {
 		int ret;
 
 		ret = close(fd);
@@ -52,11 +53,6 @@ sanitize_stdfd(void)
 
 	for (fd = 0; fd < 3; ++fd) {
 		int i, oflag;
-		struct stat sbuf;
-
-		if (fstat(fd, &sbuf) == -1) {
-			continue;
-		}
 
 		i = (fd == 0) ? 0 : 1;
 		oflag = (fd == 0) ? O_RDONLY : O_WRONLY;
