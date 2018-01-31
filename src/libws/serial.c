@@ -19,9 +19,7 @@
 #include "libws/util.h"
 #include "libws/serial.h"
 
-static struct termios oldio;
-
-long ws_io_delay = 50;
+long ws_io_delay = 0;
 
 static void
 msleep(long ms)
@@ -47,19 +45,24 @@ ws_open(const char *device, speed_t speed)
 	}
 
 	/* Save current settings */
-	if (tcgetattr(fd, &oldio) == -1) {
+	if (tcgetattr(fd, &adtio) == -1) {
 		goto error;
 	}
 	
-	memset(&adtio, 0, sizeof(adtio));
-	
 	/* Serial control options */
-	adtio.c_iflag = IGNBRK|IGNPAR;
+#if 0
+	memset(&adtio, 0, sizeof(adtio));
+
+	adtio.c_iflag = IGNBRK|IGNPAR|IGNCR;
 	adtio.c_oflag = 0;
 	adtio.c_cflag = CREAD|CLOCAL|CS8;
 	adtio.c_lflag = 0;
-	adtio.c_cc[VMIN] = 0;			/* no blocking read */
-	adtio.c_cc[VTIME] = 0;			/* timer 0s */
+#else
+	cfmakeraw(&adtio);
+#endif
+
+	adtio.c_cc[VMIN] = 0;			/* No blocking read */
+	adtio.c_cc[VTIME] = 0;			/* Timer 0s */
 
 	(void) cfsetispeed(&adtio, speed);
 	(void) cfsetospeed(&adtio, speed);
@@ -88,9 +91,6 @@ error:
 DSO_EXPORT int
 ws_close(int fd)
 {
-	if (tcsetattr(fd, TCSANOW, &oldio) == -1) {
-		goto error;
-	}
 	if (close(fd) == -1) {
 		goto error;
 	}
