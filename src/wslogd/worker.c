@@ -238,12 +238,16 @@ threads_start(void)
 		threads[i].w_status = ST_INIT;
 	}
 
+	i = 0;
+
 	/* Signal */
 #ifndef HAVE_SIGTHREADID
 	signo = SIGRTMIN;
 #else
 	signo = SIGALRM;
 #endif
+
+	syslog(LOG_INFO, "Starting %zd threads", threads_nel);
 
 	/* Configure sensor thread */
 	rt_itimer = &threads[i].w_itimer;

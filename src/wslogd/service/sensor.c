@@ -47,12 +47,12 @@ sensor_init(struct itimerspec *it)
 	syslog(LOG_INFO, "driver.delay: %ld\n", it->it_value.tv_sec);
 #endif
 
-	syslog(LOG_INFO, "sensor service ready");
+	syslog(LOG_INFO, "Sensor service ready");
 
 	return 0;
 
 error:
-	return 0;
+	return -1;
 }
 
 int
