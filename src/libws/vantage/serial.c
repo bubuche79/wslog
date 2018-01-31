@@ -11,8 +11,8 @@
 #include "libws/serial.h"
 #include "libws/vantage/vantage.h"
 
-#define BAUDRATE	B19200		/* default baudrate */
-#define WAKEUP_TO	1200		/* wakeup timeout, in milliseconds */
+#define BAUDRATE	B19200		/* Default baudrate */
+#define WAKEUP_TO	1200		/* Wakeup timeout, in milliseconds */
 
 DSO_EXPORT int
 vantage_open(const char *device)

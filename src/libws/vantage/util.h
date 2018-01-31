@@ -19,7 +19,7 @@
 #define IO_ACK_MASK	0x00F0
 
 /* I/O timeouts */
-#define IO_TIMEOUT	250		/* I/O timeout, in milliseconds */
+#define IO_TIMEOUT	1250		/* I/O timeout, in milliseconds */
 #define IO_LONG_TIMEOUT	60000		/* Long I/O timeout (ack), in milliseconds */
 
 enum vantage_cmd
@@ -71,7 +71,7 @@ enum vantage_cmd
 extern "C" {
 #endif
 
-double vantage_float(int v, int scale);
+double vantage_val(int v, int scale);
 
 double vantage_temp(int f, int scale);
 double vantage_pressure(int inhg, int scale);

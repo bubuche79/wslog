@@ -116,7 +116,7 @@ vantage_dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 	dmp->rain = vantage_uint16(buf, 10);
 	dmp->hi_rain_rate = vantage_uint16(buf, 12);
 	dmp->barometer = vantage_uint16(buf, 14);
-	dmp->solar_rad = vantage_uint16(buf, 16);
+	dmp->solar_rad = vantage_int16(buf, 16);
 	dmp->wind_samples = vantage_uint16(buf, 18);
 	dmp->in_temp = vantage_int16(buf, 20);
 	dmp->in_humidity = vantage_uint8(buf, 22);

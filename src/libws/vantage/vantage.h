@@ -128,7 +128,7 @@ struct vantage_dmp
 	uint16_t rain;			/* Number of rain clicks */
 	uint16_t hi_rain_rate;		/* Highest rain rate (clicks/hour) */
 	uint16_t barometer;		/* Barometer (Hg/1000) */
-	uint16_t solar_rad;		/* Solar radiation (W/m²) */
+	int16_t solar_rad;		/* Solar radiation (W/m²) */
 	uint16_t wind_samples;		/* Number of wind samples */
 	int16_t in_temp;		/* Inside temperature (F°/10) */
 	uint8_t in_humidity;		/* Inside humidity */

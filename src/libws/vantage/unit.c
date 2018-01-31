@@ -8,7 +8,7 @@
 static const double pow10d[] = { 1.0, 10.0, 100.0, 1000.0 };
 
 double
-vantage_float(int v, int scale)
+vantage_val(int v, int scale)
 {
 	return v / pow10d[scale];
 }
@@ -44,7 +44,7 @@ vantage_rain(int ticks, int rain_cup)
 double
 vantage_meter(int inch, int scale)
 {
-	return (inch / pow10d[scale]) * 25.4 / 1000;
+	return (inch / pow10d[scale]) * 25.4 * 1000;
 }
 
 double

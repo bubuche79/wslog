@@ -213,15 +213,28 @@ print_dmp(const struct vantage_dmp *d)
 
 	printf("Timestamp: %s\n", ftime);
 	printf("Temperature: %.1f°C\n", vantage_temp(d->temp, 1));
+	printf("High temperature: %.1f°C\n", vantage_temp(d->hi_temp, 1));
+	printf("Low temperature: %.1f°C\n", vantage_temp(d->lo_temp, 1));
 	printf("Humidity: %hhu%%\n", d->humidity);
-	printf("Pressure: %.1fhPa\n", vantage_pressure(d->barometer, 3));
-	printf("Wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed, 0));
+	printf("Rain fall: %1.fmm\n", vantage_rain(d->rain, cfg.sb_rain_cup));
+	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup));
+	printf("Barometer: %.1fhPa\n", vantage_pressure(d->barometer, 3));
+	if (d->solar_rad != INT16_MAX) {
+		printf("Solar radiation: %hhdw/m²\n", d->solar_rad);
+	}
+	printf("Number of wind samples: %hhu\n", d->wind_samples);
+	printf("Average wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed, 0));
 	printf("Main wind direction: %s\n", vantage_dir(d->main_wind_dir));
 	printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed, 0));
-	printf("Rain: %1.fmm\n", vantage_rain(d->rain, cfg.sb_rain_cup));
-	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup));
-	printf("In temperature: %.1f°C\n", vantage_temp(d->in_temp, 1));
-	printf("In humidity: %hhu%%\n", d->in_humidity);
+	printf("Direction of high wind speed: %s\n", vantage_dir(d->hi_wind_dir));
+	if (d->avg_uv) {
+		printf("Average UV: %.1f\n", vantage_val(d->avg_uv, 1));
+	}
+	if (d->et) {
+		printf("1-hour ET: %.3fmm\n", vantage_meter(d->et, 3) / 1000);
+	}
+	printf("Inside temperature: %.1f°C\n", vantage_temp(d->in_temp, 1));
+	printf("Inside humidity: %hhu%%\n", d->in_humidity);
 }
 
 static void
@@ -316,8 +329,8 @@ main_info(int fd, int argc, char* const argv[])
 	printf("  Temperature logging: %s\n\n", (cfg.log_avg ? "end" : "average"));
 
 	printf("Station info:\n");
-	printf("  Latitude (onboard): %.1f°\n", vantage_float(cfg.latitude, 1));
-	printf("  Longitude (onboard): %.1f°\n\n", vantage_float(cfg.longitude, 1));
+	printf("  Latitude (onboard): %.1f°\n", vantage_val(cfg.latitude, 1));
+	printf("  Longitude (onboard): %.1f°\n\n", vantage_val(cfg.longitude, 1));
 
 	printf("Reception diagnostics:\n");
 	print_rxcheck("  ", &ck);
