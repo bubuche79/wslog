@@ -291,7 +291,7 @@ ws23xx_get_loop(struct ws_loop *p)
 	switch (cnx_type) {
 	case 0:				/* cable */
 	case 15:			/* wireless */
-		p->wl_mask |= WF_TEMP|WF_HUMIDITY|WF_RAIN_FALL|WF_DEW_POINT;
+		p->wl_mask |= WF_TEMP|WF_HUMIDITY|WF_RAIN|WF_DEW_POINT;
 
 		if (!(wind_invalid || wind_overflow)) {
 			p->wl_mask |= WF_WIND_SPEED|WF_WIND_DIR|WF_WINDCHILL;

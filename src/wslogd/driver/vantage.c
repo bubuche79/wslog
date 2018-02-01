@@ -172,7 +172,7 @@ conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 		p->hi_wind_dir = d->hi_wind_dir;
 	}
 
-	p->wl_mask |= WF_RAIN_FALL|WF_HI_RAIN_RATE;
+	p->wl_mask |= WF_RAIN|WF_HI_RAIN_RATE;
 	p->rain_fall = vantage_rain(d->rain, cfg.sb_rain_cup);
 	p->hi_rain_rate = vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup);
 }
@@ -224,7 +224,7 @@ conv_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 		p->windchill = vantage_temp(d->heat_index, 0);
 	}
 
-	p->wl_mask |= WF_RAIN_FALL|WF_HI_RAIN_RATE;
+	p->wl_mask |= WF_RAIN|WF_HI_RAIN_RATE;
 	p->rain_day = vantage_rain(d->daily_rain, cfg.sb_rain_cup);
 	p->rain_rate = vantage_rain(d->rain_rate, cfg.sb_rain_cup);
 }

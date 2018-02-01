@@ -35,7 +35,7 @@ struct ws_db
 static sqlite3 *db;			/* Database handle */
 static sqlite3_stmt *stmt;		/* Insert prepared statement */
 
-static struct ws_db columns[] =
+static const struct ws_db columns[] =
 {
 	{ "time", SQLITE_INTEGER },
 	{ "interval", SQLITE_INTEGER },

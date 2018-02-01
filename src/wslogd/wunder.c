@@ -29,22 +29,26 @@ struct ws_http
 struct ws_wunder
 {
 	const char *param;
-	int (*get) (const struct ws_archive *, double *);
+	int (*get) (const struct ws_loop *, double *);
 	double (*conv) (double);
 };
 
-static struct ws_wunder params[] =
+static const struct ws_wunder params[] =
 {
-	{ "baromin", ws_get_barometer, ws_inhg },
-	{ "tempf", ws_get_temp, ws_fahrenheit },
-	{ "humidity", ws_get_humidity, NULL },
-	{ "windspeedmph", ws_get_wind_speed, ws_mph },
-	{ "winddir", ws_get_wind_dir, NULL },
-	{ "windgustmph", ws_get_hi_wind_speed, ws_mph },
-	{ "windgustdir", ws_get_hi_wind_dir, NULL },
-	{ "dewptf", ws_get_dew_point, ws_fahrenheit },
-	{ "indoortempf", ws_get_in_temp, ws_fahrenheit },
-	{ "indoorhumidity", ws_get_in_humidity, NULL }
+	{ "winddir", ws_loop_wind_dir },
+	{ "windspeedmph", ws_loop_wind_speed, ws_mph },
+	{ "windgustdir_10m", ws_loop_hi_wind_10m_dir },
+	{ "windgustmph_10m", ws_loop_hi_wind_10m_speed, ws_mph },
+	{ "humidity", ws_loop_humidity },
+	{ "dewptf", ws_loop_dew_point, ws_fahrenheit },
+	{ "tempf", ws_loop_temp, ws_fahrenheit },
+	{ "rainin", ws_loop_rain_1h, ws_in },
+	{ "dailyrainin", ws_loop_rain_day, ws_in },
+	{ "baromin", ws_loop_barometer, ws_inhg },
+	{ "solarradiation", ws_loop_solar_rad, ws_inhg },
+	{ "UV", ws_loop_uv },
+	{ "indoortempf", ws_loop_in_temp, ws_fahrenheit },
+	{ "indoorhumidity", ws_loop_in_humidity }
 };
 
 static size_t params_nel = array_size(params);
@@ -92,7 +96,7 @@ curl_log(const char *fn, CURLcode code)
 }
 
 static int
-wunder_url(char *str, size_t len, CURL *h, const struct ws_archive *p)
+wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 {
 	int ret;
 	char ftime[22];			/* date utc */
@@ -162,7 +166,7 @@ error:
  * See http://wiki.wunderground.com/index.php/PWS_-_Upload_Protocol
  */
 static int
-wunder_perform(const struct ws_archive *p)
+wunder_perform(const struct ws_loop *p)
 {
 	int ret;
 	CURL *curl = NULL;
@@ -180,7 +184,7 @@ wunder_perform(const struct ws_archive *p)
 		}
 
 #ifdef DEBUG
-		syslog(LOG_NOTICE, "Wunder: %s", url);
+		syslog(LOG_DEBUG, "Wunder: %s", url);
 #endif
 
 		/* Set request option */
@@ -220,7 +224,7 @@ wunder_perform(const struct ws_archive *p)
 	/* Check response */
 	ret = dry_run || (iobuf.buf && !strncmp("success\n", iobuf.buf, iobuf.len)) ? 0 : -1;
 	if (ret == -1) {
-		syslog(LOG_ERR, "wunderground response: %*s", (int) iobuf.len, iobuf.buf);
+		syslog(LOG_ERR, "Wunderground response: %*s", (int) iobuf.len, iobuf.buf);
 	}
 
 	http_cleanup(&iobuf);
@@ -256,8 +260,8 @@ error:
 int
 wunder_update(void)
 {
-	struct ws_archive arbuf;
-	const struct ws_archive *p;
+	struct ws_loop arbuf;
+	const struct ws_loop *p;
 
 	/* Peek last archive element */
 	if (board_lock() == -1) {
@@ -265,7 +269,7 @@ wunder_update(void)
 		goto error;
 	}
 
-	p = board_peek_ar(0);
+	p = board_peek(0);
 
 	if (p != NULL) {
 		memcpy(&arbuf, p, sizeof(*p));
@@ -279,7 +283,7 @@ wunder_update(void)
 	/* Process archive element */
 	if (p != NULL) {
 		if (wunder_perform(&arbuf) == -1) {
-			syslog(LOG_ERR, "wunder service error");
+			syslog(LOG_ERR, "Wunder service error");
 
 			/* Continue, not a fatal error */
 		}

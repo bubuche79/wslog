@@ -19,10 +19,15 @@
 #define WF_WIND_SAMPLES		_WF_FLAG(WS_WIND_SAMPLES)
 #define WF_HI_WIND_SPEED	_WF_FLAG(WS_HI_WIND_SPEED)
 #define WF_HI_WIND_DIR		_WF_FLAG(WS_HI_WIND_DIR)
-#define WF_RAIN_FALL		_WF_FLAG(WS_RAIN_FALL)
+#define WF_RAIN			_WF_FLAG(WS_RAIN)
+#define WF_RAIN_DAY		_WF_FLAG(WS_RAIN_DAY)
+#define WF_RAIN_1H		_WF_FLAG(WS_RAIN_1H)
+#define WF_RAIN_RATE		_WF_FLAG(WS_RAIN_RATE)
 #define WF_HI_RAIN_RATE		_WF_FLAG(WS_HI_RAIN_RATE)
 #define WF_DEW_POINT		_WF_FLAG(WS_DEW_POINT)
 #define WF_WINDCHILL		_WF_FLAG(WS_WINDCHILL)
+#define WF_SOLAR_RAD		_WF_FLAG(WS_SOLAR_RAD)
+#define WF_UV_INDEX		_WF_FLAG(WS_UV_INDEX)
 #define WF_HEAT_INDEX		_WF_FLAG(WS_HEAT_INDEX)
 #define WF_IN_TEMP		_WF_FLAG(WS_IN_TEMP)
 #define WF_IN_HUMIDITY		_WF_FLAG(WS_IN_HUMIDITY)
@@ -44,10 +49,15 @@ enum
 	WS_WIND_SAMPLES,
 	WS_HI_WIND_SPEED,
 	WS_HI_WIND_DIR,
-	WS_RAIN_FALL,
+	WS_RAIN,
+	WS_RAIN_DAY,
+	WS_RAIN_1H,
+	WS_RAIN_RATE,
 	WS_HI_RAIN_RATE,
 	WS_DEW_POINT,
 	WS_WINDCHILL,
+	WS_SOLAR_RAD,
+	WS_UV_INDEX,
 	WS_HEAT_INDEX,
 	WS_IN_TEMP,
 	WS_IN_HUMIDITY,
@@ -73,15 +83,17 @@ struct ws_loop
 	uint8_t humidity; 		/* Humidity (%) */
 	float wind_speed;		/* Wind speed (m/s) */
 	uint16_t wind_dir;		/* Wind direction (°) */
+	float hi_wind_10m_speed;	/* 10-minutes wind gust speed (m/s) */
+	uint16_t hi_wind_10m_dir;	/* 10-minutes wind gust direction (°) */
 	float rain_day;			/* Daily rain (mm) */
 	float rain_rate;		/* High rain rate (mm/hr) */
-#if 0
 	float rain_1h;			/* Accumulated rain in the past hour (mm) */
 	float rain_24h;			/* Accumulated rain in the past 24 hours (mm) */
+#if 0
 	float sample_et;		/* Sample evapotranspiration (mm) */
-	uint16_t radiation;		/* Solar radiation (W/m³) */
-	float uv;			/* UV index */
 #endif
+	uint16_t solar_rad;		/* Solar radiation (W/m³) */
+	float uv;			/* UV index */
 	float dew_point; 		/* Dew point (°C) */
 	float windchill;		/* Windchill temperature (°C) */
 	float heat_index;		/* Heat index (°C) */
@@ -132,10 +144,6 @@ extern "C" {
 #endif
 
 int ws_get_barometer(const struct ws_archive *p, double *v);
-#if 0
-int ws_get_pressure(const struct ws_archive *p, double *v);
-int ws_get_altimeter(const struct ws_archive *p, double *v);
-#endif
 int ws_get_temp(const struct ws_archive *p, double *v);
 int ws_get_hi_temp(const struct ws_archive *p, double *v);
 int ws_get_lo_temp(const struct ws_archive *p, double *v);
@@ -154,10 +162,6 @@ int ws_get_in_temp(const struct ws_archive *p, double *v);
 int ws_get_in_humidity(const struct ws_archive *p, double *v);
 
 int ws_set_barometer(struct ws_archive *p, double v);
-#if 0
-int ws_set_pressure(struct ws_archive *p, double v);
-int ws_set_altimeter(struct ws_archive *p, double v);
-#endif
 int ws_set_temp(struct ws_archive *p, double v);
 int ws_set_hi_temp(struct ws_archive *p, double v);
 int ws_set_lo_temp(struct ws_archive *p, double v);
@@ -174,6 +178,23 @@ int ws_set_windchill(struct ws_archive *p, double v);
 int ws_set_heat_index(struct ws_archive *p, double v);
 int ws_set_in_temp(struct ws_archive *p, double v);
 int ws_set_in_humidity(struct ws_archive *p, double v);
+
+int ws_loop_barometer(const struct ws_loop *p, double *v);
+int ws_loop_temp(const struct ws_loop *p, double *v);
+int ws_loop_humidity(const struct ws_loop *p, double *v);
+int ws_loop_wind_speed(const struct ws_loop *p, double *v);
+int ws_loop_wind_dir(const struct ws_loop *p, double *v);
+int ws_loop_hi_wind_10m_speed(const struct ws_loop *p, double *v);
+int ws_loop_hi_wind_10m_dir(const struct ws_loop *p, double *v);
+int ws_loop_rain_day(const struct ws_loop *p, double *v);
+int ws_loop_rain_1h(const struct ws_loop *p, double *v);
+int ws_loop_rain_rate(const struct ws_loop *p, double *v);
+int ws_loop_dew_point(const struct ws_loop *p, double *v);
+int ws_loop_windchill(const struct ws_loop *p, double *v);
+int ws_loop_solar_rad(const struct ws_loop *p, double *v);
+int ws_loop_uv(const struct ws_loop *p, double *v);
+int ws_loop_in_temp(const struct ws_loop *p, double *v);
+int ws_loop_in_humidity(const struct ws_loop *p, double *v);
 
 void ws_calc(struct ws_archive *p);
 ssize_t ws_aggr(struct ws_archive *p, int freq);
