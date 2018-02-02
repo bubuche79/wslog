@@ -37,27 +37,22 @@ struct vantage_cfg
 	int16_t latitude;		/* Latitude (tenth of degree) */
 	int16_t longitude;		/* Longitude (tenth of degree) */
 	uint16_t altitude;		/* Elevation (feet) */
-	union {
-		struct {
-			uint8_t ub_barometer : 2;	/* Barometer */
-			uint8_t ub_temp : 2;		/* Temperature */
-			uint8_t ub_altitude : 1;	/* Elevation */
-			uint8_t ub_wind : 2;		/* Wind */
-		};
-		uint8_t unit_bits;			/* Raw unit bits */
-	};
-	union {
-		struct {
-			uint8_t sb_time_mode : 1;	/* Time mode (0: AM/PM, 1: 24H) */
-			uint8_t sb_time_period : 1;	/* Is AM or PM (0: PM, 1: AM) */
-			uint8_t sb_month_mode : 1;	/* Month format (0: M/D, 1: D.M) */
-			uint8_t sb_wind_cup : 1;	/* Wind cup size (0: small, 1: large) */
-			uint8_t sb_rain_cup : 2;	/* Rain collector size (0: 0.01in, 1: 0.2mm, 2: 0.1mm) */
-			uint8_t sb_latitude : 1;	/* Latitude (0: S, 1: N) */
-			uint8_t sb_longitude : 1;	/* Longitude (0: W, 1: E) */
-		};
-		uint8_t setup_bits;			/* Raw setup bits */
-	};
+	struct {
+		uint8_t barometer : 2;	/* Barometer */
+		uint8_t temp : 2;	/* Temperature */
+		uint8_t altitude : 1;	/* Elevation */
+		uint8_t rain : 1;	/* Rain */
+		uint8_t wind : 2;	/* Wind */
+	} ub;
+	struct {
+		uint8_t time_mode : 1;	/* Time mode (0: AM/PM, 1: 24H) */
+		uint8_t day_period : 1;	/* Is AM or PM (0: PM, 1: AM) */
+		uint8_t month_fmt : 1;	/* Month format (0: M/D, 1: D/M) */
+		uint8_t wind_cup : 1;	/* Wind cup size (0: small, 1: large) */
+		uint8_t rain_cup : 2;	/* Rain collector size (0: 0.01in, 1: 0.2mm, 2: 0.1mm) */
+		uint8_t latitude : 1;	/* Latitude (0: S, 1: N) */
+		uint8_t longitude : 1;	/* Longitude (0: W, 1: E) */
+	} sb;
 	uint8_t rain_start;		/* Rain season start (1 = January) */
 	uint8_t ar_period;		/* Archive period (minutes) */
 	int8_t temp_cal;		/* Temperature calibration */
@@ -88,8 +83,8 @@ struct vantage_loop
 	uint16_t wind_dir;		/* Wind direction (1 - 360°) */
 	uint16_t wind_avg_10m;		/* 10-minutes average wind speed (mph/10) */
 	uint16_t wind_avg_2m;		/* 2-minutes average wind speed (mph/10) */
-	uint16_t wind_hi_10m;		/* 10-minutes wind gust speed (mph/10) */
-	uint16_t wind_hi_dir_10m;	/* 10-minutes wind gust direction (mph/10) */
+	uint16_t wind_hi_10m_speed;	/* 10-minutes wind gust speed (mph/10) */
+	uint16_t wind_hi_10m_dir;	/* 10-minutes wind gust direction (mph/10) */
 	int16_t dew_point;		/* Dew point (F°) */
 	uint8_t humidity;		/* Outside humidity */
 	int16_t heat_index;		/* Heat index (F°) */

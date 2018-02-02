@@ -170,8 +170,8 @@ print_lps(const struct vantage_loop *l)
 	}
 	printf("2-min average wind speed: %.1fm/s\n", vantage_speed(l->wind_avg_2m, 1));
 	printf("10-min average wind speed: %.1fm/s\n", vantage_speed(l->wind_avg_10m, 1));
-	printf("10-min high wind speed: %.1fm/s\n", vantage_speed(l->wind_hi_10m, 1));
-	printf("Direction of 10-min high wind speed: %d°\n", l->wind_hi_dir_10m);
+	printf("10-min high wind speed: %.1fm/s\n", vantage_speed(l->wind_hi_10m_speed, 0));
+	printf("Direction of 10-min high wind speed: %d°\n", l->wind_hi_10m_dir);
 	printf("Dew point: %.0f°C\n", vantage_temp(l->dew_point, 0));
 	printf("Heat index: %.0f°C\n", vantage_temp(l->heat_index, 0));
 	printf("Wind chill: %.0f°C\n", vantage_temp(l->wind_chill, 0));
@@ -184,13 +184,13 @@ print_lps(const struct vantage_loop *l)
 	if (l->solar_rad != INT16_MAX) {
 		printf("Solar radiation: %hdw/m²\n", l->solar_rad);
 	}
-	printf("Rain rate: %1.fmm/hour\n", vantage_rain(l->rain_rate, cfg.sb_rain_cup));
-	printf("Storm rate: %1.fmm/hour\n", vantage_rain(l->storm_rain, cfg.sb_rain_cup));
+	printf("Rain rate: %1.fmm/hour\n", vantage_rain(l->rain_rate, cfg.sb.rain_cup));
+	printf("Storm rate: %1.fmm/hour\n", vantage_rain(l->storm_rain, cfg.sb.rain_cup));
 	printf("Start date of current storm: %s\n", ss_time);
-	printf("Daily rain: %.1fmm\n", vantage_rain(l->daily_rain, cfg.sb_rain_cup));
-	printf("Last 15-min rain: %.1fmm\n", vantage_rain(l->last_15m_rain, cfg.sb_rain_cup));
-	printf("Last hour rain: %.1fmm\n", vantage_rain(l->last_1h_rain, cfg.sb_rain_cup));
-	printf("Last 24-hour rain: %.1fmm\n", vantage_rain(l->last_24h_rain, cfg.sb_rain_cup));
+	printf("Daily rain: %.1fmm\n", vantage_rain(l->daily_rain, cfg.sb.rain_cup));
+	printf("Last 15-min rain: %.1fmm\n", vantage_rain(l->last_15m_rain, cfg.sb.rain_cup));
+	printf("Last hour rain: %.1fmm\n", vantage_rain(l->last_1h_rain, cfg.sb.rain_cup));
+	printf("Last 24-hour rain: %.1fmm\n", vantage_rain(l->last_24h_rain, cfg.sb.rain_cup));
 	if (l->daily_et != 0) {
 		printf("Daily ET: %.1fmm\n", vantage_meter(l->daily_et, 3) / 1000.0);
 	}
@@ -216,8 +216,8 @@ print_dmp(const struct vantage_dmp *d)
 	printf("High temperature: %.1f°C\n", vantage_temp(d->hi_temp, 1));
 	printf("Low temperature: %.1f°C\n", vantage_temp(d->lo_temp, 1));
 	printf("Humidity: %hhu%%\n", d->humidity);
-	printf("Rain fall: %1.fmm\n", vantage_rain(d->rain, cfg.sb_rain_cup));
-	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup));
+	printf("Rain fall: %1.fmm\n", vantage_rain(d->rain, cfg.sb.rain_cup));
+	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb.rain_cup));
 	printf("Barometer: %.1fhPa\n", vantage_pressure(d->barometer, 3));
 	if (d->solar_rad != INT16_MAX) {
 		printf("Solar radiation: %hhdw/m²\n", d->solar_rad);
@@ -322,8 +322,8 @@ main_info(int fd, int argc, char* const argv[])
 	printf("Console settings:\n");
 	printf("  Archive interval: %d (minutes)\n", cfg.ar_period);
 	printf("  Altitude: %hu (feet)\n", cfg.altitude);
-	printf("  Wind cup size: %s\n", cfg.sb_wind_cup ? "large" : "small");
-	printf("  Rain collector size: %s\n", (cfg.sb_rain_cup == 0 ? "0.01 in" : (cfg.sb_rain_cup == 1 ? "0.2 mm" : "0.1 mm")));
+	printf("  Wind cup size: %s\n", cfg.sb.wind_cup ? "large" : "small");
+	printf("  Rain collector size: %s\n", (cfg.sb.rain_cup == 0 ? "0.01 in" : (cfg.sb.rain_cup == 1 ? "0.2 mm" : "0.1 mm")));
 	printf("  Rain season start: %d\n", cfg.rain_start);
 	printf("  Time (onboard): %s\n", buf);
 	printf("  Temperature logging: %s\n\n", (cfg.log_avg ? "end" : "average"));

@@ -31,8 +31,8 @@ vantage_loop_decode(struct vantage_loop *loop, const uint8_t *buf)
 	loop->wind_dir = vantage_uint16(buf, 16);
 	loop->wind_avg_10m = vantage_uint16(buf, 18);
 	loop->wind_avg_2m = vantage_uint16(buf, 20);
-	loop->wind_hi_10m = vantage_uint16(buf, 22);
-	loop->wind_hi_dir_10m = vantage_uint16(buf, 24);
+	loop->wind_hi_10m_speed = vantage_uint16(buf, 22);
+	loop->wind_hi_10m_dir = vantage_uint16(buf, 24);
 	loop->dew_point = vantage_int16(buf, 30);
 	loop->humidity = vantage_uint8(buf, 33);
 	loop->heat_index = vantage_int16(buf, 35);

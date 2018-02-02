@@ -173,8 +173,8 @@ conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 	}
 
 	p->wl_mask |= WF_RAIN|WF_HI_RAIN_RATE;
-	p->rain_fall = vantage_rain(d->rain, cfg.sb_rain_cup);
-	p->hi_rain_rate = vantage_rain(d->hi_rain_rate, cfg.sb_rain_cup);
+	p->rain_fall = vantage_rain(d->rain, cfg.sb.rain_cup);
+	p->hi_rain_rate = vantage_rain(d->hi_rain_rate, cfg.sb.rain_cup);
 }
 
 static void
@@ -196,19 +196,16 @@ conv_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 		p->barometer = vantage_pressure(d->barometer, 3);
 	}
 
-	if (d->in_temp != INT16_MAX) {
-		p->wl_mask |= WF_IN_TEMP;
-		p->in_temp = vantage_temp(d->in_temp, 1);
-	}
-	if (d->in_humidity != UINT8_MAX) {
-		p->wl_mask |= WF_IN_HUMIDITY;
-		p->in_humidity = d->in_humidity;
-	}
-
 	if (d->wind_dir != 0) {
 		p->wl_mask |= WF_WIND_SPEED | WF_WIND_DIR;
 		p->wind_speed = vantage_speed(d->wind_speed, 0);
 		p->wind_dir= d->wind_dir;
+	}
+
+	if (d->wind_hi_10m_dir != 0) {
+		p->wl_mask |= WF_HI_WIND_SPEED | WF_HI_WIND_DIR;
+		p->hi_wind_10m_speed = vantage_speed(d->wind_hi_10m_speed, 0);
+		p->hi_wind_10m_dir= d->wind_hi_10m_dir;
 	}
 
 	if (d->dew_point != INT8_MAX) {
@@ -224,9 +221,29 @@ conv_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 		p->windchill = vantage_temp(d->heat_index, 0);
 	}
 
+	if (d->uv_idx != UINT8_MAX) {
+		p->wl_mask |= WF_UV_INDEX;
+		p->uv = d->uv_idx;
+	}
+	if (d->solar_rad != INT16_MAX) {
+		p->wl_mask |= WF_SOLAR_RAD;
+		p->solar_rad = d->solar_rad;
+	}
+
 	p->wl_mask |= WF_RAIN|WF_HI_RAIN_RATE;
-	p->rain_day = vantage_rain(d->daily_rain, cfg.sb_rain_cup);
-	p->rain_rate = vantage_rain(d->rain_rate, cfg.sb_rain_cup);
+	p->rain_day = vantage_rain(d->daily_rain, cfg.sb.rain_cup);
+	p->rain_1h = vantage_rain(d->last_1h_rain, cfg.sb.rain_cup);
+	p->rain_24h = vantage_rain(d->last_24h_rain, cfg.sb.rain_cup);
+	p->rain_rate = vantage_rain(d->rain_rate, cfg.sb.rain_cup);
+
+	if (d->in_temp != INT16_MAX) {
+		p->wl_mask |= WF_IN_TEMP;
+		p->in_temp = vantage_temp(d->in_temp, 1);
+	}
+	if (d->in_humidity != UINT8_MAX) {
+		p->wl_mask |= WF_IN_HUMIDITY;
+		p->in_humidity = d->in_humidity;
+	}
 }
 
 int
