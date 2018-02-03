@@ -83,8 +83,8 @@ struct vantage_loop
 	uint16_t wind_dir;		/* Wind direction (1 - 360°) */
 	uint16_t wind_avg_10m;		/* 10-minutes average wind speed (mph/10) */
 	uint16_t wind_avg_2m;		/* 2-minutes average wind speed (mph/10) */
-	uint16_t wind_hi_10m_speed;	/* 10-minutes wind gust speed (mph/10) */
-	uint16_t wind_hi_10m_dir;	/* 10-minutes wind gust direction (mph/10) */
+	uint16_t wind_hi_10m_speed;	/* 10-minutes wind gust speed (mph) */
+	uint16_t wind_hi_10m_dir;	/* 10-minutes wind gust direction */
 	int16_t dew_point;		/* Dew point (F°) */
 	uint8_t humidity;		/* Outside humidity */
 	int16_t heat_index;		/* Heat index (F°) */
@@ -132,7 +132,7 @@ struct vantage_dmp
 	uint8_t hi_wind_speed;		/* Highest wind speed, mph */
 	uint8_t hi_wind_dir;		/* Direction code of the highest wind speed */
 	uint8_t main_wind_dir;		/* Prevailing wind direction code */
-	uint8_t avg_uv;			/* Average UV index */
+	uint8_t avg_uv;			/* Average UV index (UV/10) */
 	uint8_t et;			/* ET accumulated over the last hour */
 
 	/* rev b */

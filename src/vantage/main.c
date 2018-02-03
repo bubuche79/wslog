@@ -227,7 +227,7 @@ print_dmp(const struct vantage_dmp *d)
 	printf("Main wind direction: %s\n", vantage_dir(d->main_wind_dir));
 	printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed, 0));
 	printf("Direction of high wind speed: %s\n", vantage_dir(d->hi_wind_dir));
-	if (d->avg_uv) {
+	if (d->avg_uv != UINT8_MAX) {
 		printf("Average UV: %.1f\n", vantage_val(d->avg_uv, 1));
 	}
 	if (d->et) {

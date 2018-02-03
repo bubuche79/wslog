@@ -18,12 +18,13 @@
 #include "wslogd.h"
 #include "wunder.h"
 
-#define URL "weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+#define URL_LEN		512
+#define URL 		"weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
 struct ws_http
 {
 	char *buf;
-	size_t len;			/* used size */
+	size_t len;			/* Used size */
 };
 
 struct ws_wunder
@@ -99,7 +100,7 @@ static int
 wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 {
 	int ret;
-	char ftime[22];			/* date utc */
+	char ftime[22];			/* Date UTC */
 	size_t i;
 
 	/* Convert date */
@@ -177,7 +178,7 @@ wunder_perform(const struct ws_loop *p)
 	curl = curl_easy_init();
 	if (curl) {
 		CURLcode code;
-		char url[512];
+		char url[URL_LEN];
 
 		if (wunder_url(url, sizeof(url), curl, p) == -1) {
 			goto error;

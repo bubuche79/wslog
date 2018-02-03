@@ -33,9 +33,6 @@
 #define WF_IN_TEMP		_WF_FLAG(WS_IN_TEMP)
 #define WF_IN_HUMIDITY		_WF_FLAG(WS_IN_HUMIDITY)
 
-#define WF_WIND			(WF_WIND_SPEED|WF_WIND_DIR)
-#define WF_WIND_GUST		(WF_WIND_GUST_SPEED|WF_WIND_GUST_DIR)
-
 enum
 {
 	WS_BAROMETER,
@@ -88,7 +85,7 @@ struct ws_loop
 	float hi_wind_10m_speed;	/* 10-minutes wind gust speed (m/s) */
 	uint16_t hi_wind_10m_dir;	/* 10-minutes wind gust direction (°) */
 	float rain_day;			/* Daily rain (mm) */
-	float rain_rate;		/* High rain rate (mm/hr) */
+	float rain_rate;		/* Rain rate (mm/hr) */
 	float rain_1h;			/* Accumulated rain in the past hour (mm) */
 	float rain_24h;			/* Accumulated rain in the past 24 hours (mm) */
 #if 0
