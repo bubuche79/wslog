@@ -230,11 +230,13 @@ conv_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 		p->solar_rad = d->solar_rad;
 	}
 
-	p->wl_mask |= WF_RAIN|WF_HI_RAIN_RATE;
+	p->wl_mask |= WF_RAIN_DAY|WF_RAIN_RATE;
 	p->rain_day = vantage_rain(d->daily_rain, cfg.sb.rain_cup);
+	p->rain_rate = vantage_rain(d->rain_rate, cfg.sb.rain_cup);
+
+	p->wl_mask |= WF_RAIN_1H|WF_RAIN_24H;
 	p->rain_1h = vantage_rain(d->last_1h_rain, cfg.sb.rain_cup);
 	p->rain_24h = vantage_rain(d->last_24h_rain, cfg.sb.rain_cup);
-	p->rain_rate = vantage_rain(d->rain_rate, cfg.sb.rain_cup);
 
 	if (d->in_temp != INT16_MAX) {
 		p->wl_mask |= WF_IN_TEMP;
