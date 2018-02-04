@@ -1,5 +1,4 @@
-inc_CPPFLAGS = \
-	-DDEBUG
+inc_CPPFLAGS =
 
 inc_CFLAGS = \
 	-std=c11 -Wall -Werror 
