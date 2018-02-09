@@ -103,7 +103,7 @@ vantage_localtime(uint8_t *buf, time_t time)
 }
 
 static void
-vantage_dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
+dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 {
 #if 0
 	uint8_t rec_type;
@@ -145,7 +145,7 @@ vantage_dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 }
 
 static int
-vantage_read_page(int fd, uint8_t *buf, size_t len)
+dmp_read_page(int fd, uint8_t *buf, size_t len)
 {
 	int i;
 
@@ -176,7 +176,7 @@ error:
 }
 
 static ssize_t
-vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t offset)
+dmp_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t offset, time_t after)
 {
 	ssize_t sz;
 	uint8_t byte;
@@ -189,19 +189,26 @@ vantage_read_pages(int fd, struct vantage_dmp *p, size_t nel, int16_t offset)
 		size_t j;
 
 		/* Read page */
-		if (vantage_read_page(fd, buf, sizeof(buf)) == -1) {
+		if (dmp_read_page(fd, buf, sizeof(buf)) == -1) {
 			// TODO byte = ESC;
 			goto error;
 		}
 
 		/* Decode page (5 records) */
-		for (j = offset; j < REC_COUNT && sz < nel; j++) {
+		for (j = offset; j < REC_COUNT && sz < nel && byte == ACK; j++) {
 			uint8_t *r = buf + 1 + j * DMP_SIZE;
 
 			if (r[0] == 0xFF) {
 				byte = ESC;
 			} else {
-				vantage_dmp_decode(&p[sz++], r);
+				dmp_decode(&p[sz], r);
+
+				/* Cycled */
+				if (p[sz].time <= after) {
+					byte = ESC;
+				} else {
+					sz++;
+				}
 			}
 		}
 
@@ -232,7 +239,7 @@ vantage_dmp(int fd, struct vantage_dmp *p, size_t nel)
 		goto error;
 	}
 
-	return vantage_read_pages(fd, p, nel, 0);
+	return dmp_read_pages(fd, p, nel, 0, 0);
 
 error:
 	return -1;
@@ -285,7 +292,7 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 			nel = rec_cnt;
 		}
 
-		if ((sz = vantage_read_pages(fd, p, nel, offset)) == -1) {
+		if ((sz = dmp_read_pages(fd, p, nel, offset, after)) == -1) {
 			goto error;
 		}
 	}
