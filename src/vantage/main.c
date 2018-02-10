@@ -156,9 +156,9 @@ print_rxcheck(const char *pref, const struct vantage_rxck *ck)
 static void
 print_lps(const struct vantage_loop *l)
 {
-	char ss_time[20];
+	char ss_time[11];
 
-	localftime_r(ss_time, sizeof(ss_time), &l->storm_start, "%F %T");
+	localftime_r(ss_time, sizeof(ss_time), &l->storm_start, "%F");
 
 	printf("Temperature: %.1f°C\n", vantage_temp(l->temp, 1));
 	printf("Humidity: %hhu%%\n", l->humidity);

@@ -88,9 +88,6 @@ uint8_t vantage_uint8(const uint8_t *buf, uint16_t off);
 int16_t vantage_int16(const uint8_t *buf, uint16_t off);
 uint16_t vantage_uint16(const uint8_t *buf, uint16_t off);
 
-time_t vantage_mktime(const uint8_t *buf, uint16_t off, int time);
-void vantage_localtime(uint8_t *buf, time_t time);
-
 ssize_t vantage_read(int fd, void *buf, size_t len);
 ssize_t vantage_write(int fd, const void *buf, size_t len);
 

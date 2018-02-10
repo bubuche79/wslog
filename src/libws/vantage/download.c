@@ -57,27 +57,20 @@ vantage_uint16(const uint8_t *buf, uint16_t off)
 	return (buf[off+1] << 8) | buf[off];
 }
 
-time_t
-vantage_mktime(const uint8_t *buf, uint16_t off, int wtime)
+static time_t
+dmp_mktime(const uint8_t *buf, uint16_t off)
 {
 	struct tm tm;
-	uint16_t date;
+	uint16_t time, date;
 
 	date = vantage_uint16(buf, off + 0);
+	time = vantage_uint16(buf, off + 2);
 
 	tm.tm_year = 100 + (date >> 9);
 	tm.tm_mon = ((date >> 5) & 0x0F) - 1;
 	tm.tm_mday = date & 0x1F;
-
-	if (wtime) {
-		uint16_t time = vantage_uint16(buf, off + 2);
-
-		tm.tm_hour = time / 100;
-		tm.tm_min = time - (100 * tm.tm_hour);
-	} else {
-		tm.tm_hour = 0;
-		tm.tm_min = 0;
-	}
+	tm.tm_hour = time / 100;
+	tm.tm_min = time - (100 * tm.tm_hour);
 
 	tm.tm_sec = 0;
 	tm.tm_isdst = -1;
@@ -85,8 +78,8 @@ vantage_mktime(const uint8_t *buf, uint16_t off, int wtime)
 	return mktime(&tm);
 }
 
-void
-vantage_localtime(uint8_t *buf, time_t time)
+static void
+dmp_localtime(uint8_t *buf, time_t time)
 {
 	struct tm tm;
 	uint16_t date, t;
@@ -109,7 +102,7 @@ dmp_decode(struct vantage_dmp *dmp, const uint8_t *buf)
 	uint8_t rec_type;
 #endif
 
-	dmp->time = vantage_mktime(buf, 0, 1);
+	dmp->time = dmp_mktime(buf, 0);
 	dmp->temp = vantage_int16(buf, 4);
 	dmp->hi_temp = vantage_int16(buf, 6);
 	dmp->lo_temp = vantage_int16(buf, 8);
@@ -258,7 +251,7 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 	}
 
 	/* Send timestamp */
-	vantage_localtime(buf, after);
+	dmp_localtime(buf, after);
 
 	if (vantage_pwrite(fd, IO_CRC|IO_ACK, buf, sizeof(buf)) == -1) {
 		goto error;

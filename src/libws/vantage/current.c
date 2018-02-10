@@ -6,6 +6,7 @@
 #include "config.h"
 #endif
 
+#include <time.h>
 #include <errno.h>
 
 #include "defs/dso.h"
@@ -19,8 +20,28 @@
 #define LPS_DELAY 	2500		/* LPS delay between packets */
 #define LPS_MASK	0x03		/* LOOP and LOOP2 packets */
 
+static time_t
+lps_mktime(const uint8_t *buf, uint16_t off)
+{
+	struct tm tm;
+	uint16_t date;
+
+	date = vantage_uint16(buf, off + 0);
+
+	tm.tm_year = 100 + (date & 0x7F);
+	tm.tm_mon = ((date >> 12) & 0x0F) - 1;
+	tm.tm_mday = (date >> 7) & 0x1F;
+
+	tm.tm_hour = 0;
+	tm.tm_min = 0;
+	tm.tm_sec = 0;
+	tm.tm_isdst = -1;
+
+	return mktime(&tm);
+}
+
 static void
-vantage_loop_decode(struct vantage_loop *loop, const uint8_t *buf)
+lps_decode(struct vantage_loop *loop, const uint8_t *buf)
 {
 	loop->bar_trend = vantage_int8(buf, 3);
 	loop->barometer = vantage_uint16(buf, 7);
@@ -42,7 +63,7 @@ vantage_loop_decode(struct vantage_loop *loop, const uint8_t *buf)
 	loop->uv_idx = vantage_uint8(buf, 43);
 	loop->solar_rad = vantage_int16(buf, 44);
 	loop->storm_rain = vantage_int16(buf, 46);
-	loop->storm_start = vantage_mktime(buf, 48, 0);
+	loop->storm_start = lps_mktime(buf, 48);
 	loop->daily_rain = vantage_int16(buf, 50);
 	loop->last_15m_rain = vantage_int16(buf, 52);
 	loop->last_1h_rain = vantage_int16(buf, 54);
@@ -92,7 +113,7 @@ vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel)
 			goto error;
 		}
 
-		vantage_loop_decode(&p[sz], buf);
+		lps_decode(&p[sz], buf);
 
 		if (sz == 0) {
 			timeout += LPS_DELAY;

@@ -6,8 +6,7 @@ check_SOURCES = \
 	check_aggregate.c \
 	check_crc_ccitt.c \
 	check_nybble.c \
-	check_util.c \
-	check_vantage.c
+	check_util.c
 
 check_CPPFLAGS = -I../src/common -I../src
 
