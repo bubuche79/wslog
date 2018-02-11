@@ -9,7 +9,7 @@
 
 /* I/O mode */
 #define IO_CRC		0x0001
-#define IO_LONG_ACK	0x0002
+#define IO_LONG_OP	0x0002
 
 /* Acknowledge mode */
 #define IO_TEST		0x0010
@@ -19,7 +19,7 @@
 #define IO_ACK_MASK	0x00F0
 
 /* I/O timeouts */
-#define IO_TIMEOUT	1250		/* I/O timeout, in milliseconds */
+#define IO_TIMEOUT	250		/* I/O timeout, in milliseconds */
 #define IO_LONG_TIMEOUT	60000		/* Long I/O timeout (ack), in milliseconds */
 
 enum vantage_cmd

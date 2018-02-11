@@ -22,22 +22,19 @@ vantage_clrlog(int fd)
 DSO_EXPORT int
 vantage_clralm(int fd)
 {
-	errno = ENOTSUP;
-	return -1;
+	return vantage_proc(fd, CLRALM);
 }
 
 DSO_EXPORT int
 vantage_clrcal(int fd)
 {
-	errno = ENOTSUP;
-	return -1;
+	return vantage_proc(fd, CLRCAL);
 }
 
 DSO_EXPORT int
 vantage_clrgra(int fd)
 {
-	errno = ENOTSUP;
-	return -1;
+	return vantage_proc(fd, CLRGRA);
 }
 
 DSO_EXPORT int

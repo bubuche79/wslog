@@ -17,6 +17,7 @@
 #include "service/util.h"
 #include "service/archive.h"
 
+#define WSLOG_EPOCH 1514764800		/* Mon, 1 Jan 2018 00:00:00 */
 #define ARCHIVE_INTERVAL 300		/* Default archive interval */
 #define AR_LEN 64			/* Archive buffer size */
 
@@ -158,7 +159,7 @@ archive_init(struct itimerspec *it)
 #endif
 
 	freq = it->it_interval.tv_sec;
-	current = 1514764800;
+	current = WSLOG_EPOCH;
 
 	if (confp->archive.sqlite.enabled) {
 		ssize_t sz;
@@ -193,6 +194,8 @@ archive_init(struct itimerspec *it)
 	} else {
 		// TODO: pick last archive record timestamp (idem in final else above)
 	}
+
+	// TODO resync timer, as operations above may be long
 
 	syslog(LOG_INFO, "Archive service ready");
 

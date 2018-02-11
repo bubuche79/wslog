@@ -51,15 +51,15 @@ static const struct proc_def CMDS[] =
 	{ "CALFIX\n", IO_ACK },
 	{ "BAR=%d %d\n", IO_OK },
 	{ "BARDATA\n", IO_OK },
-	{ "CLRLOG\n", IO_ACK|IO_LONG_ACK },
+	{ "CLRLOG\n", IO_ACK|IO_LONG_OP },
 	{ "CLRALM\n", IO_OK_DONE },
 	{ "CLRCAL\n", IO_OK_DONE },
 	{ "CLRGRA\n", IO_OK_DONE },
-	{ "CLRVAR %d\n", IO_ACK|IO_LONG_ACK },
-	{ "CLRHIGHS %d\n", IO_ACK|IO_LONG_ACK },
-	{ "CLRLOWS %d\n", IO_ACK|IO_LONG_ACK },
-	{ "CLRBITS\n", IO_ACK|IO_LONG_ACK },
-	{ "CLRDATA\n", IO_ACK|IO_LONG_ACK },
+	{ "CLRVAR %d\n", IO_ACK|IO_LONG_OP },
+	{ "CLRHIGHS %d\n", IO_ACK|IO_LONG_OP },
+	{ "CLRLOWS %d\n", IO_ACK|IO_LONG_OP },
+	{ "CLRBITS\n", IO_ACK|IO_LONG_OP },
+	{ "CLRDATA\n", IO_ACK|IO_LONG_OP },
 	{ "BAUD %d\n", IO_OK },
 	{ "SETTIME\n", IO_ACK },
 	{ "GETTIME\n", IO_ACK },
@@ -237,7 +237,7 @@ vantage_pwrite(int fd, int flags, const void *buf, size_t len)
 		long timeout = IO_TIMEOUT;
 		int ack = flags & IO_ACK_MASK;
 
-		if (!(flags & IO_LONG_ACK)) {
+		if (!(flags & IO_LONG_OP)) {
 			timeout = IO_LONG_TIMEOUT;
 		}
 
