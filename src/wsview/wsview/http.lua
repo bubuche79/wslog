@@ -1,75 +1,103 @@
-local coroutine = require "coroutine"
+local http = { }
+
 local jsonc = require "luci.jsonc"
+local protocol = require "luci.http.protocol"
 
-module "wsview.http"
-
+local io = {}
 local context = {}
 
-function close()
-	if not context.eoh then
-		context.eoh = true
-		coroutine.yield(3)
-	end
-
-	if not context.closed then
-		context.closed = true
-		coroutine.yield(5)
-	end
+function http.io(recv, send)
+	io.recv = recv
+	io.send = send
 end
 
-function header(key, value)
+local function subrange(t, from, to)
+	local s = {}
+	local last = to or #t
+
+	for i = from, last do
+		s[i - from + 1] = t[i]
+	end
+
+	return s
+end
+
+local function flush_header()
+	for k, v in pairs(context.headers) do
+		io.send(k)
+		io.send(": ")
+		io.send(v)
+		io.send("\r\n")
+	end
+	io.send("\r\n")
+	context.eoh = true
+end
+
+function http.close()
+	if not context.eoh then
+		flush_header()
+	end
+
+	context.closed = true
+end
+
+function http.header(key, value)
 	if not context.headers then
 		context.headers = {}
 	end
-	context.headers[key:lower()] = value
-	coroutine.yield(2, key, value)
+	context.headers[key] = value
 end
 
-function prepare_content(mime)
-	if not context.headers or not context.headers["content-type"] then
-		header("Content-Type", mime)
-	end
-end
-
-function status(code, message)
+function http.status(code, message)
 	code = code or 200
-	message = message or "OK"
-	context.status = code
-	coroutine.yield(1, code, message)
+	message = message or protocol.statusmsg[code]
+
+	http.header("Status", code .. " " .. message)
 end
 
-function write(content, src_err)
-	if not content then
-		if src_err then
-			error(src_err)
-		else
-			close()
-		end
-		return true
-	elseif #content == 0 then
-		return true
+function http.write(x)
+	if not x then
+		http.close()
 	else
 		if not context.eoh then
 			if not context.status then
-				status()
+				http.status()
 			end
-			if not context.headers or not context.headers["content-type"] then
-				header("Content-Type", "text/html; charset=utf-8")
+			if not context.headers or not context.headers["Content-Type"] then
+				http.header("Content-Type", "text/html; charset=utf-8")
 			end
-			if not context.headers["cache-control"] then
-				header("Cache-Control", "no-cache")
-				header("Expires", "0")
+			if not context.headers["Cache-Control"] then
+				http.header("Cache-Control", "no-cache")
+				http.header("Expires", "0")
 			end
 
-
-			context.eoh = true
-			coroutine.yield(3)
+			flush_header()
 		end
-		coroutine.yield(4, content)
-		return true
+		io.send(x)
 	end
 end
 
-function write_json(x)
-	write(jsonc.stringify(x))
+function http.write_json(x)
+	http.write(jsonc.stringify(x))
 end
+
+function http.dispatch(env)
+	local path = env.PATH_INFO or "/index"
+
+	path = string.sub(path, 2)
+	local s = string.split(path, "/+", #path, true)
+
+	local hasmod, mod = pcall(require, "wsview." .. s[1])
+	local func = s[2] or "index"
+
+	if hasmod and mod[func] then
+		env.ARGS = subrange(s, 3)
+		mod[func](env)
+	else
+		http.status(400)
+	end
+
+	http.close()
+end
+
+return http
