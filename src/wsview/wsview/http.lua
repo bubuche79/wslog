@@ -12,7 +12,7 @@ function http.io(recv, send)
 end
 
 local function subrange(t, from, to)
-	local s = {}
+	local s = nil
 	local last = to or #t
 
 	for i = from, last do

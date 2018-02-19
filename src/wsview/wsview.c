@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <lauxlib.h>
 
 #include "defs/dso.h"
 #include "defs/std.h"
@@ -13,6 +14,8 @@
 #include "dataset.h"
 #include "wsview.h"
 
+static int board = 0;
+
 struct lua_table
 {
 	const char *name;
@@ -20,7 +23,7 @@ struct lua_table
 };
 
 static int
-get_current(lua_State *L)
+wsview_current(lua_State *L)
 {
 	int res;
 	size_t i, nel;
@@ -29,27 +32,34 @@ get_current(lua_State *L)
 
 	struct lua_table fields[] =
 	{
-#if 0
-		{ "pressure", ws_get_pressure },
-		{ "barometer", ws_get_barometer },
-		{ "temp", ws_get_temp },
-		{ "humidity", ws_get_humidity },
-		{ "wind_speed", ws_get_wind_speed },
-		{ "wind_dir", ws_get_wind_dir },
-		{ "wind_gust_speed", ws_get_wind_gust_speed },
-		{ "wind_gust_dir", ws_get_wind_gust_dir },
-		{ "rain", ws_get_rain },
-		{ "rain_rate", ws_get_rain_rate },
-		{ "dew_point", ws_get_dew_point },
-		{ "windchill", ws_get_windchill },
-		{ "heat_index", ws_get_heat_index },
-		{ "temp_in", ws_get_temp_in },
-		{ "humidity_in", ws_get_humidity_in }
-#endif
+		{ "barometer", ws_loop_barometer },
+		{ "temp", ws_loop_temp },
+		{ "humidity", ws_loop_humidity },
+		{ "wind_speed", ws_loop_wind_speed },
+		{ "wind_dir", ws_loop_wind_dir },
+		{ "rain_day", ws_loop_rain_day },
+		{ "rain_rate", ws_loop_rain_rate },
+		{ "solar_rad", ws_loop_solar_rad },
+		{ "uv", ws_loop_uv },
+		{ "dew_point", ws_loop_dew_point },
+		{ "windchill", ws_loop_windchill },
+		{ "heat_index", ws_loop_heat_index },
+		{ "in_temp", ws_loop_in_temp },
+		{ "in_humidity", ws_loop_in_humidity }
 	};
 
 	/* Read shared board */
+	if (!board) {
+		if (board_open(0) == -1) {
+			lua_pushfstring(L, "board_open: %s", strerror(errno));
+			goto error;
+		}
+
+		board = 1;
+	}
+
 	if (board_lock() == -1) {
+		lua_pushfstring(L, "board_lock: %s", strerror(errno));
 		goto error;
 	}
 
@@ -60,6 +70,7 @@ get_current(lua_State *L)
 	}
 
 	if (board_unlock() == -1) {
+		lua_pushfstring(L, "board_unlock: %s", strerror(errno));
 		goto error;
 	}
 
@@ -83,7 +94,6 @@ get_current(lua_State *L)
 			}
 		}
 
-		/* Add time */
 		lua_pushinteger(L, bufp->time);
 		lua_setfield(L, -2, "time");
 	}
@@ -91,12 +101,11 @@ get_current(lua_State *L)
 	return res;
 
 error:
-	lua_pushfstring(L, "board_unlock: %s", strerror(errno));
 	return lua_error(L);
 }
 
 static int
-get_wind_dir(lua_State *L)
+wsview_wind_dir(lua_State *L)
 {
 	double dir;
 	const char *res;
@@ -109,16 +118,18 @@ get_wind_dir(lua_State *L)
 	return 1;
 }
 
+static const luaL_Reg wslib[] =
+{
+	{ "current", wsview_current },
+	{ "wind_dir", wsview_wind_dir },
+	{ NULL, NULL }
+};
+
 DSO_EXPORT int
 luaopen_wsview(lua_State *L)
 {
-	lua_register(L, "ws_current", get_current);
-	lua_register(L, "ws_wind_dir", get_wind_dir);
+	lua_newtable(L);
+	luaL_register(L, NULL, wslib);
 
-	if (board_open(0) == -1) {
-        lua_pushfstring(L, "board_open: %s", strerror(errno));
-		return lua_error(L);
-	}
-
-    return 0;
+	return 1;
 }

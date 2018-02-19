@@ -192,6 +192,7 @@ int ws_loop_dew_point(const struct ws_loop *p, double *v);
 int ws_loop_windchill(const struct ws_loop *p, double *v);
 int ws_loop_solar_rad(const struct ws_loop *p, double *v);
 int ws_loop_uv(const struct ws_loop *p, double *v);
+int ws_loop_heat_index(const struct ws_loop *p, double *v);
 int ws_loop_in_temp(const struct ws_loop *p, double *v);
 int ws_loop_in_humidity(const struct ws_loop *p, double *v);
 

@@ -23,7 +23,3 @@ dist_data_DATA = \
 	cgi-bin/* \
 	wsview/* \
 	wsview-static/*
-
-deploy:
-	rsync -a cgi-bin wsview-static root@lede1701:/www
-	rsync -a wsview root@lede1701:/usr/lib/lua

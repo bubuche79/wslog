@@ -131,10 +131,9 @@ end
 function rest.current(env)
 	init(env)
 
-	local current = { }
-	current.time = "2018"
+	local wsview = require "wsview"
 
-	http.write_json(current)
+	http.write_json(wsview.current())
 	close(env)
 end
 

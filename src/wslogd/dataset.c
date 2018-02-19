@@ -394,6 +394,12 @@ ws_loop_uv(const struct ws_loop *p, double *v)
 }
 
 int
+ws_loop_heat_index(const struct ws_loop *p, double *v)
+{
+	return ws_get(p->wl_mask, WF_HEAT_INDEX, p->heat_index, v);
+}
+
+int
 ws_loop_in_temp(const struct ws_loop *p, double *v)
 {
 	return ws_get(p->wl_mask, WF_IN_TEMP, p->in_temp, v);
