@@ -1,9 +1,9 @@
-local tmpl = {}
+local template = { }
 
 local http = require "wsview.http"
 
 function template.header()
-	http.prepare_content("text/html; charset=utf-8")
+	http.content("text/html; charset=utf-8")
 
 	http.write([[<!DOCTYPE html>
 <html>
@@ -24,8 +24,8 @@ function template.header()
  <li class="dropdown">
   <a class="menu" href="#">Climat</a>
   <ul class="dropdown-menu">
-   <li><a href="/cgi-bin/wsview/climate-year/">Annuel</a></li>
-   <li><a href="/cgi-bin/wsview/climate/">Mensuel</a></li>
+   <li><a href="/cgi-bin/wsview/climate/year">Annuel</a></li>
+   <li><a href="/cgi-bin/wsview/climate/month">Mensuel</a></li>
   </ul>
  </li>
 </ul>
@@ -37,7 +37,7 @@ function template.header()
 end
 
 function template.footer()
-	print([[</div></body></html>]])
+	http.write([[</div></body></html>]])
 end
 
 return template

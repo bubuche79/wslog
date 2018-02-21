@@ -24,7 +24,7 @@ local function sql_archive(s, e)
 end
 
 local function sql_month(s, e)
-	local sql = "SELECT date(time, 'unixepoch') AS day, "
+	local sql = "SELECT date(time, 'unixepoch') AS time, "
 	sql = sql .. "MIN(lo_temp) AS lo_temp, "
 	sql = sql .. "MAX(hi_temp) AS hi_temp, "
 	sql = sql .. "SUM(rain_fall) AS rain_fall, "
@@ -40,7 +40,7 @@ local function sql_month(s, e)
 end
 
 local function sql_year(s, e)
-	local sql = "SELECT substr(day, 1, 7) AS month, "
+	local sql = "SELECT substr(day, 1, 7) AS time, "
 	sql = sql .. "AVG(lo_temp) AS lo_temp, "
 	sql = sql .. "AVG(hi_temp) AS hi_temp, "
 	sql = sql .. "SUM(rain_fall) AS rain, "
@@ -60,48 +60,8 @@ local function sql_year(s, e)
 	return cnx:execute(sql)
 end
 
-local function write_json(n, obj)
-	http.write(string.format('"%s":', n))
-	http.write_json(obj)
-end
-
-local function rest_cb_year(row)
-	local month_num = string.gsub(row.month, '.*-', '')
-
-	row.month = tonumber(month_num)
-end
-
-local function rest_cb_month(row)
-	local day_num = string.gsub(row.day, '.*-', '')
-
-	row.day = tonumber(day_num)
-end
-
-local function rest_json(cur, cb)
-	local first = true
-	local row = cur:fetch({}, "a")
-
-	http.write('"data":[')
-	while row do
-		if (not first) then
-			http.write(",")
-		end
-
-		if cb ~= nil then
-			cb(row)
-		end
-		http.write_json(row)
-
-		-- next row
-		first = false
-		row = cur:fetch({}, "a")
-	end
-	http.write("]")
-
-end
-
 local function init(env, db)
-	http.header("Content-Type", "application/json")
+	http.content("application/json")
 
 	if db and not cnx then
 		local driver = require "luasql.sqlite3"
@@ -118,12 +78,32 @@ local function close(env)
 	end
 end
 
-local function rest_dump(cur, period, cb)
-	http.write('{')
-	write_json('period', period)
-	http.write(',')
-	rest_json(cur, cb)
-	http.write('}')
+local function decode_time(row)
+	local s = string.split(row.time, "-")
+
+	row.year = tonumber(s[1])
+	row.month = tonumber(s[2])
+	row.time = nil
+end
+
+local function dump_cur(cur)
+	local first = true
+	local row = cur:fetch({}, "a")
+
+	http.write('[')
+	while row do
+		if (not first) then
+			http.write(",")
+		end
+
+		decode_time(row)
+		http.write_json(row)
+
+		-- next row
+		first = false
+		row = cur:fetch({}, "a")
+	end
+	http.write(']')
 
 	cur:close()
 end
@@ -161,7 +141,7 @@ function rest.month(env)
 
 	local cur = sql_month(from, to)
 
-	rest_dump(cur, { year = y, month = m }, rest_cb_month)
+	dump_cur(cur)
 	close(env)
 end
 
@@ -187,7 +167,7 @@ function rest.year(env)
 
 	local cur = sql_year(from, to)
 
-	rest_dump(cur, { year = y }, rest_cb_year)
+	dump_cur(cur)
 	close(env)
 end
 

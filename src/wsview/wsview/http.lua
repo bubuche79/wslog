@@ -16,6 +16,9 @@ local function subrange(t, from, to)
 	local last = to or #t
 
 	for i = from, last do
+		if not s then
+			s = { }
+		end
 		s[i - from + 1] = t[i]
 	end
 
@@ -55,6 +58,10 @@ function http.status(code, message)
 	http.header("Status", code .. " " .. message)
 end
 
+function http.content(mime)
+	http.header("Content-Type", mime)
+end
+
 function http.write(x)
 	if not x then
 		http.close()
@@ -77,14 +84,20 @@ function http.write(x)
 	end
 end
 
+function http.format(fmt, ...)
+	http.write(string.format(fmt, ...))
+end
+
 function http.write_json(x)
 	http.write(jsonc.stringify(x))
 end
 
 function http.dispatch(env)
-	local path = env.PATH_INFO or "/index"
+	local path = env.PATH_INFO or "/home"
 
 	path = string.sub(path, 2)
+	path = string.gsub(path, "/*$", "")
+
 	local s = string.split(path, "/+", #path, true)
 
 	local hasmod, mod = pcall(require, "wsview." .. s[1])
