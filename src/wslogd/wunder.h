@@ -5,11 +5,13 @@
  * Weather underground support.
  */
 
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int wunder_init(void);
+int wunder_init(struct itimerspec *it);
 int wunder_update(void);
 int wunder_destroy(void);
 

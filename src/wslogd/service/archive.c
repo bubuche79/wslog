@@ -32,7 +32,7 @@ board_put(struct ws_archive *ar, size_t nel)
 	size_t i;
 
 	if (board_lock() == -1) {
-		syslog(LOG_CRIT, "board_lock: %m");
+		syslog(LOG_ERR, "board_lock: %m");
 		goto error;
 	}
 
@@ -52,7 +52,7 @@ board_put(struct ws_archive *ar, size_t nel)
 	}
 
 	if (board_unlock() == -1) {
-		syslog(LOG_CRIT, "board_unlock: %m");
+		syslog(LOG_ERR, "board_unlock: %m");
 		goto error;
 	}
 

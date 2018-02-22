@@ -29,17 +29,18 @@
 #define ST_ERROR 	2
 #define ST_RUNNING	3
 
+#define signo(i)	(SIGRTMIN + (i))
+
 struct worker
 {
 	int w_signo;			/* Signal number */
 	struct itimerspec w_itimer;	/* Interval timer */
-	int (*w_action) (void);		/* Action on signal */
+	int (*w_action) (void);		/* Action on timer signal */
 	int (*w_destroy) (void);
 
 	timer_t w_timer;
 	pthread_t w_thread;		/* Thread id */
 	int w_failures;			/* Number of failures */
-	int w_status;			/* Exit status */
 };
 
 static int startup = 1;
@@ -50,11 +51,8 @@ static volatile sig_atomic_t hangup_pending;
 static struct worker threads[4];	/* Daemon threads */
 static size_t threads_nel;		/* Number of elements */
 
-static struct itimerspec *rt_itimer;	/* Real time timer */
-static struct itimerspec *ar_itimer;	/* Archive timer */
-
 static void
-sig_set(sigset_t *set)
+sig_default(sigset_t *set)
 {
 	(void) sigemptyset(set);
 	(void) sigaddset(set, SIGHUP);
@@ -105,8 +103,6 @@ sigthread_main(void *arg)
 
 	dt = (struct worker *) arg;
 
-	dt->w_status = ST_RUNNING;
-
 	/* Blocked signals */
 	(void) sigemptyset(&set);
 	(void) sigaddset(&set, dt->w_signo);
@@ -140,14 +136,10 @@ sigthread_main(void *arg)
 	if (dt->w_destroy() == -1) {
 		return NULL;
 	}
-
-	dt->w_status = ST_DONE;
-
 	return NULL;
 
 error:
 	errsv = errno;
-	dt->w_status = ST_ERROR;
 	(void) timer_delete(&timer);
 	(void) dt->w_destroy();
 
@@ -159,7 +151,7 @@ static int
 sigthread_create(struct worker *dt)
 {
 	if (pthread_create(&dt->w_thread, NULL, sigthread_main, dt) == -1) {
-		syslog(LOG_EMERG, "pthread_create: %m");
+		syslog(LOG_ERR, "pthread_create: %m");
 		return -1;
 	}
 
@@ -173,7 +165,7 @@ sigthread_kill(struct worker *dt)
 
 	ret = 0;
 
-	/* Kill thread */
+	/* Kill thread (use timer signal) */
 	if (pthread_kill(dt->w_thread, dt->w_signo) == -1) {
 		ret = -1;
 	} else {
@@ -188,77 +180,68 @@ sigthread_kill(struct worker *dt)
 }
 
 static void
-threads_count(void)
+threads_init(void)
 {
+	int i;
+
 	threads_nel = 2;
 
 	if (confp->wunder.enabled) {
 		threads_nel++;
+	}
+
+	for (i = 0; i < threads_nel; i++) {
+		threads[i].w_thread = -1;
 	}
 }
 
 static int
 threads_start(void)
 {
-	int signo;
-	size_t i = 0;
+	size_t i;
 	sigset_t set;
 
-	threads_count();
-
-	for (i = 0; i < threads_nel; i++) {
-		threads[i].w_status = ST_INIT;
-	}
-
-	i = 0;
+	threads_init();
 
 	/* Signal */
-	signo = SIGRTMIN;
+	i = 0;
 
 	syslog(LOG_INFO, "Starting %zd threads", threads_nel);
 
 	/* Configure sensor thread */
-	rt_itimer = &threads[i].w_itimer;
-
-	if (sensor_init(rt_itimer) == -1) {
+	if (sensor_init(&threads[i].w_itimer) == -1) {
 		return -1;
 	}
-	threads[i].w_signo = signo;
+	threads[i].w_signo = signo(i);
 	threads[i].w_action = sensor_main;
 	threads[i].w_destroy = sensor_destroy;
 
 	i++;
-	signo++;
 
 	/* Configure archive thread */
-	ar_itimer = &threads[i].w_itimer;
-
-	if (archive_init(ar_itimer) == -1) {
+	if (archive_init(&threads[i].w_itimer) == -1) {
 		return -1;
 	}
-	threads[i].w_signo = signo;
+	threads[i].w_signo = signo(i);
 	threads[i].w_action = archive_main;
 	threads[i].w_destroy = archive_destroy;
 
 	i++;
-	signo++;
 
 	/* Configure Wunder thread */
 	if (confp->wunder.enabled) {
-		if (confp->wunder.freq == 0) {
-			itimer_add_delay(&threads[i].w_itimer, ar_itimer, 15);
-		} else {
-			itimer_set(&threads[i].w_itimer, confp->wunder.freq);
+		if (wunder_init(&threads[i].w_itimer) == -1) {
+			return -1;
 		}
-		threads[i].w_signo = signo;
+
+		threads[i].w_signo = signo(i);
 		threads[i].w_action = wunder_update;
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;
-		signo++;
 	}
 
-	/* Manage signals */
+	/* Block all signals */
 	(void) sigemptyset(&set);
 
 	for (i = 0; i < threads_nel; i++) {
@@ -274,7 +257,7 @@ threads_start(void)
 		struct worker *dt = &threads[i];
 
 		if (sigthread_create(dt) == -1) {
-			syslog(LOG_EMERG, "pthread_create: %m");
+			syslog(LOG_ERR, "pthread_create: %m");
 			return -1;
 		}
 	}
@@ -293,10 +276,12 @@ threads_kill(void)
 	for (i = 0; i < threads_nel; i++) {
 		struct worker *dt = &threads[i];
 
-		if (dt->w_status != ST_INIT) {
+		if (dt->w_thread != -1) {
 			if (sigthread_kill(dt) == -1) {
 				ret = -1;
 			}
+
+			dt->w_thread = -1;
 		}
 	}
 
@@ -337,7 +322,7 @@ worker_main(int *halt)
 	shutdown_pending = 0;
 	hangup_pending = 0;
 
-	sig_set(&set);
+	sig_default(&set);
 
 	/* Open device */
 	if (drv_init() == -1) {
@@ -352,7 +337,7 @@ worker_main(int *halt)
 		}
 
 		if (board_open(O_CREAT) == -1) {
-			syslog(LOG_EMERG, "board_open: %m");
+			syslog(LOG_ERR, "board_open: %m");
 			goto error;
 		}
 
@@ -362,7 +347,7 @@ worker_main(int *halt)
 
 	/* Start all workers */
 	if (threads_start() == -1) {
-		syslog(LOG_EMERG, "threads_start: %m");
+		syslog(LOG_ERR, "threads_start: %m");
 		goto error;
 	}
 

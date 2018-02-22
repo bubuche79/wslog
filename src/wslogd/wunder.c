@@ -16,10 +16,13 @@
 #include "conf.h"
 #include "board.h"
 #include "wslogd.h"
+#include "service/util.h"
 #include "wunder.h"
 
 #define URL_LEN		512
 #define URL 		"weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+
+static long freq;
 
 struct ws_http
 {
@@ -242,7 +245,7 @@ error:
 }
 
 int
-wunder_init(void)
+wunder_init(struct itimerspec *it)
 {
 	CURLcode code;
 
@@ -251,6 +254,16 @@ wunder_init(void)
 		curl_log("curl_global_init", code);
 		goto error;
 	}
+
+	freq = confp->wunder.freq;
+	if (freq == 0) {
+		freq = confp->archive.freq;
+	}
+	if (freq == 0) {
+		freq = 30 * 60;
+	}
+
+	itimer_set(it, freq);
 
 	return 0;
 
