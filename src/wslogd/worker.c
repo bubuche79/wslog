@@ -191,7 +191,7 @@ threads_init(void)
 	}
 
 	for (i = 0; i < threads_nel; i++) {
-		threads[i].w_thread = -1;
+		threads[i].w_thread = (pthread_t) -1;
 	}
 }
 
@@ -276,12 +276,12 @@ threads_kill(void)
 	for (i = 0; i < threads_nel; i++) {
 		struct worker *dt = &threads[i];
 
-		if (dt->w_thread != -1) {
+		if (dt->w_thread != (pthread_t) -1) {
 			if (sigthread_kill(dt) == -1) {
 				ret = -1;
 			}
 
-			dt->w_thread = -1;
+			dt->w_thread = (pthread_t) -1;
 		}
 	}
 
