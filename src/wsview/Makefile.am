@@ -17,7 +17,7 @@ libwsview_la_SOURCES = \
 	wsview.h
 
 libwsview_la_LIBADD = \
-	-L../libws -lws -llua -lrt -lpthread
+	-L../libws -lws -llua -lsqlite3 -lrt -lpthread
 
 dist_data_DATA = \
 	cgi-bin/* \

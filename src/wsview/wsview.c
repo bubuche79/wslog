@@ -5,6 +5,7 @@
 #include <string.h>
 #include <errno.h>
 #include <lauxlib.h>
+#include <sqlite3.h>
 
 #include "defs/dso.h"
 #include "defs/std.h"
@@ -15,12 +16,218 @@
 #include "wsview.h"
 
 static int board = 0;
+static sqlite3 *db = NULL;
 
 struct lua_table
 {
 	const char *name;
 	int (*get) (const struct ws_loop *, double *);
 };
+
+static void
+db_open()
+{
+	if (db == NULL) {
+		sqlite3_initialize();
+		sqlite3_open_v2("wslogd.db", &db, SQLITE_OPEN_READONLY, NULL);
+	}
+}
+
+static void
+lua_push_int(lua_State *L, sqlite3_stmt* stmt, int idx, const char *name)
+{
+	long long v;
+
+	v = sqlite3_column_int64(stmt, idx);
+	lua_pushinteger(L, v);
+	lua_setfield(L, -2, name);
+}
+
+static void
+lua_push_double(lua_State *L, sqlite3_stmt* stmt, int idx, const char *name)
+{
+	double v;
+
+	v = sqlite3_column_double(stmt, idx);
+	lua_pushnumber(L, v);
+	lua_setfield(L, -2, name);
+}
+
+static void
+lua_push_text(lua_State *L, sqlite3_stmt* stmt, int idx, const char *name)
+{
+	const char *v;
+
+	v = (char *) sqlite3_column_text(stmt, idx);
+	lua_pushstring(L, v);
+	lua_setfield(L, -2, name);
+}
+
+static void
+lua_load_stmt(lua_State *L, sqlite3_stmt *stmt)
+{
+	int rows, n;
+
+	n = 1;
+	rows = sqlite3_column_count(stmt);
+
+	lua_newtable(L);
+
+	while (sqlite3_step(stmt) == SQLITE_ROW) {
+		int i;
+
+		lua_pushinteger(L, n++);
+		lua_newtable(L);
+
+		for (i = 0; i < rows; i++) {
+			int type;
+			const char *name;
+
+			type = sqlite3_column_type(stmt, i);
+			name = sqlite3_column_name(stmt, i);
+
+			switch (type) {
+			case SQLITE_INTEGER:
+				lua_push_int(L, stmt, i, name);
+				break;
+			case SQLITE_FLOAT:
+				lua_push_double(L, stmt, i, name);
+				break;
+			case SQLITE_TEXT:
+				lua_push_text(L, stmt, i, name);
+				break;
+			default:
+				break;
+			}
+		}
+
+		lua_settable(L, -3);
+	}
+}
+
+static int
+wsview_query(lua_State *L, const char *sql, time_t lower, time_t upper)
+{
+	sqlite3_stmt *stmt;
+
+	/* Open database */
+	db_open();
+
+	sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+	sqlite3_bind_int64(stmt, 1, lower);
+	sqlite3_bind_int64(stmt, 2, upper);
+
+	lua_load_stmt(L, stmt);
+
+	sqlite3_reset(stmt);
+	sqlite3_finalize(stmt);
+
+	return 1;
+}
+
+static int
+wsview_archive(lua_State *L)
+{
+	time_t lower = lua_tonumber(L, 1);
+	time_t upper = lua_tonumber(L, 2);
+
+	const char sql[] =
+		"SELECT time, "
+		  "barometer, "
+		  "temp, "
+		  "humidity, "
+		  "avg_wind_speed, "
+		  "avg_wind_dir, "
+		  "hi_wind_speed, "
+		  "rain_fall, "
+		  "hi_rain_rate, "
+		  "dew_point, "
+		  "windchill, "
+		  "heat_index "
+		"FROM archive "
+		"WHERE ? <= time AND time < ? "
+		"ORDER BY time";
+
+	return wsview_query(L, sql, lower, upper);
+}
+
+static int
+wsview_aggr_day(lua_State *L, time_t lower, time_t upper)
+{
+	const char sql[] =
+		"SELECT MIN(lo_temp) AS lo_temp, "
+		  "AVG(temp) AS avg_temp, "
+		  "MAX(hi_temp) AS hi_temp, "
+		  "MAX(hi_wind_speed) AS hi_wind_speed "
+		"FROM archive "
+		"WHERE ? <= time AND time < ?";
+
+	return wsview_query(L, sql, lower, upper);
+}
+
+static int
+wsview_aggr_month(lua_State *L, time_t lower, time_t upper)
+{
+	const char sql[] =
+		"SELECT date(time, 'unixepoch', 'localtime') AS time, "
+		  "MIN(lo_temp) AS lo_temp, "
+		  "MAX(hi_temp) AS hi_temp, "
+		  "SUM(rain_fall) AS rain_fall, "
+		  "AVG(avg_wind_speed) AS avg_wind_speed, "
+		  "MAX(hi_wind_speed) AS hi_wind_speed, "
+		  "AVG(barometer) AS barometer "
+		"FROM archive "
+		"WHERE ? <= time AND time < ? "
+		"GROUP BY date(time, 'unixepoch', 'localtime') "
+		"ORDER BY date(time, 'unixepoch', 'localtime')";
+
+	return wsview_query(L, sql, lower, upper);
+}
+
+static int
+wsview_aggr_year(lua_State *L, time_t lower, time_t upper)
+{
+	const char sql[] =
+		"SELECT substr(day, 1, 7) AS time, "
+		  "AVG(lo_temp) AS lo_temp, "
+		  "AVG(hi_temp) AS hi_temp, "
+		  "SUM(rain_fall) AS rain, "
+		  "MAX(rain_fall) AS rain_24h "
+		"FROM ( "
+		  "SELECT date(time, 'unixepoch', 'localtime') AS day, "
+		    "MIN(lo_temp) AS lo_temp, "
+		    "MAX(hi_temp) AS hi_temp, "
+		    "SUM(rain_fall) AS rain_fall "
+		  "FROM ws_archive "
+		  "WHERE ? <= time AND time < ? "
+		  "GROUP BY date(time, 'unixepoch', 'localtime') "
+		") q "
+		"GROUP BY substr(day, 1, 7) "
+		"ORDER BY substr(day, 1, 7)";
+
+	return wsview_query(L, sql, lower, upper);
+}
+
+static int
+wsview_aggregate(lua_State *L)
+{
+	int ret;
+	const char *method = lua_tostring(L, 1);
+	time_t lower = lua_tonumber(L, 2);
+	time_t upper = lua_tonumber(L, 3);
+
+	if (!strcmp("day", method)) {
+		ret = wsview_aggr_day(L, lower, upper);
+	} else if (!strcmp("month", method)) {
+		ret = wsview_aggr_month(L, lower, upper);
+	} else if (!strcmp("year", method)) {
+		ret = wsview_aggr_year(L, lower, upper);
+	} else {
+		ret = 0;
+	}
+
+	return ret;
+}
 
 static int
 wsview_current(lua_State *L)
@@ -118,10 +325,30 @@ wsview_wind_dir(lua_State *L)
 	return 1;
 }
 
+static int
+wsview_close(lua_State *L)
+{
+	if (board) {
+		board_unlink();
+		board = 0;
+	}
+
+	if (db) {
+		sqlite3_close_v2(db);
+		sqlite3_shutdown();
+		db = NULL;
+	}
+
+	return 0;
+}
+
 static const luaL_Reg wslib[] =
 {
 	{ "current", wsview_current },
 	{ "wind_dir", wsview_wind_dir },
+	{ "aggregate", wsview_aggregate },
+	{ "archive", wsview_archive },
+	{ "close", wsview_close },
 	{ NULL, NULL }
 };
 
