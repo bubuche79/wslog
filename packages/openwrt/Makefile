@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wslog
 PKG_VERSION:=0.8.2
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=file:///home/gbuchetet/perso/workspace/wslog
@@ -76,7 +76,7 @@ define Package/wslog-cgi
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Weather station CGI viewer
-  DEPENDS:=+wslog +uhttpd +liblua +luasql-sqlite3 +luci-base +luci-theme-bootstrap
+  DEPENDS:=+wslog +uhttpd +liblua +luci-base +luci-theme-bootstrap
 endef
 
 define Package/wslog-cgi/description
@@ -89,7 +89,9 @@ define Package/wslog-cgi/install
 	$(INSTALL_DIR) $(1)/www/wsview-static
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/wsview/wsview-static/* $(1)/www/wsview-static
 	$(INSTALL_DIR) $(1)/usr/lib/lua/wsview
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wsview/wsview/* $(1)/usr/lib/lua/wsview
+	$(INSTALL_DIR) $(1)/usr/lib/lua/wsview/sgi
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wsview/wsview/*.lua $(1)/usr/lib/lua/wsview
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wsview/wsview/sgi/*.lua $(1)/usr/lib/lua/wsview/sgi
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libwsview.so $(1)/usr/lib/lua/wsview.so
 endef
 

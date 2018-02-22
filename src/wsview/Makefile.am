@@ -21,5 +21,6 @@ libwsview_la_LIBADD = \
 
 dist_data_DATA = \
 	cgi-bin/* \
-	wsview/* \
-	wsview-static/*
+	wsview/*.lua \
+	wsview/sgi/*.lua \
+	wsview-static/*.*
