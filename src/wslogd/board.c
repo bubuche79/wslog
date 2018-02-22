@@ -70,7 +70,7 @@ shm_board_init(size_t len)
 	size_t off = sizeof(*boardp);
 
 	boardp->loop.off = off;
-	boardp->loop.sz = 100;
+	boardp->loop.sz = 150;
 	boardp->loop.nel = 0;
 	boardp->loop.idx = 0;
 
@@ -80,6 +80,13 @@ shm_board_init(size_t len)
 	boardp->ar.sz = 10;
 	boardp->ar.nel = 0;
 	boardp->ar.idx = 0;
+
+	off += boardp->ar.sz * sizeof(struct ws_archive);
+
+	if (SHM_SIZE < off) {
+		errno = ENOMEM;
+		goto error;
+	}
 
 	return 0;
 
@@ -162,13 +169,17 @@ board_unlink()
 
 	ret = 0;
 
-	if (munmap(shmbufp, shmlen) == -1) {
-		ret = -1;
-	}
 	if (shmflag & O_CREAT) {
 		if (shm_board_destroy() == -1) {
 			ret = -1;
 		}
+	}
+
+	/* Unlink shared memory */
+	if (munmap(shmbufp, shmlen) == -1) {
+		ret = -1;
+	}
+	if (shmflag & O_CREAT) {
 		if (shm_unlink(SHM_NAME) == -1) {
 			ret = -1;
 		}
