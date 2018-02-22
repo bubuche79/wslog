@@ -12,11 +12,6 @@
 #include <errno.h>
 #include <syslog.h>
 #include <time.h>
-#ifdef HAVE_SIGTHREADID
-#include <linux/version.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-#endif
 
 #include "defs/std.h"
 
@@ -64,9 +59,6 @@ sig_set(sigset_t *set)
 	(void) sigemptyset(set);
 	(void) sigaddset(set, SIGHUP);
 	(void) sigaddset(set, SIGTERM);
-#ifdef HAVE_SIGTHREADID
-	(void) sigaddset(set, SIGALRM);
-#endif
 }
 
 static int
@@ -75,12 +67,7 @@ sigtimer_create(int signo, struct itimerspec *it, timer_t *timer)
 	int errsv;
 	struct sigevent se;
 
-#ifndef HAVE_SIGTHREADID
 	se.sigev_notify = SIGEV_SIGNAL;
-#else
-	se.sigev_notify = SIGEV_THREAD_ID;
-	se._sigev_un._tid = syscall(SYS_gettid);
-#endif
 	se.sigev_signo = signo;
 	se.sigev_value.sival_ptr = timer;
 
@@ -183,9 +170,6 @@ static int
 sigthread_kill(struct worker *dt)
 {
 	int ret;
-#ifndef HAVE_SIGTHREADID
-	sigset_t set;
-#endif
 
 	ret = 0;
 
@@ -199,16 +183,6 @@ sigthread_kill(struct worker *dt)
 			ret = -1;
 		}
 	}
-
-#ifndef HAVE_SIGTHREADID
-	/* Signal management */
-	(void) sigemptyset(&set);
-	(void) sigaddset(&set, dt->w_signo);
-
-	if (pthread_sigmask(SIG_UNBLOCK, &set, NULL) == -1) {
-		return -1;
-	}
-#endif
 
 	return ret;
 }
@@ -228,9 +202,7 @@ threads_start(void)
 {
 	int signo;
 	size_t i = 0;
-#ifndef HAVE_SIGTHREADID
 	sigset_t set;
-#endif
 
 	threads_count();
 
@@ -241,11 +213,7 @@ threads_start(void)
 	i = 0;
 
 	/* Signal */
-#ifndef HAVE_SIGTHREADID
 	signo = SIGRTMIN;
-#else
-	signo = SIGALRM;
-#endif
 
 	syslog(LOG_INFO, "Starting %zd threads", threads_nel);
 
@@ -260,9 +228,7 @@ threads_start(void)
 	threads[i].w_destroy = sensor_destroy;
 
 	i++;
-#ifndef HAVE_SIGTHREADID
 	signo++;
-#endif
 
 	/* Configure archive thread */
 	ar_itimer = &threads[i].w_itimer;
@@ -275,16 +241,10 @@ threads_start(void)
 	threads[i].w_destroy = archive_destroy;
 
 	i++;
-#ifndef HAVE_SIGTHREADID
 	signo++;
-#endif
 
 	/* Configure Wunder thread */
 	if (confp->wunder.enabled) {
-		if (wunder_init() == -1) {
-			return -1;
-		}
-
 		if (confp->wunder.freq == 0) {
 			itimer_add_delay(&threads[i].w_itimer, ar_itimer, 15);
 		} else {
@@ -295,12 +255,9 @@ threads_start(void)
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;
-#ifndef HAVE_SIGTHREADID
 		signo++;
-#endif
 	}
 
-#ifndef HAVE_SIGTHREADID
 	/* Manage signals */
 	(void) sigemptyset(&set);
 
@@ -311,7 +268,6 @@ threads_start(void)
 	if (pthread_sigmask(SIG_BLOCK, &set, NULL) == -1) {
 		return -1;
 	}
-#endif
 
 	/* Create threads */
 	for (i = 0; i < threads_nel; i++) {
