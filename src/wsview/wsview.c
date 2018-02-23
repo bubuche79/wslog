@@ -342,19 +342,19 @@ wsview_close(lua_State *L)
 	return 0;
 }
 
-static const luaL_Reg wslib[] =
-{
-	{ "current", wsview_current },
-	{ "wind_dir", wsview_wind_dir },
-	{ "aggregate", wsview_aggregate },
-	{ "archive", wsview_archive },
-	{ "close", wsview_close },
-	{ NULL, NULL }
-};
-
 DSO_EXPORT int
 luaopen_wsview(lua_State *L)
 {
+	luaL_Reg wslib[] =
+	{
+		{ "current", wsview_current },
+		{ "wind_dir", wsview_wind_dir },
+		{ "aggregate", wsview_aggregate },
+		{ "archive", wsview_archive },
+		{ "close", wsview_close },
+		{ NULL, NULL }
+	};
+
 	lua_newtable(L);
 	luaL_register(L, NULL, wslib);
 
