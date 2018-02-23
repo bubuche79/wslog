@@ -144,7 +144,7 @@ wsview_archive(lua_State *L)
 		  "dew_point, "
 		  "windchill, "
 		  "heat_index "
-		"FROM archive "
+		"FROM ws_archive "
 		"WHERE ? <= time AND time < ? "
 		"ORDER BY time";
 
@@ -159,7 +159,7 @@ wsview_aggr_day(lua_State *L, time_t lower, time_t upper)
 		  "AVG(temp) AS avg_temp, "
 		  "MAX(hi_temp) AS hi_temp, "
 		  "MAX(hi_wind_speed) AS hi_wind_speed "
-		"FROM archive "
+		"FROM ws_archive "
 		"WHERE ? <= time AND time < ?";
 
 	return wsview_query(L, sql, lower, upper);
@@ -176,7 +176,7 @@ wsview_aggr_month(lua_State *L, time_t lower, time_t upper)
 		  "AVG(avg_wind_speed) AS avg_wind_speed, "
 		  "MAX(hi_wind_speed) AS hi_wind_speed, "
 		  "AVG(barometer) AS barometer "
-		"FROM archive "
+		"FROM ws_archive "
 		"WHERE ? <= time AND time < ? "
 		"GROUP BY date(time, 'unixepoch', 'localtime') "
 		"ORDER BY date(time, 'unixepoch', 'localtime')";
