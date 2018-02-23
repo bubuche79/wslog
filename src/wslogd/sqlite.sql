@@ -21,4 +21,3 @@ CREATE TABLE ws_archive
   in_humidity INTEGER,
   PRIMARY KEY (time)
 ) ;
-
