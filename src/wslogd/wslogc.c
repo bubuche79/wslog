@@ -25,7 +25,7 @@ usage(FILE *std, int status)
 }
 
 static void
-print_loop1(const struct ws_loop *p)
+print_loop(const struct ws_loop *p)
 {
 	char buf[20];
 
@@ -38,7 +38,7 @@ print_loop1(const struct ws_loop *p)
 }
 
 static void
-print_loop(size_t nel)
+dump_loop(size_t nel)
 {
 	int i;
 	const struct ws_loop *p;
@@ -49,7 +49,7 @@ print_loop(size_t nel)
 		p = board_peek(i);
 
 		if (p != NULL) {
-			print_loop1(p);
+			print_loop(p);
 		}
 
 		i++;
@@ -57,7 +57,19 @@ print_loop(size_t nel)
 }
 
 static void
-print_ar(size_t nel)
+print_ar(const struct ws_archive *p)
+{
+	char buf[20];
+
+	localftime_r(buf, sizeof(buf), &p->time, "%F %T");
+
+	printf("%s %.1f°C %hhu%% %.1fm/s (%s) %.1fmm %.1f°C %hhu%%\n", buf, p->temp,
+			p->humidity, p->avg_wind_speed, ws_dir_deg(p->avg_wind_dir),
+			p->rain_fall, p->in_temp, p->in_humidity);
+}
+
+static void
+dump_ar(size_t nel)
 {
 	int i;
 	const struct ws_archive *p;
@@ -68,7 +80,7 @@ print_ar(size_t nel)
 		p = board_peek_ar(i);
 
 		if (p != NULL) {
-//			print_loop1(&p->data);
+			print_ar(p);
 		}
 
 		i++;
@@ -142,9 +154,9 @@ main(int argc, char *argv[])
 
 		/* Display */
 		if (use_sensors) {
-			print_loop(nel);
+			dump_loop(nel);
 		} else {
-			print_ar(nel);
+			dump_ar(nel);
 		}
 
 		if (board_unlink() == -1) {
