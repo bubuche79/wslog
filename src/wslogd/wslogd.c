@@ -158,9 +158,9 @@ main(int argc, char *argv[])
 
 exit:
 	if (ret == 0) {
-		syslog(LOG_NOTICE, "Shutdown complete...");
+		syslog(LOG_NOTICE, "Shutdown complete");
 	} else {
-		syslog(LOG_ERR, "Shutdown complete (abort)...");
+		syslog(LOG_ERR, "Shutdown complete (abort)");
 	}
 
 	closelog();
