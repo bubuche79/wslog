@@ -128,6 +128,8 @@ board_open(int oflag, /* args */ ...)
 
 	shmfd = -1;
 	shmflag = oflag;
+	nloops = 0;
+	nar = 0;
 
 	/* Create shared memory */
 	shmfd = shm_open(SHM_NAME, O_RDWR|oflag, S_IRUSR|S_IWUSR);
