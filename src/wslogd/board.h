@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-int board_open(int oflag);
+ssize_t board_open(int oflag, ...);
 int board_unlink(void);
 
 int board_lock(void);

@@ -10,9 +10,9 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <errno.h>
-#include <syslog.h>
 #include <string.h>
 
 #include "board.h"
@@ -20,34 +20,44 @@
 #define SHM_NAME "/wslog"		/* Shared memory object name */
 #define SHM_SIZE (16*1024)		/* Shared memory size */
 
-struct shm_buf
+struct shm_circ
 {
 	size_t off;			/* Offset to buffer */
 	size_t sz;			/* Max number of elements */
 
 	size_t nel;			/* Number of elements */
-	size_t idx;			/* next index */
+	size_t idx;			/* Next index */
 };
 
 struct shm_board
 {
-	pthread_mutex_t mutex;
+	size_t len;			/* Buffer size */
+	pthread_mutex_t mutex;		/* Process-shared */
 
-	struct shm_buf loop;		/* Loop array */
-	struct shm_buf ar;		/* Archive array */
+	struct shm_circ ar;		/* Archive array */
+	struct shm_circ loop;		/* Loop array */
 };
 
 static int shmflag = 0;			/* Open flag */
-static size_t shmlen = 0;		/* Shared memory size */
 static void *shmbufp = MAP_FAILED;	/* Shared memory */
 
 struct shm_board *boardp = NULL;
 
+static size_t
+shm_board_size(size_t nloops, size_t nar)
+{
+	return sizeof(*boardp)
+			+ nloops * sizeof(struct ws_loop)
+			+ nar * sizeof(struct ws_archive);
+}
+
 static int
-shm_board_init(size_t len)
+shm_board_init(size_t len, size_t nloops, size_t nar)
 {
 	int errsv;
 	pthread_mutexattr_t attr;
+
+	boardp->len = len;
 
 	/* Shared lock */
 	if (pthread_mutexattr_init(&attr) == -1) {
@@ -70,20 +80,20 @@ shm_board_init(size_t len)
 	size_t off = sizeof(*boardp);
 
 	boardp->loop.off = off;
-	boardp->loop.sz = 150;
+	boardp->loop.sz = nloops;
 	boardp->loop.nel = 0;
 	boardp->loop.idx = 0;
 
 	off += boardp->loop.sz * sizeof(struct ws_loop);
 
 	boardp->ar.off = off;
-	boardp->ar.sz = 10;
+	boardp->ar.sz = nar;
 	boardp->ar.nel = 0;
 	boardp->ar.idx = 0;
 
 	off += boardp->ar.sz * sizeof(struct ws_archive);
 
-	if (SHM_SIZE < off) {
+	if (len < off) {
 		errno = ENOMEM;
 		goto error;
 	}
@@ -108,14 +118,15 @@ shm_board_destroy()
 	return ret;
 }
 
-int
-board_open(int oflag)
+ssize_t
+board_open(int oflag, /* args */ ...)
 {
 	int errsv;
-	int shmfd;
+	int shmfd, shmlen;
+	size_t nloops, nar;
+	va_list ap;
 
 	shmfd = -1;
-	shmlen = SHM_SIZE;
 	shmflag = oflag;
 
 	/* Create shared memory */
@@ -125,9 +136,24 @@ board_open(int oflag)
 	}
 
 	if (oflag & O_CREAT) {
+		va_start(ap, oflag);
+		nloops = va_arg(ap, size_t);
+		nar = va_arg(ap, size_t);
+		va_end(ap);
+
+		shmlen = shm_board_size(nloops, nar);
+
 		if (ftruncate(shmfd, shmlen) == -1) {
 			goto error;
 		}
+	} else {
+		struct stat sbuf;
+
+		if (fstat(shmfd, &sbuf) == -1) {
+			goto error;
+		}
+
+		shmlen = sbuf.st_size;
 	}
 
 	shmbufp = mmap(NULL, shmlen, PROT_READ|PROT_WRITE, MAP_SHARED, shmfd, 0);
@@ -142,12 +168,12 @@ board_open(int oflag)
 
 	/* Initialize shared_memory content */
 	if (oflag & O_CREAT) {
-		if (shm_board_init(SHM_SIZE) == -1) {
+		if (shm_board_init(shmlen, nloops, nar) == -1) {
 			goto error;
 		}
 	}
 
-	return 0;
+	return shmlen;
 
 error:
 	errsv = errno;
@@ -166,8 +192,10 @@ int
 board_unlink()
 {
 	int ret;
+	size_t shmlen;
 
 	ret = 0;
+	shmlen = boardp->len;
 
 	if (shmflag & O_CREAT) {
 		if (shm_board_destroy() == -1) {
@@ -222,7 +250,7 @@ board_unlock(void)
  * Increment the circular buffer pointed to by {@code buf}.
  */
 static void
-shm_buf_inc(struct shm_buf *buf)
+shm_buf_inc(struct shm_circ *buf)
 {
 	if (buf->nel == 0) {
 		buf->nel = 1;
@@ -243,7 +271,7 @@ shm_buf_inc(struct shm_buf *buf)
  * by {@code buf}.
  */
 static int
-shm_buf_index(const struct shm_buf *buf, size_t i)
+shm_buf_index(const struct shm_circ *buf, size_t i)
 {
 	if (i <= buf->idx) {
 		i = buf->idx - i;

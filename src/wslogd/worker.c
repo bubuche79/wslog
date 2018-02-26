@@ -179,7 +179,38 @@ sigthread_kill(struct worker *dt)
 	return ret;
 }
 
-static void
+static long long
+timespec_ms(struct timespec *ts)
+{
+	return ts->tv_sec * 1000 + ts->tv_nsec / 1000000;
+}
+
+
+static size_t
+nloops_count()
+{
+	size_t i;
+	long long step;
+	long long duration;
+
+	/* Sensor interval */
+	step = timespec_ms(&threads[0].w_itimer.it_interval);
+
+	/* Longest duration */
+	duration = 0;
+
+	for (i = 1; i < threads_nel; i++) {
+		long long d = timespec_ms(&threads[i].w_itimer.it_interval);
+
+		if (duration < d) {
+			duration = d;
+		}
+	}
+
+	return divup(duration, step);
+}
+
+static int
 threads_init(void)
 {
 	int i;
@@ -191,26 +222,15 @@ threads_init(void)
 	}
 
 	for (i = 0; i < threads_nel; i++) {
+		threads[i].w_signo = 0;
 		threads[i].w_thread = (pthread_t) -1;
 	}
-}
 
-static int
-threads_start(void)
-{
-	size_t i;
-	sigset_t set;
-
-	threads_init();
-
-	/* Signal */
 	i = 0;
 
-	syslog(LOG_INFO, "Starting %zd threads", threads_nel);
-
-	/* Configure sensor thread */
+	/* Sensor */
 	if (sensor_init(&threads[i].w_itimer) == -1) {
-		return -1;
+		goto error;
 	}
 	threads[i].w_signo = signo(i);
 	threads[i].w_action = sensor_main;
@@ -218,9 +238,9 @@ threads_start(void)
 
 	i++;
 
-	/* Configure archive thread */
+	/* Archive */
 	if (archive_init(&threads[i].w_itimer) == -1) {
-		return -1;
+		goto error;
 	}
 	threads[i].w_signo = signo(i);
 	threads[i].w_action = archive_main;
@@ -228,10 +248,10 @@ threads_start(void)
 
 	i++;
 
-	/* Configure Wunder thread */
+	/* Wunderground */
 	if (confp->wunder.enabled) {
 		if (wunder_init(&threads[i].w_itimer) == -1) {
-			return -1;
+			goto error;
 		}
 
 		threads[i].w_signo = signo(i);
@@ -240,6 +260,19 @@ threads_start(void)
 
 		i++;
 	}
+
+	return 0;
+
+error:
+	// TODO: cleanup
+	return -1;
+}
+
+static int
+threads_start(void)
+{
+	size_t i;
+	sigset_t set;
 
 	/* Block all signals */
 	(void) sigemptyset(&set);
@@ -261,6 +294,8 @@ threads_start(void)
 			return -1;
 		}
 	}
+
+	syslog(LOG_INFO, "%zd threads running", threads_nel);
 
 	return 0;
 }
@@ -328,21 +363,32 @@ worker_main(int *halt)
 	if (drv_init() == -1) {
 		return -1;
 	}
+	if (threads_init() == -1) {
+		goto error;
+	}
 
 	/* Startup initialization */
 	if (startup) {
+		ssize_t sz;
+		size_t nloops;
+		size_t nar;
+
 		if (pthread_sigmask(SIG_BLOCK, &set, NULL) == -1) {
 			syslog(LOG_ERR, "pthread_sigmask: %m");
 			goto error;
 		}
 
-		if (board_open(O_CREAT) == -1) {
+		nloops = nloops_count();
+		nar = 1;
+
+		if ((sz = board_open(O_CREAT, nloops, nar)) == -1) {
 			syslog(LOG_ERR, "board_open: %m");
 			goto error;
 		}
 
-		syslog(LOG_INFO, "board_open: done");
 		startup = 0;
+
+		syslog(LOG_INFO, "Allocated %zdkB for shared board", sz / 1024);
 	}
 
 	/* Start all workers */
