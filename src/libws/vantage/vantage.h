@@ -65,11 +65,11 @@ struct vantage_cfg
 
 struct vantage_rxck
 {
-	long pkt_recv;			/* Total packets received */
-	long pkt_missed;		/* Total packets missed */
-	long pkt_in_row;		/* Maximum packets received without error */
-	long resync;			/* Number of resynchronizations */
-	long crc_ko;			/* Number of CRC errors detected */
+	uint16_t pkt_recv;		/* Total packets received */
+	uint16_t pkt_missed;		/* Total packets missed */
+	uint16_t pkt_in_row;		/* Maximum packets received without error */
+	uint16_t resync;		/* Number of resynchronizations */
+	uint16_t crc_ko;		/* Number of CRC errors detected */
 };
 
 struct vantage_loop

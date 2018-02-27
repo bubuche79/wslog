@@ -146,11 +146,11 @@ error:
 static void
 print_rxcheck(const char *pref, const struct vantage_rxck *ck)
 {
-	printf("%s%s: %ld\n", pref, "Packets received", ck->pkt_recv);
-	printf("%s%s: %ld\n", pref, "Packets missed", ck->pkt_missed);
-	printf("%s%s: %ld\n", pref, "Maximum packets received without error", ck->pkt_in_row);
-	printf("%s%s: %ld\n", pref, "Resynchronizations", ck->resync);
-	printf("%s%s: %ld\n", pref, "CRC errors", ck->crc_ko);
+	printf("%s%s: %hu\n", pref, "Packets received", ck->pkt_recv);
+	printf("%s%s: %hu\n", pref, "Packets missed", ck->pkt_missed);
+	printf("%s%s: %hu\n", pref, "Maximum packets received without error", ck->pkt_in_row);
+	printf("%s%s: %hu\n", pref, "Resynchronizations", ck->resync);
+	printf("%s%s: %hu\n", pref, "CRC errors", ck->crc_ko);
 }
 
 static void

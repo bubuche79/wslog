@@ -58,6 +58,29 @@ error:
 	return -1;
 }
 
+static int
+scan_rxcheck(const char *buf, struct vantage_rxck *ck)
+{
+	int ret;
+
+	/**
+	 * Use signed conversion, as the Vantage Pro may return negative numbers
+	 * when values reach INT16_MAX (-32079 for example).
+	 */
+	ret = sscanf(buf, "%hd %hd %hd %hd %hd",
+			&ck->pkt_recv, &ck->pkt_missed, &ck->resync,
+			&ck->pkt_in_row, &ck->crc_ko);
+
+	if (ret == 5) {
+		ret = 0;
+	} else {
+		ret = -1;
+		errno = EIO;
+	}
+
+	return ret;
+}
+
 DSO_EXPORT int
 vantage_test(int fd)
 {
@@ -124,16 +147,7 @@ vantage_rxcheck(int fd, struct vantage_rxck *ck)
 		sz += ret;
 	} while (memcmp(buf + sz - 2, LFCR, 2));
 
-	ret = sscanf(buf, " %ld %ld %ld %ld %ld",
-			&ck->pkt_recv, &ck->pkt_missed, &ck->resync,
-			&ck->pkt_in_row, &ck->crc_ko);
-
-	if (ret != 5) {
-		errno = EIO;
-		goto error;
-	}
-
-	return 0;
+	return scan_rxcheck(buf, ck);
 
 error:
 	return -1;
