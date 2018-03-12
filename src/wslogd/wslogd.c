@@ -91,9 +91,6 @@ main(int argc, char *argv[])
 		switch (c) {
 		case 'c':
 			conf_file = optarg;
-			if (conf_file[0] != '/') {
-				err(1, "%s: Not an absolute file\n", conf_file);
-			}
 			break;
 		case 'i':
 			archive_freq = atoi(optarg);
@@ -119,6 +116,10 @@ main(int argc, char *argv[])
 
 	if (argc != optind) {
 		usage(stderr, 2);
+	}
+
+	if (!one_process_mode && conf_file[0] != '/') {
+		err(1, "%s: Not an absolute file\n", conf_file);
 	}
 
 	/* Required stuff before fork() */
