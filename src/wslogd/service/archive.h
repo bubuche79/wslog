@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 int archive_init(struct itimerspec *it);
-int archive_main(void);
+int archive_timer(void);
 int archive_destroy(void);
 
 #ifdef __cplusplus

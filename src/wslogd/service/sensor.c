@@ -15,12 +15,14 @@ static int
 sensor_push(const struct ws_loop *p)
 {
 	if (board_lock() == -1) {
+		syslog(LOG_ERR, "board_lock: %m");
 		return -1;
 	}
 
 	board_push(p);
 
 	if (board_unlock() == -1) {
+		syslog(LOG_ERR, "board_unlock: %m");
 		return -1;
 	}
 
@@ -56,7 +58,7 @@ error:
 }
 
 int
-sensor_main(void)
+sensor_timer(void)
 {
 	struct ws_loop buf;
 
@@ -67,12 +69,8 @@ sensor_main(void)
 		goto error;
 	}
 
-	/* Compute derived measures */
-	//	ws_calc(&buf);
-
 	/* Push loop event in board */
 	if (sensor_push(&buf) == -1) {
-		syslog(LOG_ERR, "sensor_push: %m");
 		goto error;
 	}
 

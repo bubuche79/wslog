@@ -272,7 +272,7 @@ error:
 }
 
 int
-wunder_update(void)
+wunder_timer(void)
 {
 	struct ws_loop arbuf;
 	const struct ws_loop *p;

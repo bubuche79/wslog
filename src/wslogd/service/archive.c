@@ -27,7 +27,7 @@ static int hw_archive;			/* Hardware archive */
 static time_t current;			/* Last known console archive record */
 
 static ssize_t
-board_put(struct ws_archive *ar, size_t nel)
+push_record(struct ws_archive *ar, size_t nel)
 {
 	size_t i;
 
@@ -206,11 +206,12 @@ error:
 }
 
 int
-archive_main(void)
+archive_timer(void)
 {
 	ssize_t sz;
 	struct ws_archive arbuf;
 
+	/* Device archive */
 	if (hw_archive) {
 		if ((sz = drv_get_archive(&arbuf, 1, current)) == -1) {
 			goto error;
@@ -220,11 +221,12 @@ archive_main(void)
 			current = arbuf.time;
 		}
 	} else {
+		arbuf.wl_mask = 0;
 		sz = 1;
 	}
 
 	/* Update board */
-	sz = board_put(&arbuf, sz);
+	sz = push_record(&arbuf, sz);
 	if (sz == -1) {
 		goto error;
 	} else if (sz > 0) {

@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 int sensor_init(struct itimerspec *it);
-int sensor_main(void);
+int sensor_timer(void);
 int sensor_destroy(void);
 
 #ifdef __cplusplus

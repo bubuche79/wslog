@@ -52,9 +52,9 @@ wslogd_SOURCES = \
 	service/archive.c \
 	service/sensor.c \
 	service/util.c \
+	service/wunder.c \
 	worker.c \
 	wslogd.c \
-	wunder.c \
 	board.h \
 	daemon.h \
 	dataset.h \
@@ -62,9 +62,9 @@ wslogd_SOURCES = \
 	service/archive.h \
 	service/sensor.h \
 	service/util.h \
+	service/wunder.h \
 	worker.h \
-	wslogd.h \
-	wunder.h
+	wslogd.h
 
 wslogd_LDADD = \
 	-L. -lwslog -L../libws -lws -lsqlite3 -lcurl -lrt -lpthread

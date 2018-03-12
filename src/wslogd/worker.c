@@ -18,16 +18,11 @@
 #include "board.h"
 #include "conf.h"
 #include "db/sqlite.h"
-#include "wunder.h"
 #include "service/util.h"
 #include "service/archive.h"
 #include "service/sensor.h"
+#include "service/wunder.h"
 #include "worker.h"
-
-#define ST_DONE 	0
-#define ST_INIT		1
-#define ST_ERROR 	2
-#define ST_RUNNING	3
 
 #define signo(i)	(SIGRTMIN + (i))
 
@@ -233,7 +228,7 @@ threads_init(void)
 		goto error;
 	}
 	threads[i].w_signo = signo(i);
-	threads[i].w_action = sensor_main;
+	threads[i].w_action = sensor_timer;
 	threads[i].w_destroy = sensor_destroy;
 
 	i++;
@@ -243,7 +238,7 @@ threads_init(void)
 		goto error;
 	}
 	threads[i].w_signo = signo(i);
-	threads[i].w_action = archive_main;
+	threads[i].w_action = archive_timer;
 	threads[i].w_destroy = archive_destroy;
 
 	i++;
@@ -255,7 +250,7 @@ threads_init(void)
 		}
 
 		threads[i].w_signo = signo(i);
-		threads[i].w_action = wunder_update;
+		threads[i].w_action = wunder_timer;
 		threads[i].w_destroy = wunder_destroy;
 
 		i++;

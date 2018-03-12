@@ -1,5 +1,5 @@
-#ifndef _WUNDER_H
-#define _WUNDER_H
+#ifndef _SERVICE_WUNDER_H
+#define _SERVICE_WUNDER_H
 
 /**
  * Weather underground support.
@@ -12,11 +12,11 @@ extern "C" {
 #endif
 
 int wunder_init(struct itimerspec *it);
-int wunder_update(void);
+int wunder_timer(void);
 int wunder_destroy(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _WUNDER_H */
+#endif	/* _SERVICE_WUNDER_H */
