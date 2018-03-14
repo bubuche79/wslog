@@ -30,32 +30,46 @@ local function add_charts(n)
 	http.write('<script>')
 end
 
-local function climate_charts(year, month)
-	http.write([[
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
-<div class="charts">
-<div class="chart">
-<canvas id="chart1"></canvas>
-</div>
-<div class="chart">
-<canvas id="chart2"></canvas>
-</div>
-</div>
-<script>
-var ctx1 = document.getElementById("chart1").getContext("2d");
-var ctx2 = document.getElementById("chart2").getContext("2d");
-fetch('/cgi-bin/wsview/rest/year/')
-	.then(function(response) {
-		return response.json();
-	})
-	.then(function(json) {
-//		new Chart(ctx2, chart_wind(json));
-//		new Chart(ctx3, chart_barometer(json));
-		new Chart(ctx1, chart_year_temp(json));
-		new Chart(ctx2, chart_year_rain(json));
-	});
-</script>]])
+local function climate_charts(year, month, p)
+	local url
+	local charts = { }
+
+	if p.period == 'month' then
+		url = "month/"
+		charts[1] = { name = "temp_rain" }
+		charts[2] = { name = "wind" }
+		charts[3] = { name = "barometer" }
+	else
+		url = "year/"
+		charts[1] = { name = "temp" }
+		charts[2] = { name = "rain" }
+	end
+
+	http.write([[<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment-with-locales.min.js"></script>]])
+	http.write([[<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>]])
+	http.write([[<div class="charts">]])
+
+	for i = 1, #charts do
+		local n = charts[i].name
+		http.format([[<div class="chart"><canvas id="chart-%s"></canvas></div>]], n)
+	end
+
+	http.write([[</div><script>moment.locale('fr');]])
+
+	for i = 1, #charts do
+		local n = charts[i].name
+		http.format([[var %s = document.getElementById("chart-%s").getContext("2d"); ]], n, n)
+	end
+
+	http.format([[fetch('/cgi-bin/wsview/rest/%s')]], url)
+	http.write([[.then(function(response) { return response.json(); }) .then(function(json) {]])
+
+	for i = 1, #charts do
+		local n = charts[i].name
+		http.format("new Chart(%s, chart_%s(json, '%s')); ", n, n, p.period)
+	end
+
+	http.write([[});</script>]]);
 end
 
 local function climate_table(year, month)
@@ -128,9 +142,9 @@ local function climate1(env, p)
 	http.write([[<input class="cbi-button" type="submit" value="Submit"></form></div>]])
 
 	if (view == "table") then
-		climate_table(year, month)
+		climate_table(year, month, p)
 	else
-		climate_charts(year, month)
+		climate_charts(year, month, p)
 	end
 
 	http.write([[</div>]])

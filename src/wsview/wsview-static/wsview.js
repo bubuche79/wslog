@@ -1,13 +1,3 @@
-function get_x(json) {
-	if (json.period.from != null) {
-		return json.data.length;
-	} else if (json.period.month == null) {
-		return 12;
-	} else {
-		return new Date(json.period.year, json.period.month, 0).getDate();
-	}
-};
-
 function scale_min(a) {
 	return 5 * parseInt((a + 4) / 5) - 5;
 }
@@ -16,40 +6,69 @@ function scale_max(a) {
 	return 5 * parseInt(a / 5) + 5;
 }
 
-function get_labels(json) {
-	var labels = [];
-	var x = get_x(json);
+function time_get(row) {
+	return new Date(row.time);
+}
 
-	for (var i = 0; i < x; i++) {
-		if (json.period.from != null) {
-			labels.push(json.data[i].time);
-		} else if (json.period.month == null) {
-			labels.push(i > 0 && i < x + 1 ? i : '');
-		} else {
-			labels.push(i > 0 && i < x + 1 && (i % 2 == 0) ? i : '');
+function time_start(date, period) {
+	if (period == 'month') {
+		date.setDate(1);
+	} else if (period == 'year') {
+		date.setMonth(0);
+	}
+
+	return date;
+}
+
+function time_next(date, period) {
+	if (period == 'month') {
+		date.setDate(date.getDate() + 1);
+	} else if (period = 'year') {
+		date.setMonth(date.getMonth() + 1);
+	}
+
+	return date;
+}
+
+function get_labels(json, period) {
+	var labels = [];
+
+	var start = time_get(json[0])
+	var x = time_start(start, period);
+
+	for (var i = 0; i < json.length; i++) {
+		var time = time_get(json[i]);
+
+		while (x.getTime() < time.getTime()) {
+			labels.push(x);
+			time_next(x, period);
 		}
+
+		labels.push(time);
+		time_next(x, period);
 	}
 
 	return labels;
 }
 
-function get_data(json, field) {
+function get_data(json, field, period) {
 	var data = [];
-	var x = get_x(json);
-	var x_field = (json.period.from != null && json.period.month == null) ? 'month' : 'day';
+
+	var start = time_get(json[0])
+	var x = time_start(start, period);
 
 	var j = 0;
 
-	for (var i = 0; i < x; i++) {
-		if (json.period.from != null) {
-			data.push(json.data[j][field]);
-			j++;
-		} else if (j < json.data.length && json.data[j][x_field] == i) {
-			data.push(json.data[j][field]);
-			j++;
-		} else {
+	for (var i = 0; i < json.length; i++) {
+		var time = time_get(json[i]);
+
+		while (x.getTime() < time.getTime()) {
 			data.push(null);
+			x = time_next(x, period);
 		}
+
+		data.push(json[i][field]);
+		x = time_next(x, period);
 	}
 
 	return data;
@@ -68,11 +87,22 @@ function get_type(config) {
 	return type;
 }
 
-function create_chart(json, config) {
+function create_chart(json, config, period) {
+	var time_unit;
+	var title_fmt;
+
+	if (period == 'month') {
+		time_unit = 'day';
+		title_fmt = 'D MMMM YYYY';
+	} else if (period == 'year') {
+		time_unit = 'month';
+		title_fmt = 'MMMM YYYY';
+	}
+
 	var chartjs = {
 		type: get_type(config),
 		data: {
-			labels: get_labels(json),
+			labels: get_labels(json, period),
 			datasets: [],
 		},
 		options: {
@@ -91,7 +121,7 @@ function create_chart(json, config) {
 				bodySpacing: 5,
 				callbacks: {
 					title: function(items, data) {
-						return moment.unix(items[0].xLabel).format('DD/MM/YY HH:mm');
+						return moment(items[0].xLabel).format(title_fmt);
 					},
 					label: function(item, data) {
 						var result = null;
@@ -120,12 +150,13 @@ function create_chart(json, config) {
 						offsetGridLines: false
 					},
 					time: {
-						unit: 'day',
-						parser: moment.unix,
-						min: new Date(json.period.from),
+						unit: time_unit,
+						parser: moment,
+//						min: new Date(json.period.from),
 						displayFormats: {
 							hour: 'HH:mm',
-							day: 'D MMM'
+							day: 'D',
+							month: 'MMM'
 						}
 					},
 					scaleLabel: {
@@ -149,7 +180,7 @@ function create_chart(json, config) {
 			yAxisID: dataset.axis,
 			backgroundColor: dataset.color,
 			borderColor: dataset.color,
-			data: get_data(json, dataset.field)
+			data: get_data(json, dataset.field, period)
 		};
 
 		if (dataset.type == 'line') {
@@ -270,19 +301,19 @@ function obs_wind(json) {
 	return create_chart(json, options);
 }
 
-function chart_wind(json) {
+function chart_wind(json, period) {
 	var options = {
 		datasets: [{
 			type: 'line',
 			label: 'Rafale',
-			field: 'wind_gust_speed',
+			field: 'hi_wind_speed',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
 			color: 'rgba(86, 65, 112, 1)'
 		},{
 			type: 'line',
 			label: 'Vent moyen',
-			field: 'wind_speed',
+			field: 'avg_wind_speed',
 			axis: 'y-axis-1',
 			pointStyle: 'rect',
 			color: 'rgba(128, 105, 155, 1)'
@@ -298,10 +329,10 @@ function chart_wind(json) {
 		}
 	};
 
-	return create_chart(json, options);
+	return create_chart(json, options, period);
 };
 
-function chart_barometer(json) {
+function chart_barometer(json, period) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -322,25 +353,25 @@ function chart_barometer(json) {
 		}
 	};
 
-	return create_chart(json, options);
+	return create_chart(json, options, period);
 };
 
-function chart_year_temp(json) {
+function chart_temp(json, period) {
 	var options = {
 		datasets: [{
 			type: 'line',
-			label: 'Température minimale',
-			field: 'temp_min',
-			axis: 'y-axis-1',
-			pointStyle: 'circle',
-			color: 'rgba(69, 114, 167, 1)'
-		},{
-			type: 'line',
 			label: 'Température maximale',
-			field: 'temp_max',
+			field: 'hi_temp',
 			axis: 'y-axis-1',
 			pointStyle: 'rect',
 			color: 'rgba(170, 70, 70, 1)'
+		},{
+			type: 'line',
+			label: 'Température minimale',
+			field: 'lo_temp',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(69, 114, 167, 1)'
 		}],
 		options: {
 			title: 'Températures',
@@ -353,24 +384,66 @@ function chart_year_temp(json) {
 		}
 	};
 
-	return create_chart(json, options);
+	return create_chart(json, options, period);
 };
 
-function chart_year_rain(json) {
+function chart_temp_rain(json, period) {
 	var options = {
 		datasets: [{
+			type: 'line',
+			label: 'Température maximale',
+			field: 'hi_temp',
+			axis: 'y-axis-1',
+			pointStyle: 'rect',
+			color: 'rgba(170, 70, 70, 1)'
+		},{
+			type: 'line',
+			label: 'Température minimale',
+			field: 'lo_temp',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(69, 114, 167, 1)'
+		},{
+			type: 'bar',
+			label: 'Précipitations',
+			field: 'rain_fall',
+			axis: 'y-axis-2',
+			color: 'rgba(162, 190, 163, 1)'
+		}],
+		options: {
+			title: 'Températures',
+			axes: [{
+				id: 'y-axis-1',
+				position: 'left',
+				label: 'Températures',
+				unit: '°C'
+			},{
+				id: 'y-axis-2',
+				position: 'right',
+				label: 'Précipitations',
+				unit: 'mm'
+			}]
+		}
+	};
+
+	return create_chart(json, options, period);
+};
+
+function chart_rain(json, period) {
+	var options = {
+		datasets: [{
+			type: 'bar',
+			label: 'Précipitations',
+			field: 'rain',
+			axis: 'y-axis-1',
+			color: 'rgba(162, 190, 163, 1)'
+		},{
 			type: 'line',
 			label: 'Précipitations maximales sur 24h',
 			field: 'rain_24h',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
 			color: 'rgba(18, 137, 186, 1)'
-		}, {
-			type: 'bar',
-			label: 'Précipitations',
-			field: 'rain',
-			axis: 'y-axis-1',
-			color: 'rgba(162, 190, 163, 1)'
 		}],
 		options: {
 			title: 'Précipitations',
@@ -383,6 +456,6 @@ function chart_year_rain(json) {
 		}
 	};
 
-	return create_chart(json, options);
+	return create_chart(json, options, period);
 };
 
