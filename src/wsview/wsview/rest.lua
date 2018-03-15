@@ -49,9 +49,12 @@ local function init(env, db)
 
 	if db and not cnx then
 		local driver = require "luasql.sqlite3"
+		local util = require "wsview.util"
+
+		local fname = util.getconfig()['archive.sqlite.db']
 
 		drv = driver.sqlite3()
-		cnx = drv:connect("/var/lib/wslogd.db")
+		cnx = drv:connect(fname)
 	end
 end
 
