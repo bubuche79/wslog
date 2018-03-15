@@ -21,7 +21,7 @@ local function add_charts(n)
 	local i
 
 	http.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>')
-	http.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>')
+	http.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>')
 	http.write('<div class="charts">')
 	for i = 1, n do
 		http.write('<div class="chart"><canvas id="chart%d/></div>', i)

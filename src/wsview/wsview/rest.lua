@@ -51,7 +51,7 @@ local function init(env, db)
 		local driver = require "luasql.sqlite3"
 
 		drv = driver.sqlite3()
-		cnx = drv:connect("/u12/wslogd.db")
+		cnx = drv:connect("/var/lib/wslogd.db")
 	end
 end
 

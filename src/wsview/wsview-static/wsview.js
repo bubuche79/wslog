@@ -16,8 +16,16 @@ function time_start(date, period) {
 	} else if (period == 'year') {
 		date.setMonth(0);
 	}
+}
 
-	return date;
+function time_end(date, period) {
+	if (period == 'month') {
+		date.setDate(1);
+		date.setMonth(date.getMonth() + 1);
+	} else if (period == 'year') {
+		date.setMonth(0);
+		date.setYear(date.getYear() + 1);
+	}
 }
 
 function time_next(date, period) {
@@ -26,25 +34,31 @@ function time_next(date, period) {
 	} else if (period = 'year') {
 		date.setMonth(date.getMonth() + 1);
 	}
-
-	return date;
 }
 
 function get_labels(json, period) {
 	var labels = [];
 
-	var start = time_get(json[0])
-	var x = time_start(start, period);
+	var x = time_get(json[0]);
+	var last = time_get(json[json.length-1]);
+
+	time_start(x, period);
+	time_end(last, period);
 
 	for (var i = 0; i < json.length; i++) {
 		var time = time_get(json[i]);
 
 		while (x.getTime() < time.getTime()) {
-			labels.push(x);
+			labels.push(new Date(x));
 			time_next(x, period);
 		}
 
 		labels.push(time);
+		time_next(x, period);
+	}
+
+	while (x.getTime() < last.getTime()) {
+		labels.push(new Date(x));
 		time_next(x, period);
 	}
 
@@ -54,21 +68,20 @@ function get_labels(json, period) {
 function get_data(json, field, period) {
 	var data = [];
 
-	var start = time_get(json[0])
-	var x = time_start(start, period);
+	var x = time_get(json[0]);
 
-	var j = 0;
+	time_start(x, period);
 
 	for (var i = 0; i < json.length; i++) {
 		var time = time_get(json[i]);
 
 		while (x.getTime() < time.getTime()) {
 			data.push(null);
-			x = time_next(x, period);
+			time_next(x, period);
 		}
 
 		data.push(json[i][field]);
-		x = time_next(x, period);
+		time_next(x, period);
 	}
 
 	return data;
@@ -90,12 +103,15 @@ function get_type(config) {
 function create_chart(json, config, period) {
 	var time_unit;
 	var title_fmt;
+	var time_step;
 
 	if (period == 'month') {
 		time_unit = 'day';
+		time_step = 2;
 		title_fmt = 'D MMMM YYYY';
 	} else if (period == 'year') {
 		time_unit = 'month';
+		time_step = 1;
 		title_fmt = 'MMMM YYYY';
 	}
 
@@ -152,7 +168,8 @@ function create_chart(json, config, period) {
 					time: {
 						unit: time_unit,
 						parser: moment,
-//						min: new Date(json.period.from),
+						stepSize: time_step,
+//						min: time_min,
 						displayFormats: {
 							hour: 'HH:mm',
 							day: 'D',
@@ -188,9 +205,9 @@ function create_chart(json, config, period) {
 			dat.lineTension = 0;
 			dat.borderWidth = 2;
 			dat.pointStyle = dataset.pointStyle;
-			dat.pointRadius = 0;
-			dat.pointHitRadius = 5;
-			dat.pointHoverRadius = 5;
+//			dat.pointRadius = 0;
+//			dat.pointHitRadius = 5;
+//			dat.pointHoverRadius = 5;
 			dat.spanGaps = false;
 		}
 
