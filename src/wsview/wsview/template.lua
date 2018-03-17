@@ -20,7 +20,7 @@ function template.header()
 <a class="brand" href="#">WSVIEW</a>
 <ul class="nav">
  <li><a href="/cgi-bin/wsview/">Temps réel</a></li>
- <li><a href="/cgi-bin/wsview/observations/">Observations</a></li>
+ <li><a href="/cgi-bin/wsview/archive/">Observations</a></li>
  <li class="dropdown">
   <a class="menu" href="#">Climat</a>
   <ul class="dropdown-menu">

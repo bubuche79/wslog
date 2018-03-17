@@ -12,13 +12,10 @@ function http.io(recv, send)
 end
 
 local function subrange(t, from, to)
-	local s = nil
+	local s = { }
 	local last = to or #t
 
 	for i = from, last do
-		if not s then
-			s = { }
-		end
 		s[i - from + 1] = t[i]
 	end
 
@@ -93,6 +90,18 @@ function http.write_json(x)
 end
 
 function http.dispatch(env)
+	local params = {}
+
+	-- Parameters
+	if env.REQUEST_METHOD == "POST" then
+		local buf = io.recv()
+
+		protocol.urldecode_params(buf, params)
+	else
+		protocol.urldecode_params(env.QUERY_STRING, params)
+	end
+
+	-- Path
 	local path = env.PATH_INFO or "/home"
 
 	path = string.sub(path, 2)
@@ -105,7 +114,7 @@ function http.dispatch(env)
 
 	if hasmod and mod[func] then
 		env.ARGS = subrange(s, 3)
-		mod[func](env)
+		mod[func](env, params)
 	else
 		http.status(400)
 	end

@@ -7,6 +7,25 @@ local http = require "wsview.http"
 local drv
 local cnx
 
+local function archive(s, e)
+	local sql = "SELECT time, "
+	sql = sql .. "barometer, "
+	sql = sql .. "temp, "
+	sql = sql .. "lo_temp, "
+	sql = sql .. "hi_temp, "
+	sql = sql .. "humidity, "
+	sql = sql .. "rain_fall, "
+	sql = sql .. "hi_rain_rate, "
+	sql = sql .. "avg_wind_speed, "
+	sql = sql .. "22.5*avg_wind_dir AS avg_wind_dir, "
+	sql = sql .. "hi_wind_speed "
+	sql = sql .. "FROM ws_archive "
+	sql = sql .. string.format("WHERE %d <= time AND time < %d ", s, e)
+	sql = sql .. "ORDER BY time"
+
+	return cnx:execute(sql)
+end
+
 local function aggr_month(s, e)
 	local sql = "SELECT date(time, 'unixepoch', 'localtime') AS time, "
 	sql = sql .. "MIN(lo_temp) AS lo_temp, "
@@ -95,6 +114,21 @@ function rest.current(env)
 --	local wsview = require "wsview"
 
 	http.write_json(wsview.current())
+	close(env)
+end
+
+function rest.archive(env)
+	local y, m
+	local t = os.date("*t")
+
+	init(env, true)
+
+	local from = os.time(t) - 4 * 24 * 3600
+	local to = os.time(t)
+
+	local cur = archive(from, to)
+
+	dump_cur(cur)
 	close(env)
 end
 

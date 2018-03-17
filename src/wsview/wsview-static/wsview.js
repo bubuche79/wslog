@@ -7,7 +7,15 @@ function scale_max(a) {
 }
 
 function time_get(row) {
-	return new Date(row.time);
+	var t = row.time;
+
+	if (typeof(t) == 'number') {
+		t = new Date(t * 1000);
+	} else {
+		t = new Date(t);
+	}
+
+	return t;
 }
 
 function time_start(date, period) {
@@ -42,8 +50,10 @@ function get_labels(json, period) {
 	var x = time_get(json[0]);
 	var last = time_get(json[json.length-1]);
 
-	time_start(x, period);
-	time_end(last, period);
+	if (period != null) {
+		time_start(x, period);
+		time_end(last, period);
+	}
 
 	for (var i = 0; i < json.length; i++) {
 		var time = time_get(json[i]);
@@ -70,7 +80,9 @@ function get_data(json, field, period) {
 
 	var x = time_get(json[0]);
 
-	time_start(x, period);
+	if (period != null) {
+		time_start(x, period);
+	}
 
 	for (var i = 0; i < json.length; i++) {
 		var time = time_get(json[i]);
@@ -105,7 +117,8 @@ function create_chart(json, config, period) {
 	var title_fmt;
 	var time_step;
 
-	if (period == 'month') {
+	if (period == null) {
+	} else if (period == 'month') {
 		time_unit = 'day';
 		time_step = 2;
 		title_fmt = 'D MMMM YYYY';
@@ -202,13 +215,15 @@ function create_chart(json, config, period) {
 
 		if (dataset.type == 'line') {
 			dat.fill = false;
+			dat.spanGaps = false;
 			dat.lineTension = 0;
 			dat.borderWidth = 2;
 			dat.pointStyle = dataset.pointStyle;
-//			dat.pointRadius = 0;
-//			dat.pointHitRadius = 5;
-//			dat.pointHoverRadius = 5;
-			dat.spanGaps = false;
+			if (dataset.pointHide) {
+				dat.pointRadius = 0;
+				dat.pointHitRadius = 4;
+				dat.pointHoverRadius = 4;
+			}
 		}
 
 		chartjs.data.datasets.push(dat);
@@ -225,7 +240,7 @@ function create_chart(json, config, period) {
 			ticks: {
 //				min: scale_min(temp_min.min),
 //				max: scale_max(temp_max.max),
-				stepSize: 5
+//				stepSize: 5
 			},
 			scaleLabel: {
 				display: true,
@@ -240,7 +255,7 @@ function create_chart(json, config, period) {
 	return chartjs;
 }
 
-function obs_temp(json) {
+function archive_temp(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -248,6 +263,7 @@ function obs_temp(json) {
 			field: 'temp',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
+			pointHide: 1,
 			color: 'rgba(237, 86, 27, 1)'
 		},{
 			type: 'line',
@@ -255,12 +271,14 @@ function obs_temp(json) {
 			field: 'dew_point',
 			axis: 'y-axis-1',
 			pointStyle: 'rect',
+			pointHide: 1,
 			color: 'rgba(80, 180, 50, 1)'
 		},{
 			type: 'line',
 			label: 'Humidité',
 			field: 'humidity',
 			axis: 'y-axis-2',
+			pointHide: 1,
 			color: 'rgba(5, 141, 199, 1)'
 		}],
 		options: {
@@ -282,21 +300,21 @@ function obs_temp(json) {
 	return create_chart(json, options);
 }
 
-function obs_wind(json) {
+function archive_wind(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
 			label: 'Vent moyen',
-			field: 'wind_speed',
+			field: 'avg_wind_speed',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
+			pointHide: 1,
 			color: 'rgba(69, 114, 167, 1)'
 		},{
-			type: 'line',
+			type: 'bubble',
 			label: 'Direction',
-			field: 'wind_dir',
+			field: 'avg_wind_dir',
 			axis: 'y-axis-2',
-			pointStyle: 'rect',
 			color: 'rgba(170, 70, 70, 1)'
 		}],
 		options: {
@@ -318,7 +336,7 @@ function obs_wind(json) {
 	return create_chart(json, options);
 }
 
-function chart_wind(json, period) {
+function aggr_wind(json, period) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -349,7 +367,7 @@ function chart_wind(json, period) {
 	return create_chart(json, options, period);
 };
 
-function chart_barometer(json, period) {
+function aggr_barometer(json, period) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -373,7 +391,7 @@ function chart_barometer(json, period) {
 	return create_chart(json, options, period);
 };
 
-function chart_temp(json, period) {
+function aggr_temp(json, period) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -404,7 +422,7 @@ function chart_temp(json, period) {
 	return create_chart(json, options, period);
 };
 
-function chart_temp_rain(json, period) {
+function aggr_temp_rain(json, period) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -446,7 +464,7 @@ function chart_temp_rain(json, period) {
 	return create_chart(json, options, period);
 };
 
-function chart_rain(json, period) {
+function aggr_rain(json, period) {
 	var options = {
 		datasets: [{
 			type: 'bar',
@@ -476,3 +494,25 @@ function chart_rain(json, period) {
 	return create_chart(json, options, period);
 };
 
+function tr_cell(tr, row, field) {
+	var td = tr.insertCell();
+
+	td.appendChild(document.createTextNode(row[field]));
+}
+
+function table_all(root, json, period) {
+	var body = document.body;
+	var tbl = document.createElement('table');
+
+	for (var i = 0; i < json.length; i++) {
+		var tr = tbl.insertRow();
+
+		tr_cell(tr, json[i], "time");
+		tr_cell(tr, json[i], "lo_temp");
+		tr_cell(tr, json[i], "hi_temp");
+		tr_cell(tr, json[i], "rain_fall");
+		tr_cell(tr, json[i], "hi_wind_speed");
+	}
+
+	root.appendChild(tbl);
+}
