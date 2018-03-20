@@ -3,20 +3,7 @@ local climate = { }
 local http = require "wsview.http"
 local template = require "wsview.template"
 local i18n = require "wsview.i18n"
-local charts = require "wsview.charts"
-
-local function add_tab(tab, prefix, active)
-	local class = ""
-	local i18n_tab = i18n.translate("tab_" .. tab)
-
-	if (active == tab) then
-		class = " active"
-	end
-
-	http.format("<li class='tabmenu-item%s'>", class)
-	http.format("<a href='%s/%s'>%s</a>", prefix, tab, i18n_tab)
-	http.write("</li>")
-end
+local graphics = require "wsview.graphics"
 
 local function climate_charts(p)
 	local defs = { }
@@ -30,23 +17,11 @@ local function climate_charts(p)
 		defs[2] = { name = "rain" }
 	end
 
-	charts.add("aggr", defs, p)
+	graphics.charts("aggr", defs, p)
 end
 
 local function climate_table(p)
-	local url
-
-	if p.period == 'month' then
-		url = "month/" .. p.year .. "/" .. p.month
-	else
-		url = "year/" .. p.year
-	end
-
-	http.write([[<div id="climate-tables" class="tables"><script>]])
-	http.format([[var root = document.getElementById("climate-tables");]])
-	http.format([[fetch('/cgi-bin/wsview/rest/%s')]], url)
-	http.write([[.then(function(response) { return response.json(); }).then(function(json) {]])
-	http.format([[table_all(root, json, '%s');});</script>]], p.period)
+	graphics.table({ name = "aggr" }, p)
 end
 
 local function add_input_year(selected, last)
@@ -102,8 +77,8 @@ local function main(env, p)
 	p.month = tonumber(p.month) or t.month
 
 	http.write([[<ul class="tabs">]])
-	add_tab("charts", prefix, p.view)
-	add_tab("table", prefix, p.view)
+	graphics.tab("charts", prefix, p.view)
+	graphics.tab("table", prefix, p.view)
 
 	http.write([[</ul><div class="tab-main"><div class="climate-period">]])
 	http.format([[<form method="POST" action="%s">]], prefix)

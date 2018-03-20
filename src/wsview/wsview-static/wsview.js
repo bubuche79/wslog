@@ -6,9 +6,7 @@ function scale_max(a) {
 	return 5 * parseInt(a / 5) + 5;
 }
 
-function time_get(row) {
-	var t = row.time;
-
+function time_get(t) {
 	if (typeof(t) == 'number') {
 		t = new Date(t * 1000);
 	} else {
@@ -47,8 +45,8 @@ function time_next(date, period) {
 function get_labels(json, period) {
 	var labels = [];
 
-	var x = time_get(json[0]);
-	var last = time_get(json[json.length-1]);
+	var x = time_get(json[0].time);
+	var last = time_get(json[json.length-1].time);
 
 	if (period != null) {
 		time_start(x, period);
@@ -56,7 +54,7 @@ function get_labels(json, period) {
 	}
 
 	for (var i = 0; i < json.length; i++) {
-		var time = time_get(json[i]);
+		var time = time_get(json[i].time);
 
 		while (x.getTime() < time.getTime()) {
 			labels.push(new Date(x));
@@ -78,14 +76,14 @@ function get_labels(json, period) {
 function get_data(json, field, period) {
 	var data = [];
 
-	var x = time_get(json[0]);
+	var x = time_get(json[0].time);
 
 	if (period != null) {
 		time_start(x, period);
 	}
 
 	for (var i = 0; i < json.length; i++) {
-		var time = time_get(json[i]);
+		var time = time_get(json[i].time);
 
 		while (x.getTime() < time.getTime()) {
 			data.push(null);
@@ -494,25 +492,43 @@ function aggr_rain(json, period) {
 	return create_chart(json, options, period);
 };
 
+function tr_cell_val(tr, value) {
+	var td = tr.insertCell();
+
+	td.appendChild(document.createTextNode(value));
+}
+
 function tr_cell(tr, row, field) {
 	var td = tr.insertCell();
 
 	td.appendChild(document.createTextNode(row[field]));
 }
 
-function table_all(root, json, period) {
+function mk_table(root, json, fields) {
 	var body = document.body;
 	var tbl = document.createElement('table');
 
 	for (var i = 0; i < json.length; i++) {
 		var tr = tbl.insertRow();
+		var time = time_get(json[i].time);
 
-		tr_cell(tr, json[i], "time");
-		tr_cell(tr, json[i], "lo_temp");
-		tr_cell(tr, json[i], "hi_temp");
-		tr_cell(tr, json[i], "rain_fall");
-		tr_cell(tr, json[i], "hi_wind_speed");
+		tr_cell_val(tr, time);
+		for (var j = 0; j < fields.length; j++) {
+			tr_cell(tr, json[i], fields[j]);
+		}
 	}
 
 	root.appendChild(tbl);
+}
+
+function table_archive(root, json) {
+	var fields = [ "temp" ];
+
+	mk_table(root, json, fields);
+}
+
+function table_aggr(root, json) {
+	var fields = [ "lo_temp", "hi_temp", "rain_fall", "hi_wind_speed" ];
+
+	mk_table(root, json, fields);
 }
