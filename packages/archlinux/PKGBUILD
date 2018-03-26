@@ -1,0 +1,27 @@
+pkgname=wslog
+pkgver=0.8.3
+pkgrel=1
+pkgdesc="Weather station logger"
+arch=('x86_64' 'aarch64')
+url=""
+license=('GPL3')
+source=($pkgname-$pkgver.tar.gz)
+sha1sums=('3badaecb1673c279f6f633877300db1be72f646d')
+depends=('sqlite' 'curl')
+
+build() {
+  cd "$pkgname-$pkgver"
+  ./configure --prefix=/usr --sysconfdir=/etc --disable-wsview
+  make
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  make DESTDIR="$pkgdir" install
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+#  ./tests/check
+}
+

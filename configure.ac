@@ -1,4 +1,5 @@
 AC_PREREQ([2.69])
+LT_PREREQ([2.4.6])
 AC_INIT([wslog], [0.8.3], [bubuche.pub@free.fr])
 AC_CONFIG_HEADERS([config.h])
 
@@ -56,7 +57,7 @@ AC_ARG_ENABLE([wsview],
 AS_IF([test "x$enable_wsview" != "xno"],
 	[AC_DEFINE(HAVE_WSVIEW, 1, [Weather Station View])])
 
-AM_CONDITIONAL([USE_WSVIEW], [test "x$enable_ws23xx" = "xyes"])
+AM_CONDITIONAL([USE_WSVIEW], [test "x$enable_wsview" = "xyes"])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile

@@ -9,6 +9,6 @@ SUBDIRS += \
 	wsview
 endif
 
-dist_data_DATA = \
+EXTRA_DIST = \
 	common/defs/dso.h \
 	common/defs/std.h

@@ -118,9 +118,12 @@ wait_startup(int fd)
 	char buf[128];
 	ssize_t sz;
 
-	read(fd, &status, sizeof(status));
-	sz = read(fd, buf, sizeof(buf));
+	sz = read(fd, &status, sizeof(status));
+	if (sz == -1) {
+		err(status, "IO error\n");
+	}
 
+	sz = read(fd, buf, sizeof(buf));
 	if (status != 0) {
 		buf[sz] = 0;
 		err(status, "%s\n", buf);
@@ -146,10 +149,12 @@ write_pid_file(void)
 static int
 vnotify(int status, int fd, const char *fmt, va_list ap)
 {
-	write(fd, &status, sizeof(status));
+	ssize_t sz;
+
+	sz = write(fd, &status, sizeof(status));
 	vdprintf(fd, fmt, ap);
 
-	return 0;
+	return (sz == -1) ? -1 : 0;
 }
 
 #if __GNUC__ >= 4

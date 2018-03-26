@@ -12,8 +12,3 @@ check_SOURCES = \
 check_CPPFLAGS = -I../src/common -I../src
 
 check_LDADD = -L../src/libws -lws -lcheck
-
-all: tests
-
-tests:
-	./check
