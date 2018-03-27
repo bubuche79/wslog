@@ -14,12 +14,10 @@
 #include "libws/conf.h"
 
 #include "conf.h"
-#include "daemon.h"
 #include "worker.h"
 
 #define PROGNAME	"wslogd"
 
-static int one_process_mode = 0;
 static int archive_freq = -1;
 
 int dry_run = 0;
@@ -27,7 +25,7 @@ int dry_run = 0;
 static void
 usage(FILE *std, int status)
 {
-	fprintf(std, "Usage: " PROGNAME " [-h] [-V] [-D] [-X] [-c config] [-i freq]\n");
+	fprintf(std, "Usage: " PROGNAME " [-h] [-V] [-D] [-c config] [-i freq]\n");
 
 	exit(status);
 }
@@ -43,11 +41,7 @@ post_config(void)
 static int
 loop_init(void)
 {
-	int option;
-
-	option = LOG_PID | (one_process_mode ? LOG_PERROR : 0);
-
-	openlog(PROGNAME, option, confp->log_facility);
+	openlog(PROGNAME, LOG_PID, confp->log_facility);
 	(void) setlogmask(LOG_UPTO(confp->log_level));
 
 	return 0;
@@ -98,9 +92,6 @@ main(int argc, char *argv[])
 		case 'D':
 			dry_run = 1;
 			break;
-		case 'X':
-			one_process_mode = 1;
-			break;
 		case 'h':
 			usage(stdout, 0);
 			break;
@@ -118,10 +109,6 @@ main(int argc, char *argv[])
 		usage(stderr, 2);
 	}
 
-	if (!one_process_mode && conf_file[0] != '/') {
-		err(1, "%s: Not an absolute file\n", conf_file);
-	}
-
 	/* Required stuff before fork() */
 	if (conf_load(conf_file) == -1) {
 		exit(1);
@@ -129,13 +116,7 @@ main(int argc, char *argv[])
 
 	post_config();
 
-	/* Detach, create new session */
-	if (!one_process_mode) {
-		if (daemon_create() == -1) {
-			err(1, "daemon: %s\n", strerror(errno));
-		}
-	}
-
+	/* Startup */
 	ret = 1;
 	if (loop_init() == -1) {
 		goto exit;

@@ -46,7 +46,6 @@ EXTRA_wslogc_DEPENDENCIES = \
 	libwslog.a
 
 wslogd_SOURCES = \
-	daemon.c \
 	dataset.c \
 	db/sqlite.c \
 	service/archive.c \
@@ -56,7 +55,6 @@ wslogd_SOURCES = \
 	worker.c \
 	wslogd.c \
 	board.h \
-	daemon.h \
 	dataset.h \
 	db/sqlite.h \
 	service/archive.h \

@@ -11,8 +11,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <pwd.h>
-#include <grp.h>
 #include <errno.h>
 
 #include "defs/std.h"
@@ -88,78 +86,6 @@ code_search(const struct code *c, size_t nel, const char *name, int *code)
 }
 
 int
-ws_getuid(const char *str, uid_t *uid)
-{
-	int ret;
-	struct passwd pwd;
-	struct passwd *result;
-	char *buf;
-	long bufsize;
-	int s;
-
-	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if (bufsize == -1) {
-		bufsize = 16384;
-	}
-
-	buf = malloc(bufsize);
-	if (buf == NULL) {
-		return -1;
-	}
-
-	s = getpwnam_r(str, &pwd, buf, bufsize, &result);
-	if (result == NULL) {
-		ret = -1;
-		if (s == 0) {
-			errno = EINVAL;
-		} else {
-			errno = s;
-		}
-	} else {
-		*uid = pwd.pw_uid;
-	}
-
-	free(buf);
-
-	return ret;
-}
-
-int
-ws_getgid(const char *str, gid_t *gid)
-{
-	struct group grp;
-	struct group *result;
-	char *buf;
-	long bufsize;
-	int s;
-
-	bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
-	if (bufsize == -1) {
-		bufsize = 16384;
-	}
-
-	buf = malloc(bufsize);
-	if (buf == NULL) {
-		return -1;
-	}
-
-	s = getgrnam_r(str, &grp, buf, bufsize, &result);
-	if (result == NULL) {
-		if (s == 0) {
-			errno = EINVAL;
-		} else {
-			errno = s;
-		}
-	} else {
-		*gid = grp.gr_gid;
-	}
-
-	free(buf);
-
-	return 0;
-}
-
-int
 ws_getdriver(const char *str, enum ws_driver *driver)
 {
 	int ret;
@@ -213,9 +139,6 @@ conf_init(struct ws_conf *cfg)
 	memset(cfg, 0, sizeof(*cfg));
 
 	/* Daemon */
-	cfg->uid = -1;
-	cfg->gid = -1;
-	cfg->pid_file = "/var/run/wslogd.pid";
 	cfg->log_facility = LOG_LOCAL0;
 	cfg->log_level = LOG_NOTICE;
 
@@ -257,13 +180,7 @@ conf_decode(void *p, const char *key, const char *value)
 
 	errno = 0;
 
-	if (!strcmp(key, "user")) {
-		ws_getuid(value, &cfg->uid);
-	} else if (!strcmp(key, "group")) {
-		ws_getgid(value, &cfg->gid);
-	} else if (!strcmp(key, "pid_file")) {
-		cfg->pid_file = strdup(value);
-	} else if (!strcmp(key, "log_facility")) {
+	if (!strcmp(key, "log_facility")) {
 		ws_getfacility(value, &cfg->log_facility);
 	} else if (!strcmp(key, "log_level")) {
 		ws_getlevel(value, &cfg->log_level);

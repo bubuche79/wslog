@@ -1,8 +1,6 @@
 #ifndef _CONF_H
 #define _CONF_H
 
-#include <sys/types.h>
-
 #include "driver/driver.h"
 
 /*
@@ -11,9 +9,6 @@
 
 struct ws_conf
 {
-	uid_t uid;				/* Effective user id */
-	gid_t gid;				/* Effective group id */
-	const char *pid_file;			/* The daemon PID file */
 	int log_facility;			/* Syslog facility */
 	int log_level;				/* Syslog level */
 
