@@ -4,11 +4,9 @@
 
 #include <errno.h>
 
-#include "defs/dso.h"
-
 #include "aggregate.h"
 
-DSO_EXPORT void
+void
 aggr_init(struct aggr_data *p, enum aggr_type type)
 {
 	p->type = type;
@@ -25,7 +23,7 @@ aggr_init(struct aggr_data *p, enum aggr_type type)
 	}
 }
 
-DSO_EXPORT void
+void
 aggr_update(struct aggr_data *p, double value)
 {
 	switch (p->type)
@@ -51,7 +49,7 @@ aggr_update(struct aggr_data *p, double value)
 	p->count++;
 }
 
-DSO_EXPORT int
+int
 aggr_finalize(struct aggr_data *p, double *value)
 {
 	int null;

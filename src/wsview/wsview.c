@@ -7,7 +7,6 @@
 #include <lauxlib.h>
 #include <sqlite3.h>
 
-#include "defs/dso.h"
 #include "defs/std.h"
 #include "libws/util.h"
 
@@ -342,7 +341,7 @@ wsview_close(lua_State *L)
 	return 0;
 }
 
-DSO_EXPORT int
+int
 luaopen_wsview(lua_State *L)
 {
 	luaL_Reg wslib[] =

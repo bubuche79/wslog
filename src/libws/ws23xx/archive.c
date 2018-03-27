@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "defs/dso.h"
-
 #include "libws/util.h"
 #include "libws/nybble.h"
 #include "libws/ws23xx/decoder.h"
@@ -52,7 +50,7 @@ hist_decode(const uint8_t *buf, struct ws23xx_ar *h)
 	h->wind_dir = nybtoul(buf, 1, 18, 16) * 22.5;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 ws23xx_fetch_ar(int fd, struct ws23xx_ar *h, size_t nel)
 {
 	size_t i;

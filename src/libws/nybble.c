@@ -11,17 +11,15 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "defs/dso.h"
-
 #include "libws/nybble.h"
 
-extern DSO_EXPORT uint8_t nybget(const uint8_t *buf, size_t off);
-extern DSO_EXPORT void nybset(uint8_t *buf, size_t off, uint8_t v);
+extern uint8_t nybget(const uint8_t *buf, size_t off);
+extern void nybset(uint8_t *buf, size_t off, uint8_t v);
 
 /**
  * Convert nybbles to an unsigned long integer.
  */
-DSO_EXPORT unsigned long int
+unsigned long int
 nybtoul(const uint8_t *buf, size_t nnyb, size_t off, int base)
 {
 	int i;
@@ -59,7 +57,7 @@ exit:
 /**
  * Convert an unsigned long integer to nybbles.
  */
-DSO_EXPORT int
+int
 ultonyb(uint8_t *buf, size_t nnyb, size_t off, unsigned long int v, int base)
 {
 	size_t i;
@@ -91,7 +89,7 @@ exit:
  * The #nybcpy() function copies #nyb nybbles from area #src, starting at
  * #offset offset (nybbles offset), to memory area #dest.
  */
-DSO_EXPORT void
+void
 nybcpy(uint8_t *dest, const uint8_t *src, size_t nnyb, size_t off)
 {
 	src += off / 2;
@@ -113,7 +111,7 @@ nybcpy(uint8_t *dest, const uint8_t *src, size_t nnyb, size_t off)
 	}
 }
 
-DSO_EXPORT void
+void
 nybprint(uint16_t addr, const uint8_t *buf, size_t nnyb, int hex)
 {
 	int disp_sz;

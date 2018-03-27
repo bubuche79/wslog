@@ -14,8 +14,6 @@
 #include <stdint.h>
 #include <errno.h>
 
-#include "defs/dso.h"
-
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
@@ -224,7 +222,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 vantage_dmp(int fd, struct vantage_dmp *p, size_t nel)
 {
 	/* DMP command */
@@ -238,7 +236,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 {
 	size_t sz;

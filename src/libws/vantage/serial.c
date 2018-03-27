@@ -6,27 +6,25 @@
 #include <string.h>
 #include <errno.h>
 
-#include "defs/dso.h"
-
 #include "libws/serial.h"
 #include "libws/vantage/vantage.h"
 
 #define BAUDRATE	B19200		/* Default baudrate */
 #define WAKEUP_TO	1200		/* Wakeup timeout, in milliseconds */
 
-DSO_EXPORT int
+int
 vantage_open(const char *device)
 {
 	return ws_open(device, BAUDRATE);
 }
 
-DSO_EXPORT int
+int
 vantage_close(int fd)
 {
 	return ws_close(fd);
 }
 
-DSO_EXPORT int
+int
 vantage_wakeup(int fd)
 {
 	int retry;

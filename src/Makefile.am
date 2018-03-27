@@ -10,5 +10,4 @@ SUBDIRS += \
 endif
 
 EXTRA_DIST = \
-	common/defs/dso.h \
 	common/defs/std.h

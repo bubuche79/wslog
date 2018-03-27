@@ -9,8 +9,6 @@
 #include <time.h>
 #include <errno.h>
 
-#include "defs/dso.h"
-
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
@@ -77,14 +75,14 @@ lps_decode(struct vantage_loop *loop, const uint8_t *buf)
 	loop->altimeter_opts = vantage_int16(buf, 69);
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 vantage_loop(int fd, struct vantage_loop *p, size_t nel)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel)
 {
 	ssize_t sz;
@@ -133,14 +131,14 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 vantage_hilows(int fd, struct vantage_hilow *p, size_t nel)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 vantage_putrain(int fd, long rain)
 {
 	if (rain < 0) {
@@ -154,7 +152,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 vantage_putet(int fd, long et)
 {
 	if (et < 0) {

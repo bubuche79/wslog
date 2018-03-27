@@ -10,12 +10,10 @@
 #include <time.h>
 #include <errno.h>
 
-#include "defs/dso.h"
-
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
-DSO_EXPORT int
+int
 vantage_baud(int fd, speed_t speed)
 {
 	int bauds;
@@ -41,7 +39,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_settime(int fd, time_t time)
 {
 	struct tm tm;
@@ -70,7 +68,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_gettime(int fd, time_t *time)
 {
 	struct tm tm;
@@ -102,13 +100,13 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_gain(int fd, int on)
 {
 	return vantage_proc(fd, GAIN, (on) ? 1 : 0);
 }
 
-DSO_EXPORT int
+int
 vantage_setper(int fd, int min)
 {
 	switch (min) {
@@ -131,27 +129,27 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_stop(int fd)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_start(int fd)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_newsetup(int fd)
 {
 	return vantage_proc(fd, NEWSETUP);
 }
 
-DSO_EXPORT int
+int
 vantage_lamps(int fd, int on)
 {
 	return vantage_proc(fd, LAMPS, (on) ? 1 : 0);

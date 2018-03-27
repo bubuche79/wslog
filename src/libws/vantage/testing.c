@@ -11,8 +11,6 @@
 #include <stdint.h>
 #include <errno.h>
 
-#include "defs/dso.h"
-
 #include "libws/serial.h"
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
@@ -81,7 +79,7 @@ scan_rxcheck(const char *buf, struct vantage_rxck *ck)
 	return ret;
 }
 
-DSO_EXPORT int
+int
 vantage_test(int fd)
 {
 	return vantage_proc(fd, TEST);
@@ -101,7 +99,7 @@ vantage_type_str(enum vantage_type wrd)
 	return s;
 }
 
-DSO_EXPORT int
+int
 vantage_wrd(int fd, enum vantage_type *wrd)
 {
 	uint8_t byte;
@@ -124,7 +122,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_rxcheck(int fd, struct vantage_rxck *ck)
 {
 	int ret;
@@ -153,14 +151,14 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_rxtest(int fd)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_ver(int fd, char *buf, size_t len)
 {
 	if (len < VER_SIZE) {
@@ -171,14 +169,14 @@ vantage_ver(int fd, char *buf, size_t len)
 	return vantage_verx(fd, VER, buf, VER_SIZE - 1);
 }
 
-DSO_EXPORT int
+int
 vantage_receivers(int fd, uint8_t *receivers)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_nver(int fd, char *buf, size_t len)
 {
 	if (len < NVER_SIZE) {

@@ -7,8 +7,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "defs/dso.h"
-
 #include "util.h"
 
 #define ZERO_K 273.15
@@ -51,7 +49,7 @@ ws_celsius(double temp)
  *
  * TODO: verify barometric formula.
  */
-DSO_EXPORT double
+double
 ws_barometer(double pressure, double temp, double elev)
 {
 	double temp_k = ZERO_K + temp;
@@ -67,7 +65,7 @@ ws_barometer(double pressure, double temp, double elev)
  *
  * http://www.wrh.noaa.gov/slc/projects/wxcalc/formulas/altimeterSetting.pdf
  */
-DSO_EXPORT double
+double
 ws_altimeter(double pressure, double elev)
 {
 	double c = 0.190284;
@@ -85,7 +83,7 @@ ws_altimeter(double pressure, double elev)
  *
  * https://en.wikipedia.org/wiki/Wind_chill
  */
-DSO_EXPORT double
+double
 ws_windchill(double temp, double speed)
 {
 	double wc;
@@ -108,7 +106,7 @@ ws_windchill(double temp, double speed)
  *
  * https://en.wikipedia.org/wiki/Dew_point
  */
-DSO_EXPORT double
+double
 ws_dewpoint(double temp, double hr)
 {
 	double b, c, d;
@@ -129,7 +127,7 @@ ws_dewpoint(double temp, double hr)
 	return (c * lambda) / (b - lambda);
 }
 
-DSO_EXPORT double
+double
 ws_heat_index(double temp, double hr)
 {
 	double hi;
@@ -154,7 +152,7 @@ ws_heat_index(double temp, double hr)
  *
  * https://en.wikipedia.org/wiki/Humidex
  */
-DSO_EXPORT double
+double
 ws_humidex(double temp, double hr)
 {
 	double dp_k = ZERO_K + ws_dewpoint(temp, hr);
@@ -165,7 +163,7 @@ ws_humidex(double temp, double hr)
 /**
  * Convert pressure from hPa to inHg.
  */
-DSO_EXPORT double
+double
 ws_inhg(double p)
 {
 	return p * 0.02953;
@@ -174,7 +172,7 @@ ws_inhg(double p)
 /**
  * Convert temperature from Celsius to Fahrenheit.
  */
-DSO_EXPORT double
+double
 ws_fahrenheit(double temp)
 {
 	return 1.8 * temp + 32;
@@ -183,7 +181,7 @@ ws_fahrenheit(double temp)
 /**
  * Convert speed from m/s to miles/hour.
  */
-DSO_EXPORT double
+double
 ws_mph(double speed)
 {
 	return speed / 0.44704;
@@ -192,13 +190,13 @@ ws_mph(double speed)
 /**
  * Convert length from mm to inches.
  */
-DSO_EXPORT double
+double
 ws_in(double len)
 {
 	return len / 25.4;
 }
 
-DSO_EXPORT double
+double
 round_scale(double v, int scale)
 {
 	long pow10[] = { 1, 10, 100, 1000 };
@@ -207,7 +205,7 @@ round_scale(double v, int scale)
 	return round(v * ratio) / ratio;
 }
 
-DSO_EXPORT const char *
+const char *
 ws_dir(int idx)
 {
 	if (idx > 16) {
@@ -217,13 +215,13 @@ ws_dir(int idx)
 	return dir[idx];
 }
 
-DSO_EXPORT const char *
+const char *
 ws_dir_deg(int degree)
 {
 	return ws_dir(degree / 22.5);
 }
 
-DSO_EXPORT size_t
+size_t
 gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 {
 	struct tm tm;
@@ -232,7 +230,7 @@ gmftime(char *s, size_t max, const time_t *timep, const char *fmt)
 	return strftime(s, max, fmt, &tm);
 }
 
-DSO_EXPORT size_t
+size_t
 localftime_r(char *s, size_t max, const time_t *timep, const char *fmt)
 {
 	struct tm tm;
@@ -241,7 +239,7 @@ localftime_r(char *s, size_t max, const time_t *timep, const char *fmt)
 	return strftime(s, max, fmt, &tm);
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 strftimespec(char *s, size_t len, const struct timespec *ts, int width)
 {
 	size_t ret1;
@@ -269,7 +267,7 @@ strftimespec(char *s, size_t len, const struct timespec *ts, int width)
 	return ret1 + ret2;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 ws_read_all(const char *pathname, void *buf, size_t len)
 {
 	int fd;
@@ -294,7 +292,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 ws_write_all(const char *pathname, const void *buf, size_t len)
 {
 	int fd;
@@ -322,14 +320,14 @@ error:
 	return -1;
 }
 
-DSO_EXPORT void
+void
 ws_time_ms(struct timespec *ts, long ms)
 {
 	ts->tv_sec = ms / 1000;
 	ts->tv_nsec = ms - 1000 * ts->tv_sec;
 }
 
-DSO_EXPORT void
+void
 ws_itimer_delay(struct itimerspec *it, long freq, long delay)
 {
 	time_t now;

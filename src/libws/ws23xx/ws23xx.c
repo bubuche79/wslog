@@ -11,7 +11,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "defs/dso.h"
 #include "defs/std.h"
 
 #include "libws/nybble.h"
@@ -109,7 +108,7 @@ error:
 /**
  * Open serial device
  */
-DSO_EXPORT int
+int
 ws23xx_open(const char *device)
 {
 	int fd;
@@ -143,7 +142,7 @@ error:
 /**
  * Write a reset string and wait for a reply.
  */
-DSO_EXPORT int
+int
 ws23xx_reset_06(int fd)
 {
 	uint8_t answer;
@@ -204,7 +203,7 @@ error:
  *
  * @return 0 on success, -1 on error
  */
-DSO_EXPORT int
+int
 ws23xx_write_addr(int fd, uint16_t addr)
 {
 	int i;
@@ -233,7 +232,7 @@ error:
  *
  * @return 0 on success, -1 on error
  */
-DSO_EXPORT int
+int
 ws23xx_write(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
 	size_t i;
@@ -290,7 +289,7 @@ error:
 /**
  * Reset the device and write a command, verifying it was written correctly.
  */
-DSO_EXPORT int
+int
 ws23xx_write_safe(int fd, uint16_t addr, size_t nnyb, uint8_t op, const uint8_t *buf)
 {
 	int i;
@@ -314,7 +313,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 ws23xx_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 {
 	size_t i;
@@ -438,7 +437,7 @@ nybsz(const size_t *a, size_t nel)
 	return res;
 }
 
-DSO_EXPORT int
+int
 ws23xx_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, uint8_t *buf[])
 {
 	size_t i, j;
@@ -506,7 +505,7 @@ ws23xx_read_batch(int fd, const uint16_t *addr, const size_t *nnyb, size_t nel, 
 	return 0;
 }
 
-DSO_EXPORT int
+int
 ws23xx_read_safe(int fd, uint16_t addr, size_t nnybble, uint8_t *buf)
 {
 	return read_block_all(fd, &addr, &nnybble, 1, &buf);

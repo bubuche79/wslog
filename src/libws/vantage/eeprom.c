@@ -8,8 +8,6 @@
 
 #include <errno.h>
 
-#include "defs/dso.h"
-
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
@@ -19,7 +17,7 @@ vantage_bits(uint8_t byte, size_t off, size_t len)
 	return (byte >> off) & ((0x1 << (len + 1)) - 1);
 }
 
-DSO_EXPORT int
+int
 vantage_getee(int fd, void *buf, size_t len)
 {
 	if (len < EEPROM_SIZE) {
@@ -38,21 +36,21 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_eerd(int fd, uint16_t addr, void *buf, size_t len)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_eewr(int fd, uint16_t addr, uint8_t byte)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_eebrd(int fd, uint16_t addr, void *buf, size_t len)
 {
 	if (EEPROM_SIZE < addr + len) {
@@ -71,14 +69,14 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_eebwr(int fd, uint16_t addr, void *buf, size_t len)
 {
 	errno = ENOTSUP;
 	return -1;
 }
 
-DSO_EXPORT int
+int
 vantage_ee_cfg(int fd, struct vantage_cfg *p)
 {
 	uint8_t buf[0xAF];

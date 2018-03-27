@@ -15,7 +15,6 @@
 #include <time.h>
 #include <fcntl.h>
 
-#include "defs/dso.h"
 #include "libws/util.h"
 #include "libws/serial.h"
 
@@ -30,7 +29,7 @@ msleep(long ms)
 	nanosleep(&ts, NULL);
 }
 
-DSO_EXPORT int
+int
 ws_open(const char *device, speed_t speed)
 {
 	int fd = -1;
@@ -88,7 +87,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 ws_close(int fd)
 {
 	if (close(fd) == -1) {
@@ -104,13 +103,13 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 ws_read(int fd, void *buf, size_t nbyte)
 {
 	return ws_read_to(fd, buf, nbyte, 0);
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 ws_read_to(int fd, void *buf, size_t nbyte, long timeout)
 {
 	int ret;
@@ -156,7 +155,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 ws_write(int fd, const void *buf, size_t nbyte)
 {
 	ssize_t ret;
@@ -181,7 +180,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT ssize_t
+ssize_t
 ws_writev(int fd, const struct iovec *iov, size_t iovcnt)
 {
 	ssize_t ret;
@@ -206,7 +205,7 @@ error:
 	return -1;
 }
 
-DSO_EXPORT int
+int
 ws_flush(int fd)
 {
 	if (tcflush(fd, TCIOFLUSH) == -1) {

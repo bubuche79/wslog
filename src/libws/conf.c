@@ -13,7 +13,6 @@
 #include <limits.h>
 #include <errno.h>
 
-#include "defs/dso.h"
 #include "libws/conf.h"
 
 #define iseol(c) ((c) == 0 || (c) == '#' || (c) == '\n' || (c) == '\r')
@@ -93,7 +92,7 @@ conftok(char *line, char **name, char **value)
 	return 0;
 }
 
-DSO_EXPORT int
+int
 ws_getint(const char *str, int *val)
 {
 	char *eptr;
@@ -116,7 +115,7 @@ ws_getint(const char *str, int *val)
 	return 0;
 }
 
-DSO_EXPORT int
+int
 ws_getlong(const char *str, long *val)
 {
 	char *eptr;
@@ -136,7 +135,7 @@ ws_getlong(const char *str, long *val)
 	return 0;
 }
 
-DSO_EXPORT int
+int
 ws_getfloat(const char *str, float *val)
 {
 	char *eptr;
@@ -158,7 +157,7 @@ ws_getfloat(const char *str, float *val)
 	return 0;
 }
 
-DSO_EXPORT int
+int
 ws_getbool(const char *str, int *val)
 {
 	if (!strcmp(str, "yes") || !strcmp(str, "1")) {
@@ -173,7 +172,7 @@ ws_getbool(const char *str, int *val)
 	return 0;
 }
 
-DSO_EXPORT int
+int
 ws_parse_config(const char *path, int *lineno,
     int (*usrcfg)(void *, const char *, const char *), void *arg)
 {

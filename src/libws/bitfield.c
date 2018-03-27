@@ -13,13 +13,11 @@
 #include <sys/types.h>
 #include <string.h>
 
-#include "defs/dso.h"
-
 #include "libws/bitfield.h"
 
-extern DSO_EXPORT void bfset(uint8_t *buf, size_t off);
-extern DSO_EXPORT void bfclear(uint8_t *buf, size_t off);
-extern DSO_EXPORT int bftest(const uint8_t *buf, size_t off);
+extern void bfset(uint8_t *buf, size_t off);
+extern void bfclear(uint8_t *buf, size_t off);
+extern int bftest(const uint8_t *buf, size_t off);
 
 static void
 setval_all(uint8_t *bfbuf, size_t off, size_t nbits, int v)
@@ -71,19 +69,19 @@ setval_all(uint8_t *bfbuf, size_t off, size_t nbits, int v)
 	}
 }
 
-DSO_EXPORT void
+void
 bfsetall(uint8_t *bfbuf, size_t off, size_t nbits)
 {
 	setval_all(bfbuf, off, nbits, 1);
 }
 
-DSO_EXPORT void
+void
 bfclearall(uint8_t *bfbuf, size_t off, size_t nbits)
 {
 	setval_all(bfbuf, off, nbits, 0);
 }
 
-DSO_EXPORT int
+int
 bftestall(const uint8_t *bfbuf, size_t off, size_t nbits)
 {
 	size_t byte_idx;
