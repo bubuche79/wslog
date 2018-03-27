@@ -8,9 +8,8 @@
 #include <pthread.h>
 #include <syslog.h>
 
-#include "defs/std.h"
+#include "libws/defs.h"
 #include "libws/nybble.h"
-
 #include "libws/serial.h"
 #include "libws/ws23xx/archive.h"
 #include "libws/ws23xx/decoder.h"

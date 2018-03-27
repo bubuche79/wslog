@@ -9,8 +9,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "defs/std.h"
-
+#include "libws/defs.h"
 #include "libws/nybble.h"
 #include "libws/serial.h"
 #include "libws/ws23xx/ws23xx.h"

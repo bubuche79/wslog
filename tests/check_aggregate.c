@@ -5,8 +5,7 @@
 #include <check.h>
 #include <errno.h>
 
-#include "defs/std.h"
-
+#include "libws/defs.h"
 #include "libws/aggregate.h"
 
 #include "suites.h"

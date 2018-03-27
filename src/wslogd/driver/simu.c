@@ -6,7 +6,7 @@
 #include <syslog.h>
 #include <errno.h>
 
-#include "defs/std.h"
+#include "libws/defs.h"
 #include "libws/util.h"
 
 #include "conf.h"

@@ -7,8 +7,7 @@
 #include <errno.h>
 #include <syslog.h>
 
-#include "defs/std.h"
-
+#include "libws/defs.h"
 #include "libws/util.h"
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"

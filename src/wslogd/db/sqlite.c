@@ -9,7 +9,7 @@
 #include <syslog.h>
 #include <sqlite3.h>
 
-#include "defs/std.h"
+#include "libws/defs.h"
 #include "libws/util.h"
 
 #include "board.h"

@@ -6,8 +6,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "defs/std.h"
-
+#include "libws/defs.h"
 #include "libws/aggregate.h"
 #include "libws/util.h"
 

@@ -13,7 +13,7 @@
 #include <syslog.h>
 #include <time.h>
 
-#include "defs/std.h"
+#include "libws/defs.h"
 
 #include "board.h"
 #include "conf.h"

@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <syslog.h>
 
-#include "defs/std.h"
+#include "libws/defs.h"
 #include "libws/util.h"
 
 #include "conf.h"

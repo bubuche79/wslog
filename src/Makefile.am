@@ -8,6 +8,3 @@ if USE_WSVIEW
 SUBDIRS += \
 	wsview
 endif
-
-EXTRA_DIST = \
-	common/defs/std.h

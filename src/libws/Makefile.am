@@ -13,9 +13,12 @@ libws_la_SOURCES = \
 	aggregate.h \
 	bitfield.h \
 	conf.h \
+	defs.h \
 	crc_ccitt.h \
 	nybble.h \
-	util.h \
+	util.h
+
+nobase_pkginclude_HEADERS = \
 	serial.h
 
 if USE_VANTAGE
@@ -31,6 +34,9 @@ libws_la_SOURCES += \
 	vantage/util.h \
 	vantage/unit.c \
 	vantage/vantage.h
+
+nobase_pkginclude_HEADERS += \
+	vantage/vantage.h
 endif
 
 if USE_WS23XX
@@ -40,6 +46,9 @@ libws_la_SOURCES += \
 	ws23xx/ws23xx.c \
 	ws23xx/archive.h \
 	ws23xx/decoder.h \
+	ws23xx/ws23xx.h
+
+nobase_pkginclude_HEADERS += \
 	ws23xx/ws23xx.h
 endif
 
