@@ -374,7 +374,7 @@ ws23xx_set_artimer(long itmin, long next)
 {
 	uint8_t buf[3];
 
-	if ((itmin < 1 && 0xFFF < itmin) || 0xFFF < next) {
+	if ((itmin < 1 || 0xFFF < itmin) || 0xFFF < next) {
 		errno = EINVAL;
 		return -1;
 	}

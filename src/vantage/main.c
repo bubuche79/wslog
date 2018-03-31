@@ -104,7 +104,7 @@ check_empty_cmdline(int argc, char* const argv[])
 static unsigned int
 strtoui(const char *s)
 {
-	unsigned int v;
+	long int v;
 	char *p;
 
 	v = strtol(s, &p, 10);
