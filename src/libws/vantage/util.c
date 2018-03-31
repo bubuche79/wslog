@@ -141,6 +141,7 @@ vantage_read_ack_to(int fd, int ack, long timeout)
 	default:
 		errno = EINVAL;
 		ret = -1;
+		break;
 	}
 
 	return ret;

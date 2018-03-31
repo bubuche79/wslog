@@ -545,12 +545,14 @@ calc_rain_rate(struct ws_archive *p)
 void
 ws_calc(struct ws_archive *p)
 {
-//	calc_barometer(p);
-//	calc_altimeter(p);
-//	calc_windchill(p);
-//	calc_dewpoint(p);
-//	calc_heat_index(p);
-//	calc_rain_rate(p);
+#if 0
+	calc_barometer(p);
+	calc_altimeter(p);
+	calc_windchill(p);
+	calc_dewpoint(p);
+	calc_heat_index(p);
+	calc_rain_rate(p);
+#endif
 }
 
 #if 0

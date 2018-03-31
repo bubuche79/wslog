@@ -793,6 +793,7 @@ main(int argc, char * const argv[])
 			break;
 		default:
 			usage_opt(stderr, c, 1);
+			break;
 		}
 	}
 

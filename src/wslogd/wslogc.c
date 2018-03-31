@@ -124,6 +124,7 @@ main(int argc, char *argv[])
 			break;
 		default:
 			usage(stderr, 2);
+			break;
 		}
 	}
 

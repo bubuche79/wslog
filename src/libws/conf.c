@@ -193,8 +193,9 @@ ws_parse_config(const char *path, int *lineno,
 
 		++(*lineno);
 
-		if (linebuf[0] == '#' || linebuf[0] == '\n')
+		if (linebuf[0] == '#' || linebuf[0] == '\n') {
 			continue;
+		}
 
 		ret = conftok(linebuf, &n, &v);
 		if (ret == -1) {

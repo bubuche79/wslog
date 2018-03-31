@@ -894,6 +894,7 @@ main(int argc, char * const argv[])
 
 		default:
 			usage_opt(stderr, c, 1);
+			break;
 		}
 	}
 
