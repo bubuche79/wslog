@@ -81,7 +81,7 @@ main(int argc, char *argv[])
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "hVDXc:i:")) != -1) {
+	while ((c = getopt(argc, argv, "hVDc:i:")) != -1) {
 		switch (c) {
 		case 'c':
 			conf_file = optarg;
