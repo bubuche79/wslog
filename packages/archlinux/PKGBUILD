@@ -1,20 +1,23 @@
 pkgname=wslog
 pkgver=0.8.3
-pkgrel=1
+pkgrel=4
 pkgdesc="Weather station logger"
-arch=('x86_64')
+arch=('x86_64' 'aarch64')
 url=""
 license=('GPL3')
 source=("$pkgname-$pkgver.tar.gz"
-	'wslogd.service')
-sha1sums=('3badaecb1673c279f6f633877300db1be72f646d')
+	'wslogd.service'
+	'wslog.sysusers')
+sha1sums=('46f3e7685c9b9def924d6d7b1565c282cda7da0b'
+          '6531743a53927325c9a008dcb091fcca86e6753b'
+	  '')
 depends=('sqlite' 'curl')
 
 backup=('etc/wslogd.conf')
 
 build() {
   cd "$pkgname-$pkgver"
-  ./configure --prefix=/usr --sysconfdir=/etc --disable-wsview --enable-simu
+  ./configure --prefix=/usr --sysconfdir=/etc --disable-wsview
   make
 }
 
@@ -22,10 +25,11 @@ package() {
   cd "$pkgname-$pkgver"
   make DESTDIR="$pkgdir" install
   install -Dm0644 "$srcdir"/wslogd.service "$pkgdir"/usr/lib/systemd/system/wslogd.service
+  install -Dm0644 "$srcdir"/wslog.sysusers "$pkgdir"/usr/lib/sysusers.d/wslog.conf
 }
 
 check() {
   cd "$pkgname-$pkgver"
-#  make tests
+#  make check
 }
 
