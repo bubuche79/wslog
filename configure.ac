@@ -87,6 +87,7 @@ AM_CONDITIONAL([USE_WSVIEW], [test "x$enable_wsview" = "xyes"])
 
 AC_CONFIG_FILES([
 	Makefile
+	docs/Makefile
 	src/Makefile
 	src/libws/Makefile
 	src/vantage/Makefile
