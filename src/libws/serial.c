@@ -3,9 +3,6 @@
 #endif
 
 #include <termios.h>
-#ifdef DEBUG
-#include <stdio.h>
-#endif
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -77,10 +74,6 @@ ws_open(const char *device, speed_t speed)
 	return fd;
 
 error:
-#ifdef DEBUG
-	perror("ws_open");
-#endif
-
 	if (fd != -1) {
 		close(fd);
 	}
@@ -97,9 +90,6 @@ ws_close(int fd)
 	return 0;
 
 error:
-#ifdef DEBUG
-	perror("ws_close");
-#endif
 	return -1;
 }
 
@@ -149,9 +139,6 @@ ws_read_to(int fd, void *buf, size_t nbyte, long timeout)
 	return ret;
 
 error:
-#ifdef DEBUG
-	perror("ws_read_to");
-#endif
 	return -1;
 }
 
@@ -174,9 +161,6 @@ ws_write(int fd, const void *buf, size_t nbyte)
 	return ret;
 
 error:
-#ifdef DEBUG
-	perror("ws_write");
-#endif
 	return -1;
 }
 
@@ -199,9 +183,6 @@ ws_writev(int fd, const struct iovec *iov, size_t iovcnt)
 	return ret;
 
 error:
-#ifdef DEBUG
-	perror("ws_writev");
-#endif
 	return -1;
 }
 
@@ -215,8 +196,5 @@ ws_flush(int fd)
 	return 0;
 
 error:
-#ifdef DEBUG
-	perror("ws_flush");
-#endif
 	return -1;
 }

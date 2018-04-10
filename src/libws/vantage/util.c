@@ -238,7 +238,7 @@ vantage_pwrite(int fd, int flags, const void *buf, size_t len)
 		long timeout = IO_TIMEOUT;
 		int ack = flags & IO_ACK_MASK;
 
-		if (!(flags & IO_LONG_OP)) {
+		if (flags & IO_LONG_OP) {
 			timeout = IO_LONG_TIMEOUT;
 		}
 
@@ -268,10 +268,6 @@ vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...)
 	va_start(ap, cmd);
 	bufsz = vsnprintf(buf, sizeof(buf), CMDS[cmd].fmt, ap);
 	va_end(ap);
-
-#if DEBUG >= 2
-	printf("%*s\n", bufsz, buf);
-#endif
 
 	return vantage_pwrite(fd, CMDS[cmd].flags, buf, bufsz);
 

@@ -7,10 +7,40 @@
 #include <errno.h>
 
 #include "libws/serial.h"
+#include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
 #define BAUDRATE	B19200		/* Default baudrate */
 #define WAKEUP_TO	1200		/* Wakeup timeout, in milliseconds */
+
+static ssize_t
+wakeup_read(int fd, void *buf, size_t len)
+{
+	ssize_t sz;
+	long timeout;
+
+	sz = 0;
+	timeout = WAKEUP_TO;
+
+	while (sz < len) {
+		ssize_t ret;
+
+		if ((ret = ws_read_to(fd, buf + sz, len - sz, timeout)) == -1) {
+			goto error;
+		} else if (ret == 0) {
+			errno = ETIME;
+			goto error;
+		}
+
+		sz += ret;
+		timeout = IO_TIMEOUT;
+	}
+
+	return sz;
+
+error:
+	return -1;
+}
 
 int
 vantage_open(const char *device)
@@ -44,7 +74,7 @@ vantage_wakeup(int fd)
 
 		/* Expect LF CR result */
 		memset(buf, 0, bufsz);
-		sz = ws_read_to(fd, buf, bufsz, WAKEUP_TO);
+		sz = wakeup_read(fd, buf, bufsz);
 
 		if (sz == -1) {
 			goto error;
@@ -52,11 +82,11 @@ vantage_wakeup(int fd)
 			if (memcmp(buf, resp, sz) == 0) {
 				break;
 			}
+		}
 
-			/* Sometimes console sends { CR LF CR }, retry */
-			if (tcflush(fd, TCIFLUSH) == -1) {
-				goto error;
-			}
+		/* Flush pending data */
+		if (tcflush(fd, TCIFLUSH) == -1) {
+			goto error;
 		}
 	}
 
