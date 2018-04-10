@@ -18,7 +18,7 @@
 #include "service/archive.h"
 
 #define WSLOG_EPOCH 1514764800		/* Mon, 1 Jan 2018 00:00:00 */
-#define ARCHIVE_INTERVAL 300		/* Default archive interval */
+#define ARCHIVE_INTERVAL 1800		/* Default archive interval */
 #define AR_LEN 64			/* Archive buffer size */
 
 static enum ws_driver driver;		/* Driver */
