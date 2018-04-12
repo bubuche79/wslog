@@ -1,0 +1,62 @@
+WSLOGD(1)
+=========
+:doctype: manpage
+:man manual: Wslog Manual
+
+
+NAME
+----
+wslogd - weather station logger daemon
+
+
+SYNOPSIS
+--------
+*wslogd* [*-h*] [*-V*] [*-c* _path_] [*-D*] [*-i* _freq_]
+
+
+DESCRIPTION
+-----------
+The *wslogd* command starts the weather station logger.
+
+It connects to the device, fetches weather data, and sends it to various
+locations, like a SQLite database, or a Weather Underground account.
+
+See *wslogd.conf*(5) for more details on configuration.
+
+
+OPTIONS
+-------
+*-c* _path_::
+Path of *wslogd* configuration file. Default: '/etc/wslogd.conf'.
+    
+*-D*::
+Do not modify anything; just log what would be done.
++
+In dry mode, nothing is committed to database backends, and remote sites are not
+updated with new data. Should be used for testing purpose only. 
+
+*-i* _freq_::
+Set archive frequency to _freq_, in seconds.
++
+When specified, it overrides the 'archive.freq' configuration parameter. Refer
+to *wslogd.conf*(5) for more details on this parameter.
+
+*-h*::
+Display *wslogd* short help and exit.
+
+*-V*::
+Display the *wslogd* version and exit.
+
+
+EXIT STATUS
+-----------
+*0*::
+Success
+
+*1*::
+Failure.
+
+
+SEE ALSO
+--------
+*wslogd.conf*(5), *vantage*(1)
