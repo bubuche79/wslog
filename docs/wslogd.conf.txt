@@ -51,6 +51,12 @@ VIRTUAL DRIVER OPTIONS
 ----------------------
 The virual console should be used for testing purpose only.
 
+*driver.virt.hw_archive* (int)::
+Turn on hardware archive. Default: 1.
+
+*driver.virt.io_delay* (int)::
+Virtual I/O delay, in milliseconds. Default: 100.
+
 
 ARCHIVE OPTIONS
 ---------------
