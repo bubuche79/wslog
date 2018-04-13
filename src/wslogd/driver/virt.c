@@ -1,3 +1,4 @@
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -11,7 +12,7 @@
 
 #include "conf.h"
 #include "driver/driver.h"
-#include "driver/simu.h"
+#include "driver/virt.h"
 
 #define IO_DELAY		250
 #define PI			3.1415926535897932384626433832795
@@ -26,7 +27,7 @@ static int hw_archive;
 static struct timespec io_delay;
 
 static double
-simu_sin(double from, double to, time_t time)
+virt_sin(double from, double to, time_t time)
 {
 	double range = (to - from) / 2;
 
@@ -34,7 +35,7 @@ simu_sin(double from, double to, time_t time)
 }
 
 static time_t
-simu_next(time_t time, long delay)
+virt_next(time_t time, long delay)
 {
 	time_t r;
 
@@ -48,52 +49,52 @@ simu_next(time_t time, long delay)
 }
 
 static int
-simu_io_delay()
+virt_io_delay()
 {
 	return clock_nanosleep(CLOCK_REALTIME, 0, &io_delay, NULL);
 }
 
 static void
-simu_loop(struct ws_loop *p, int idx)
+virt_loop(struct ws_loop *p, int idx)
 {
-	p->barometer = simu_sin(950, 1020, idx);
-	p->temp = simu_sin(15, 25, idx);
-	p->humidity = simu_sin(60, 80, idx);
-	p->wind_speed = simu_sin(0, 2, idx);
-	p->wind_dir = simu_sin(225, 315, idx);
+	p->barometer = virt_sin(950, 1020, idx);
+	p->temp = virt_sin(15, 25, idx);
+	p->humidity = virt_sin(60, 80, idx);
+	p->wind_speed = virt_sin(0, 2, idx);
+	p->wind_dir = virt_sin(225, 315, idx);
 
 	/* Supported sensors */
 	p->wl_mask = WF_BAROMETER|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
 }
 
 static void
-simu_archive(struct ws_archive *p, time_t time)
+virt_archive(struct ws_archive *p, time_t time)
 {
 	p->time = time;
-	p->barometer = simu_sin(950, 1020, time);
-	p->temp = simu_sin(15, 25, time);
-	p->humidity = simu_sin(60, 80, time);
-	p->avg_wind_speed = simu_sin(0, 2, time);
-	p->avg_wind_dir = simu_sin(225, 315, time);
+	p->barometer = virt_sin(950, 1020, time);
+	p->temp = virt_sin(15, 25, time);
+	p->humidity = virt_sin(60, 80, time);
+	p->avg_wind_speed = virt_sin(0, 2, time);
+	p->avg_wind_dir = virt_sin(225, 315, time);
 
 	/* Supported sensors */
 	p->wl_mask = WF_BAROMETER|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
 }
 
 int
-simu_init(void)
+virt_init(void)
 {
 	long delay;
 
-	hw_archive = confp->driver.simu.hw_archive;
-	delay = confp->driver.simu.io_delay;
+	hw_archive = confp->driver.virt.hw_archive;
+	delay = confp->driver.virt.io_delay;
 
 	if (delay== 0) {
 		delay = IO_DELAY;
 	}
 	ws_time_ms(&io_delay, delay);
 
-	if (simu_io_delay() == -1) {
+	if (virt_io_delay() == -1) {
 		return -1;
 	}
 
@@ -103,9 +104,9 @@ simu_init(void)
 }
 
 int
-simu_destroy(void)
+virt_destroy(void)
 {
-	if (simu_io_delay() == -1) {
+	if (virt_io_delay() == -1) {
 		return -1;
 	}
 
@@ -113,11 +114,11 @@ simu_destroy(void)
 }
 
 int
-simu_get_itimer(struct itimerspec *it, enum ws_timer type)
+virt_get_itimer(struct itimerspec *it, enum ws_timer type)
 {
 	int ret;
 
-	if (simu_io_delay() == -1) {
+	if (virt_io_delay() == -1) {
 		return -1;
 	}
 
@@ -141,28 +142,28 @@ simu_get_itimer(struct itimerspec *it, enum ws_timer type)
 }
 
 int
-simu_get_loop(struct ws_loop *p)
+virt_get_loop(struct ws_loop *p)
 {
 	time_t now;
 
 	time(&now);
-	simu_loop(p, now);
+	virt_loop(p, now);
 
 	return 0;
 }
 
 ssize_t
-simu_get_archive(struct ws_archive *p, size_t nel, time_t after)
+virt_get_archive(struct ws_archive *p, size_t nel, time_t after)
 {
 	int i;
 	time_t now;
 	time_t artime;
 
 	time(&now);
-	artime = simu_next(after, ARCHIVE_INTERVAL);
+	artime = virt_next(after, ARCHIVE_INTERVAL);
 
 	for (i = 0; i < nel && artime <= now; i++) {
-		simu_archive(&p[i], artime);
+		virt_archive(&p[i], artime);
 
 		artime += ARCHIVE_INTERVAL;
 	}

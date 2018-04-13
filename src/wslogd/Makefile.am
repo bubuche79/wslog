@@ -28,10 +28,10 @@ libwslog_a_SOURCES += \
 	driver/ws23xx.h
 endif
 
-if USE_SIMU
+if USE_VIRT
 libwslog_a_SOURCES += \
-	driver/simu.c \
-	driver/simu.h
+	driver/virt.c \
+	driver/virt.h
 endif
 
 bin_PROGRAMS = wslogd wslogc

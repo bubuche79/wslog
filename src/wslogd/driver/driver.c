@@ -12,8 +12,8 @@
 #ifdef HAVE_WS23XX
 #include "driver/ws23xx.h"
 #endif
-#ifdef HAVE_SIMU
-#include "driver/simu.h"
+#ifdef HAVE_VIRT
+#include "driver/virt.h"
 #endif
 #include "driver/driver.h"
 #include "conf.h"
@@ -39,9 +39,9 @@ drv_init(void)
 		ret = ws23xx_init();
 		break;
 #endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_init();
+#ifdef HAVE_VIRT
+	case VIRT:
+		ret = virt_init();
 		break;
 #endif
 	default:
@@ -70,9 +70,9 @@ drv_destroy(void)
 		ret = ws23xx_destroy();
 		break;
 #endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_destroy();
+#ifdef HAVE_VIRT
+	case VIRT:
+		ret = virt_destroy();
 		break;
 #endif
 	default:
@@ -101,9 +101,9 @@ drv_get_itimer(struct itimerspec *itimer, enum ws_timer type)
 		ret = ws23xx_get_itimer(itimer, type);
 		break;
 #endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_get_itimer(itimer, type);
+#ifdef HAVE_VIRT
+	case VIRT:
+		ret = virt_get_itimer(itimer, type);
 		break;
 #endif
 	default:
@@ -132,9 +132,9 @@ drv_get_loop(struct ws_loop *loop)
 		ret = ws23xx_get_loop(loop);
 		break;
 #endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_get_loop(loop);
+#ifdef HAVE_VIRT
+	case VIRT:
+		ret = virt_get_loop(loop);
 		break;
 #endif
 	default:
@@ -163,9 +163,9 @@ drv_get_archive(struct ws_archive *ar, size_t nel, time_t after)
 		ret = ws23xx_get_archive(ar, nel, after);
 		break;
 #endif
-#ifdef HAVE_SIMU
-	case SIMU:
-		ret = simu_get_archive(ar, nel, after);
+#ifdef HAVE_VIRT
+	case VIRT:
+		ret = virt_get_archive(ar, nel, after);
 		break;
 #endif
 	default:

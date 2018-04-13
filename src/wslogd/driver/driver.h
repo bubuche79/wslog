@@ -1,5 +1,5 @@
-#ifndef _DRIVER_H
-#define _DRIVER_H
+#ifndef _DRV_DRIVER_H
+#define _DRV_DRIVER_H
 
 #include <time.h>
 #include <sys/types.h>
@@ -24,8 +24,8 @@ enum ws_driver
 #if HAVE_WS23XX
 	WS23XX,				/* La Crosse Technology WS23XX */
 #endif
-#if HAVE_SIMU
-	SIMU,				/* simulator device */
+#if HAVE_VIRT
+	VIRT,				/* Virtual device */
 #endif
 	UNUSED
 };
@@ -44,4 +44,4 @@ int drv_set_artimer(long itmin, long next);
 }
 #endif
 
-#endif /* _DRIVER_H */
+#endif /* _DRV_DRIVER_H */

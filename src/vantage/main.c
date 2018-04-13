@@ -35,8 +35,8 @@ usage(FILE *out, int status)
 	fprintf(out, "   rxcheck         display console diagnostic report\n");
 	fprintf(out, "   ver             display firmware date\n");
 	fprintf(out, "   nver            display firmware version\n");
-	fprintf(out, "   settime [time]  set time and date on console\n");
-	fprintf(out, "   gettime         get current time and date\n");
+	fprintf(out, "   settime [time]  set console time and date\n");
+	fprintf(out, "   gettime         get console time and date\n");
 	fprintf(out, "   setper min      set archive interval, in minutes\n");
 	fprintf(out, "   lps [n]         display current weather\n");
 	fprintf(out, "   dmp [n]         download records\n");

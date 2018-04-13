@@ -39,15 +39,15 @@ AS_IF([test "x$enable_ws23xx" != "xno"],
 
 AM_CONDITIONAL([USE_WS23XX], [test "x$enable_ws23xx" = "xyes"])
 
-# Add simulator device support
-AC_ARG_ENABLE([simu],
-	[AS_HELP_STRING([--enable-simu], [Enable simulator device support])],
-	[], [enable_simu=no])
+# Add virtual device support
+AC_ARG_ENABLE([virt],
+	[AS_HELP_STRING([--enable-virt], [Enable virtual device support])],
+	[], [enable_virt=no])
 
-AS_IF([test "x$enable_simu" != "xno"],
-	[AC_DEFINE(HAVE_SIMU, 1, [Simulator device support])])
+AS_IF([test "x$enable_virt" != "xno"],
+	[AC_DEFINE(HAVE_VIRT, 1, [Virtual device support])])
 
-AM_CONDITIONAL([USE_SIMU], [test "x$enable_simu" = "xyes"])
+AM_CONDITIONAL([USE_VIRT], [test "x$enable_virt" = "xyes"])
 
 # Add Weather Station View CGI device support
 AC_ARG_ENABLE([wsview],
@@ -60,6 +60,7 @@ AS_IF([test "x$enable_wsview" != "xno"],
 AM_CONDITIONAL([USE_WSVIEW], [test "x$enable_wsview" = "xyes"])
 
 AC_CONFIG_FILES([Makefile
+                 docs/Makefile
                  src/Makefile
                  src/libws/Makefile
                  src/vantage/Makefile

@@ -102,9 +102,9 @@ ws_getdriver(const char *str, enum ws_driver *driver)
 		*driver = WS23XX;
 	}
 #endif
-#if HAVE_SIMU
-	if (!strcmp(str, "simu")) {
-		*driver = SIMU;
+#if HAVE_VIRT
+	if (!strcmp(str, "virt")) {
+		*driver = VIRT;
 	}
 #endif
 
@@ -138,7 +138,7 @@ conf_init(struct ws_conf *cfg)
 	memset(cfg, 0, sizeof(*cfg));
 
 	/* Daemon */
-	cfg->log_facility = LOG_LOCAL0;
+	cfg->log_facility = LOG_USER;
 	cfg->log_level = LOG_NOTICE;
 
 	cfg->station.driver = UNUSED;
@@ -151,9 +151,9 @@ conf_init(struct ws_conf *cfg)
 #if HAVE_WS23XX
 	cfg->driver.ws23xx.tty = "/dev/ttyUSB0";
 #endif
-#if HAVE_SIMU
-	cfg->driver.simu.hw_archive = 1;
-	cfg->driver.simu.io_delay = 250;
+#if HAVE_VIRT
+	cfg->driver.virt.hw_archive = 1;
+	cfg->driver.virt.io_delay = 100;
 #endif
 
 	/* Archive */
@@ -206,11 +206,11 @@ conf_decode(void *p, const char *key, const char *value)
 		} else if (!strcmp(key, "driver.ws23xx.tty")) {
 			cfg->driver.ws23xx.tty = strdup(value);
 #endif
-#if HAVE_SIMU
-		} else if (!strcmp(key, "driver.simu.hw_archive")) {
-			ws_getbool(value, &cfg->driver.simu.hw_archive);
-		} else if (!strcmp(key, "driver.simu.io_delay")) {
-			ws_getlong(value, &cfg->driver.simu.io_delay);
+#if HAVE_VIRT
+		} else if (!strcmp(key, "driver.virt.hw_archive")) {
+			ws_getbool(value, &cfg->driver.virt.hw_archive);
+		} else if (!strcmp(key, "driver.virt.io_delay")) {
+			ws_getlong(value, &cfg->driver.virt.io_delay);
 #endif
 		} else {
 			errno = EINVAL;

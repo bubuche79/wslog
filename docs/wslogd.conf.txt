@@ -1,0 +1,110 @@
+WSLOGD.CONF(5)
+==============
+:doctype: manpage
+:man manual: Wslog Manual
+
+
+NAME
+----
+wslogd.conf - weather station logger configuration
+
+
+DESCRIPTION
+-----------
+The *wslogd*(1) configuration file.
+
+
+OPTIONS
+-------
+*log_facility*::
+The syslog facility. Valid facility names are: 'user', 'local0' to 'local7'.
+Default: user.
+    
+*log_level*::
+Restrict logging to the specified level. Valid levels are: 'err', 'warning',
+'notice', 'info' and 'debug'. Default: notice.
+
+
+STATION OPTIONS
+---------------
+*station.driver* (string)::
+The console driver. Shall be one of: 'vantage', 'ws23xx', 'virt'.
+
+
+VANTAGE DRIVER OPTIONS
+----------------------
+*driver.vantage.tty* (string)::
+The serial console device. Default: /dev/ttyUSB0.
+
+*driver.vantage.bauds* (int)::
+The serial bauds rate. Valid values are 1200, 2400, 4800, 9600, 14400,
+and 19200. The value shall match the console setup value. Default: 19200.
+
+
+WS23XX DRIVER OPTIONS
+---------------------
+*driver.ws23xx.tty* (string)::
+The serial console device. Default: /dev/ttyUSB0.
+
+
+VIRTUAL DRIVER OPTIONS
+----------------------
+The virual console should be used for testing purpose only.
+
+*driver.virt.hw_archive* (int)::
+Turn on hardware archive. Default: 1.
+
+*driver.virt.io_delay* (int)::
+Virtual I/O delay, in milliseconds. Default: 100.
+
+
+ARCHIVE OPTIONS
+---------------
+*archive.freq* (int)::
+Archive frequency, in seconds. Default: 0.
++
+When the value is set to zero, the *wslogd* daemon probes the device to get
+the hardware archive interval, when supported. 1800 is used otherwise.
+
+*archive.delay* (int)::
+Delay, in seconds, before fetching new data from the device. Default: 15.
++
+That delay allows the console to internally build and write archive data. For
+example, if archive interval is 30 minutes and the delay is 15 seconds, then
+console data will be requested at 00:00:15, 00:30:15, etc. 
+
+*archive.sqlite.enabled* (int)::
+Enable SQLite database backend. Default: 1.
+
+*archive.sqlite.db* (string)::
+Path to the SQLite database. Default: /var/lib/wslog/wslogd.db.
++
+Note that *wslogd* will create the database if the specified file does not
+exist. It is not recommended to create the file by yourself.
+
+
+WEATHER UNDERGROUND SERVICE OPTIONS
+-----------------------------------
+*wunder.enabled* (int)::
+Enable report to Weather Underground. Default: 0.
+
+*wunder.https* (int)::
+Use HTTPS to report data. Default: 1.
++
+Unless you have good reasons to do so, it is not recommended to turn of HTTPS,
+as *wslogd* would send your password in clear.
+
+*wunder.station* (string)::
+The Weather Underground station id (mandatory).
+
+*wunder.password* (string)::
+The Weather Underground password (mandatory).
+
+*wunder.freq* (int)::
+
+Default: 300
+
+
+SEE ALSO
+--------
+*wslogd*(1)

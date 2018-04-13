@@ -1,6 +1,8 @@
 #ifndef _CONF_H
 #define _CONF_H
 
+#include <termios.h>
+
 #include "driver/driver.h"
 
 /*
@@ -27,7 +29,7 @@ struct ws_conf
 		struct
 		{
 			const char *tty;	/* TTY device */
-//			speed_t baud;		/* Console baud rate */
+			speed_t baud;		/* Console baud rate */
 		} vantage;
 		struct
 		{
@@ -37,7 +39,7 @@ struct ws_conf
 		{
 			int hw_archive;		/* Turn on hardware archive */
 			long io_delay;		/* I/O delay, in milliseconds */
-		} simu;
+		} virt;
 	} driver;
 
 	struct

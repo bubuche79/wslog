@@ -2,8 +2,8 @@
  * Davis Vantage support.
  */
 
-#ifndef _VANTAGE_H
-#define _VANTAGE_H
+#ifndef _DRV_VANTAGE_H
+#define _DRV_VANTAGE_H
 
 #include <time.h>
 #include <sys/types.h>
@@ -28,4 +28,4 @@ int vantage_set_artimer(long itmin, long next);
 }
 #endif
 
-#endif /* _VANTAGE_H */
+#endif /* _DRV_VANTAGE_H */

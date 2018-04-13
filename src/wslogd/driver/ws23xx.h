@@ -2,8 +2,8 @@
  * Lacrosse Technology WS23XX support.
  */
 
-#ifndef _WS23XX_H
-#define _WS23XX_H
+#ifndef _DRV_WS23XX_H
+#define _DRV_WS23XX_H
 
 #include <time.h>
 #include <sys/types.h>
@@ -27,4 +27,4 @@ int ws23xx_set_artimer(long itmin, long next);
 }
 #endif
 
-#endif /* _WS23XX_H */
+#endif /* _DRV_WS23XX_H */
