@@ -1,4 +1,5 @@
 man1_MAN = \
+	vantage.1 \
 	wslogd.1
 
 man5_MAN = \
