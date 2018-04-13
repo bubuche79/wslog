@@ -25,13 +25,12 @@ OPTIONS
 *-h*::
 Display *vantage* short help and exit.
 
-*-d* _path_::
+*-d* _dev_::
 The serial console device. Default: /dev/ttyUSB0.
 
 
 VANTAGE COMMANDS
 ----------------
-
 'info'::
 Display console info.
 

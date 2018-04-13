@@ -21,6 +21,11 @@ The *wslogd* command starts the weather station logger.
 It connects to the device, fetches weather data, and sends it to various
 locations, like a SQLite database, or a Weather Underground account.
 
+When the daemon reads from the device, it requests an exclusive lock using
+the *flock*(2) function, and releases that lock on completion. That is, this is
+safe to use tools with the same locking mechanism while the daemon is running,
+like all utilities from the 'wslog' suite. 
+
 See *wslogd.conf*(5) for more details on configuration.
 
 
@@ -38,8 +43,7 @@ updated with new data. Should be used for testing purpose only.
 *-i* _freq_::
 Set archive frequency to _freq_, in seconds.
 +
-When specified, it overrides the 'archive.freq' configuration parameter. Refer
-to *wslogd.conf*(5) for more details on this parameter.
+If set, it overrides the 'archive.freq' configuration parameter.
 
 *-h*::
 Display *wslogd* short help and exit.
