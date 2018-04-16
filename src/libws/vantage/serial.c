@@ -67,6 +67,11 @@ vantage_wakeup(int fd)
 	for (retry = 0; retry < 3; retry++) {
 		ssize_t sz;
 
+		/* Discard pending data */
+		if (tcflush(fd, TCIOFLUSH) == -1) {
+			goto error;
+		}
+
 		/* Write LF */
 		if (ws_write(fd, in, 1) == -1) {
 			goto error;
@@ -77,16 +82,13 @@ vantage_wakeup(int fd)
 		sz = wakeup_read(fd, buf, bufsz);
 
 		if (sz == -1) {
-			goto error;
+			if (errno != ETIME) {
+				goto error;
+			}
 		} else if (sz == bufsz) {
 			if (memcmp(buf, resp, sz) == 0) {
 				break;
 			}
-		}
-
-		/* Flush pending data */
-		if (tcflush(fd, TCIFLUSH) == -1) {
-			goto error;
 		}
 	}
 
