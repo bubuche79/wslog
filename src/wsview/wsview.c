@@ -28,7 +28,7 @@ db_open()
 {
 	if (db == NULL) {
 		sqlite3_initialize();
-		sqlite3_open_v2("/u12/wslogd.db", &db, SQLITE_OPEN_READONLY, NULL);
+		sqlite3_open_v2("/var/lib/wslogd.db", &db, SQLITE_OPEN_READONLY, NULL);
 	}
 }
 
@@ -355,7 +355,7 @@ luaopen_wsview(lua_State *L)
 	};
 
 	lua_newtable(L);
-	luaL_register(L, NULL, wslib);
+	luaL_setfuncs(L, wslib, 0);
 
 	return 1;
 }
