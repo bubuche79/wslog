@@ -52,15 +52,11 @@ Display *wslogd* short help and exit.
 Display the *wslogd* version and exit.
 
 
-EXIT STATUS
------------
-*0*::
-Success
-
-*1*::
-Failure.
-
-
 SEE ALSO
 --------
 *wslogd.conf*(5), *vantage*(1)
+
+
+WSLOG
+-----
+Part of the *wslog*(1) suite.

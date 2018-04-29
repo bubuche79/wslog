@@ -108,3 +108,8 @@ Default: 300
 SEE ALSO
 --------
 *wslogd*(1)
+
+
+WSLOG
+-----
+Part of the *wslog*(1) suite.

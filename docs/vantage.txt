@@ -107,15 +107,11 @@ Clear all daily (*-d*), monthly (*-m*) or yearly (*-y*) high values.
 Clear all daily (*-d*), monthly (*-m*) or yearly (*-y*) low values.
 
 
-EXIT STATUS
------------
-*0*::
-Success
-
-*1*::
-Failure.
-
-
 SEE ALSO
 --------
 *wslogd*(1)
+
+
+WSLOG
+-----
+Part of the *wslog*(1) suite.
