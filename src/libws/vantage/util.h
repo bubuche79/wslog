@@ -9,7 +9,11 @@
 
 /* I/O mode */
 #define IO_CRC		0x0001
-#define IO_LONG_OP	0x0002
+#define IO_T(s)		(((s) & 0xFF) << 8)
+
+#define IO_T10		IO_T(10)	/* 1.0 second */
+#define IO_T100		IO_T(100)	/* 10.0 seconds */
+#define IO_TMASK	0xFF00		/* Up to 25.5 seconds */
 
 /* Acknowledge mode */
 #define IO_TEST		0x0010
@@ -17,10 +21,6 @@
 #define IO_OK_DONE	0x0030
 #define IO_ACK		0x0040
 #define IO_ACK_MASK	0x00F0
-
-/* I/O timeouts */
-#define IO_TIMEOUT	250		/* I/O timeout, in milliseconds */
-#define IO_LONG_TIMEOUT	60000		/* Long I/O timeout (ack), in milliseconds */
 
 enum vantage_cmd
 {
@@ -67,6 +67,8 @@ enum vantage_cmd
 	LAMPS
 };
 
+extern const struct timespec IO_TIMEOUT;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -89,10 +91,11 @@ int16_t vantage_int16(const uint8_t *buf, uint16_t off);
 uint16_t vantage_uint16(const uint8_t *buf, uint16_t off);
 
 ssize_t vantage_read(int fd, void *buf, size_t len);
+ssize_t vantage_read_to(int fd, void *buf, size_t len, const struct timespec *ts);
 ssize_t vantage_write(int fd, const void *buf, size_t len);
 
 int vantage_pread(int fd, int flags, void *buf, size_t len);
-int vantage_pread_to(int fd, int flags, void *buf, size_t len, long timeout);
+int vantage_pread_to(int fd, int flags, void *buf, size_t len, const struct timespec *ts);
 int vantage_pwrite(int fd, int flags, const void *buf, size_t len);
 
 int vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...);

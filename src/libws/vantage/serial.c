@@ -11,35 +11,16 @@
 #include "libws/vantage/vantage.h"
 
 #define BAUDRATE	B19200		/* Default baudrate */
-#define WAKEUP_TO	1200		/* Wakeup timeout, in milliseconds */
 
 static ssize_t
 wakeup_read(int fd, void *buf, size_t len)
 {
-	ssize_t sz;
-	long timeout;
+	struct timespec ts;
 
-	sz = 0;
-	timeout = WAKEUP_TO;
+	ts.tv_sec = 1;
+	ts.tv_nsec = 200000000;
 
-	while (sz < len) {
-		ssize_t ret;
-
-		if ((ret = ws_read_to(fd, buf + sz, len - sz, timeout)) == -1) {
-			goto error;
-		} else if (ret == 0) {
-			errno = ETIME;
-			goto error;
-		}
-
-		sz += ret;
-		timeout = IO_TIMEOUT;
-	}
-
-	return sz;
-
-error:
-	return -1;
+	return vantage_read_to(fd, buf, len, &ts);
 }
 
 int

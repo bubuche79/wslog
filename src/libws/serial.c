@@ -15,17 +15,6 @@
 #include "libws/util.h"
 #include "libws/serial.h"
 
-long ws_io_delay = 0;
-
-static void
-msleep(long ms)
-{
-	struct timespec ts;
-
-	ws_time_ms(&ts, ms);
-	nanosleep(&ts, NULL);
-}
-
 int
 ws_open(const char *device, speed_t speed)
 {
@@ -96,33 +85,20 @@ error:
 ssize_t
 ws_read(int fd, void *buf, size_t nbyte)
 {
-	return ws_read_to(fd, buf, nbyte, 0);
+	return ws_read_to(fd, buf, nbyte, NULL);
 }
 
 ssize_t
-ws_read_to(int fd, void *buf, size_t nbyte, long timeout)
+ws_read_to(int fd, void *buf, size_t nbyte, const struct timespec *timeout)
 {
 	int ret;
 	fd_set readset;
-	struct timeval tv, *ptv;
 
 	/* Wait for input */
-	do {
-		FD_ZERO(&readset);
-		FD_SET(fd, &readset);
+	FD_ZERO(&readset);
+	FD_SET(fd, &readset);
 
-		if (timeout) {
-			tv.tv_sec = timeout / 1000;
-			tv.tv_usec = (timeout - 1000 * tv.tv_sec) * 1000;
-			ptv = &tv;
-		} else {
-			ptv = NULL;
-		}
-
-		ret = select(fd + 1, &readset, NULL, NULL, ptv);
-	} while (ret == -1 && errno == EINTR);
-
-	if (ret == -1) {
+	if (pselect(fd + 1, &readset, NULL, NULL, timeout, NULL) == -1) {
 		goto error;
 	}
 
@@ -154,10 +130,6 @@ ws_write(int fd, const void *buf, size_t nbyte)
 		goto error;
 	}
 
-	if (ws_io_delay > 0) {
-		msleep(ws_io_delay);
-	}
-
 	return ret;
 
 error:
@@ -174,10 +146,6 @@ ws_writev(int fd, const struct iovec *iov, size_t iovcnt)
 	}
 	if (tcdrain(fd) == -1) {
 		goto error;
-	}
-
-	if (ws_io_delay > 0) {
-		msleep(ws_io_delay);
 	}
 
 	return ret;
