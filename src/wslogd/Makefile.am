@@ -40,7 +40,7 @@ wslogc_SOURCES = \
 	wslogc.c
 
 wslogc_LDADD = \
-	-L. -lwslog -L../libws -lws -lrt -lpthread
+	-L. -lwslog -L../libws -lws -lm -lrt -lpthread
 
 EXTRA_wslogc_DEPENDENCIES = \
 	libwslog.a
@@ -65,7 +65,7 @@ wslogd_SOURCES = \
 	wslogd.h
 
 wslogd_LDADD = \
-	-L. -lwslog -L../libws -lws -lsqlite3 -lcurl -lrt -lpthread
+	-L. -lwslog -L../libws -lws -lsqlite3 -lcurl -lm -lrt -lpthread
 
 EXTRA_wslogd_DEPENDENCIES = \
 	libwslog.a
