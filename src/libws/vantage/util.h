@@ -95,7 +95,6 @@ ssize_t vantage_read_to(int fd, void *buf, size_t len, const struct timespec *ts
 ssize_t vantage_write(int fd, const void *buf, size_t len);
 
 int vantage_pread(int fd, int flags, void *buf, size_t len);
-int vantage_pread_to(int fd, int flags, void *buf, size_t len, const struct timespec *ts);
 int vantage_pwrite(int fd, int flags, const void *buf, size_t len);
 
 int vantage_proc(int fd, enum vantage_cmd cmd, /* args */ ...);
