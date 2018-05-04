@@ -21,13 +21,13 @@
 #define MAX_RESETS 	100
 #define MAX_RETRIES	50
 #define MAX_BLOCKS	30
-#define READ_TIMEOUT	1000			/* milliseconds */
 
 #define SETACK		0x04
 #define UNSETACK	0x0C
 #define WRITEACK	0x10
 
-static const uint8_t reset = 0x06;
+static const uint8_t RESET = 0x06;
+static const struct timespec IO_TIMEOUT = { .tv_sec = 1, .tv_nsec = 0 };
 
 static uint8_t
 checksum(const uint8_t *buf, size_t len)
@@ -45,11 +45,11 @@ checksum(const uint8_t *buf, size_t len)
 }
 
 static int
-read_byte(int fd, uint8_t *buf, long timeout)
+read_byte(int fd, uint8_t *buf, const struct timespec *ts)
 {
 	int ret;
 
-	ret = ws_read_to(fd, buf, 1, timeout);
+	ret = ws_read_to(fd, buf, 1, ts);
 	if (ret == -1) {
 		goto error;
 	} else if (ret == 0) {
@@ -81,7 +81,7 @@ write_byte(int fd, uint8_t byte, uint8_t ack)
 	}
 
 	/* Check ack */
-	ret = ws_read_to(fd, &answer, 1, READ_TIMEOUT);
+	ret = ws_read_to(fd, &answer, 1, &IO_TIMEOUT);
 	if (ret == -1) {
 		goto error;
 	} else if (ret == 0) {
@@ -153,7 +153,7 @@ ws23xx_reset_06(int fd)
 		if (ws_flush(fd) == -1) {
 			goto error;
 		}
-		if (ws_write(fd, &reset, 1) == -1) {
+		if (ws_write(fd, &RESET, 1) == -1) {
 			goto error;
 		}
 
@@ -165,7 +165,7 @@ ws23xx_reset_06(int fd)
 		 * timeout until all data is exhausted, if we got a 2 back at all,
 		 * we consider it a success.
 		 */
-		ret = ws_read_to(fd, &answer, 1, READ_TIMEOUT);
+		ret = ws_read_to(fd, &answer, 1, &IO_TIMEOUT);
 		if (ret == -1) {
 			goto error;
 		}
@@ -173,11 +173,16 @@ ws23xx_reset_06(int fd)
 		success = 0;
 
 		while (ret > 0) {
+			struct timespec ts;
+
 			if (answer == 0x02) {
 				success = 1;
 			}
 
-			ret = ws_read_to(fd, &answer, 1, 50);
+			ts.tv_sec = 0;
+			ts.tv_nsec = 100000000;
+
+			ret = ws_read_to(fd, &answer, 1, &ts);
 			if (ret == -1) {
 				goto error;
 			}
@@ -339,13 +344,13 @@ ws23xx_read(int fd, uint16_t addr, size_t nnyb, uint8_t *buf)
 
 	/* Read the response */
 	for (i = 0; i < nbyte; i++) {
-		if (read_byte(fd, buf + i, READ_TIMEOUT) == -1) {
+		if (read_byte(fd, buf + i, &IO_TIMEOUT) == -1) {
 			goto error;
 		}
 	}
 
 	/* Read and verify checksum */
-	if (read_byte(fd, &answer, READ_TIMEOUT) == -1) {
+	if (read_byte(fd, &answer, &IO_TIMEOUT) == -1) {
 		goto error;
 	}
 	if (answer != checksum(buf, nbyte)) {

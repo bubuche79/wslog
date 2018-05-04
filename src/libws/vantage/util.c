@@ -51,15 +51,15 @@ static const struct proc_def CMDS[] =
 	{ "CALFIX\n", IO_ACK },
 	{ "BAR=%d %d\n", IO_OK },
 	{ "BARDATA\n", IO_OK },
-	{ "CLRLOG\n", IO_ACK|IO_LONG_OP },
-	{ "CLRALM\n", IO_OK_DONE },
-	{ "CLRCAL\n", IO_OK_DONE },
-	{ "CLRGRA\n", IO_OK_DONE },
-	{ "CLRVAR %d\n", IO_ACK|IO_LONG_OP },
-	{ "CLRHIGHS %d\n", IO_ACK|IO_LONG_OP },
-	{ "CLRLOWS %d\n", IO_ACK|IO_LONG_OP },
-	{ "CLRBITS\n", IO_ACK|IO_LONG_OP },
-	{ "CLRDATA\n", IO_ACK|IO_LONG_OP },
+	{ "CLRLOG\n", IO_ACK|IO_T100 },
+	{ "CLRALM\n", IO_OK_DONE|IO_T100 },
+	{ "CLRCAL\n", IO_OK_DONE|IO_T100 },
+	{ "CLRGRA\n", IO_OK_DONE|IO_T100 },
+	{ "CLRVAR %d\n", IO_ACK|IO_T100 },
+	{ "CLRHIGHS %d\n", IO_ACK|IO_T100 },
+	{ "CLRLOWS %d\n", IO_ACK|IO_T100 },
+	{ "CLRBITS\n", IO_ACK|IO_T100 },
+	{ "CLRDATA\n", IO_ACK|IO_T100 },
 	{ "BAUD %d\n", IO_OK },
 	{ "SETTIME\n", IO_ACK },
 	{ "GETTIME\n", IO_ACK },
@@ -71,38 +71,14 @@ static const struct proc_def CMDS[] =
 	{ "LAMPS %d\n", IO_OK },
 };
 
-static ssize_t
-vantage_read_to(int fd, void *buf, size_t len, long timeout)
-{
-	ssize_t sz;
-
-	sz = 0;
-
-	while (sz < len) {
-		ssize_t ret;
-
-		if ((ret = ws_read_to(fd, buf + sz, len - sz, timeout)) == -1) {
-			goto error;
-		} else if (ret == 0) {
-			errno = ETIME;
-			goto error;
-		}
-
-		sz += ret;
-	}
-
-	return sz;
-
-error:
-	return -1;
-}
+const struct timespec IO_TIMEOUT = { .tv_sec = 0, .tv_nsec = 200000000 };
 
 static int
-vantage_ack_ck_to(int fd, const uint8_t *ack, size_t acklen, long timeout)
+vantage_ack_ck(int fd, const uint8_t *ack, size_t acklen, const struct timespec *ts)
 {
 	char buf[acklen];
 
-	if (vantage_read_to(fd, buf, acklen, timeout) == -1) {
+	if (vantage_read_to(fd, buf, acklen, ts) == -1) {
 		goto error;
 	}
 
@@ -117,26 +93,32 @@ error:
 	return -1;
 }
 
+/**
+ * Read I/O acknowledge.
+ *
+ * The `ts' timeout argument is only used when `mode' is set to ACK_DONE or
+ * ACK_ACK. The default timeout is used otherwise.
+ */
 static int
-vantage_read_ack_to(int fd, int ack, long timeout)
+vantage_ack(int fd, int mode, const struct timespec *ts)
 {
 	int ret;
 
-	switch (ack) {
+	switch (mode) {
 	case IO_TEST:
-		ret = vantage_ack_ck_to(fd, ACK_TEST, sizeof(ACK_TEST), timeout);
+		ret = vantage_ack_ck(fd, ACK_TEST, sizeof(ACK_TEST), &IO_TIMEOUT);
 		break;
 	case IO_OK:
-		ret = vantage_ack_ck_to(fd, ACK_OK, sizeof(ACK_OK), timeout);
+		ret = vantage_ack_ck(fd, ACK_OK, sizeof(ACK_OK), &IO_TIMEOUT);
 		break;
 	case IO_OK_DONE:
-		if (vantage_ack_ck_to(fd, ACK_OK, sizeof(ACK_OK), timeout) == -1) {
+		if (vantage_ack_ck(fd, ACK_OK, sizeof(ACK_OK), &IO_TIMEOUT) == -1) {
 			goto error;
 		}
-		ret = vantage_ack_ck_to(fd, ACK_DONE, sizeof(ACK_DONE), IO_LONG_TIMEOUT);
+		ret = vantage_ack_ck(fd, ACK_DONE, sizeof(ACK_DONE), ts);
 		break;
 	case IO_ACK:
-		ret = vantage_ack_ck_to(fd, ACK_ACK, sizeof(ACK_ACK), timeout);
+		ret = vantage_ack_ck(fd, ACK_ACK, sizeof(ACK_ACK), ts);
 		break;
 	default:
 		errno = EINVAL;
@@ -150,10 +132,43 @@ error:
 	return -1;
 }
 
+/**
+ * Vantage I/O read.
+ *
+ * The `ts' timeout only applies to the first I/O wait. Upon first read, the
+ * timeout is set to IO_TIMEOUT (0.2 second).
+ */
+ssize_t
+vantage_read_to(int fd, void *buf, size_t len, const struct timespec *ts)
+{
+	ssize_t sz;
+
+	sz = 0;
+
+	while (sz < len) {
+		ssize_t ret;
+
+		if ((ret = ws_read_to(fd, buf + sz, len - sz, ts)) == -1) {
+			goto error;
+		} else if (ret == 0) {
+			errno = ETIME;
+			goto error;
+		}
+
+		sz += ret;
+		ts = &IO_TIMEOUT;
+	}
+
+	return sz;
+
+error:
+	return -1;
+}
+
 ssize_t
 vantage_read(int fd, void *buf, size_t len)
 {
-	return vantage_read_to(fd, buf, len, IO_TIMEOUT);
+	return vantage_read_to(fd, buf, len, &IO_TIMEOUT);
 }
 
 ssize_t
@@ -163,14 +178,14 @@ vantage_write(int fd, const void *buf, size_t len)
 }
 
 int
-vantage_pread_to(int fd, int flags, void *buf, size_t len, long timeout)
+vantage_pread(int fd, int flags, void *buf, size_t len)
 {
 	if (flags & IO_ACK_MASK) {
 		errno = EINVAL;
 		goto error;
 	}
 
-	if (vantage_read_to(fd, buf, len, timeout) == -1) {
+	if (vantage_read_to(fd, buf, len, &IO_TIMEOUT) == -1) {
 		goto error;
 	}
 
@@ -195,12 +210,6 @@ vantage_pread_to(int fd, int flags, void *buf, size_t len, long timeout)
 
 error:
 	return -1;
-}
-
-int
-vantage_pread(int fd, int flags, void *buf, size_t len)
-{
-	return vantage_pread_to(fd, flags, buf, len, IO_TIMEOUT);
 }
 
 int
@@ -235,14 +244,19 @@ vantage_pwrite(int fd, int flags, const void *buf, size_t len)
 
 	/* Acknowledge */
 	if (flags & IO_ACK_MASK) {
-		long timeout = IO_TIMEOUT;
-		int ack = flags & IO_ACK_MASK;
+		struct timespec ts;
 
-		if (flags & IO_LONG_OP) {
-			timeout = IO_LONG_TIMEOUT;
+		if (flags & IO_TMASK) {
+			long tenth = (flags & IO_TMASK) >> 8;
+
+			ts.tv_sec = tenth / 10;
+			ts.tv_nsec = (tenth - 10 * ts.tv_sec) * 100000000;
+		} else {
+			ts.tv_sec = IO_TIMEOUT.tv_sec;
+			ts.tv_nsec = IO_TIMEOUT.tv_nsec;
 		}
 
-		if (vantage_read_ack_to(fd, ack, timeout) == -1) {
+		if (vantage_ack(fd, flags & IO_ACK_MASK, &ts) == -1) {
 			goto error;
 		}
 	}

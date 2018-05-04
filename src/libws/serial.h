@@ -5,8 +5,6 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 
-extern long ws_io_delay;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,7 +13,7 @@ int ws_open(const char *device, speed_t speed);
 int ws_close(int fd);
 
 ssize_t ws_read(int fd, void *buf, size_t len);
-ssize_t ws_read_to(int fd, void *buf, size_t len, long timeout);
+ssize_t ws_read_to(int fd, void *buf, size_t len, const struct timespec *ts);
 
 ssize_t ws_write(int fd, const void *buf, size_t len);
 ssize_t ws_writev(int fd, const struct iovec *iov, size_t iovcnt);

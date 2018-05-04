@@ -138,7 +138,7 @@ vantage_rxcheck(int fd, struct vantage_rxck *ck)
 	sz = 0;
 
 	do {
-		if ((ret = ws_read_to(fd, buf + sz, sizeof(buf) - sz, IO_TIMEOUT)) == -1) {
+		if ((ret = ws_read_to(fd, buf + sz, sizeof(buf) - sz, &IO_TIMEOUT)) == -1) {
 			goto error;
 		}
 

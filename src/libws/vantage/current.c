@@ -87,16 +87,14 @@ vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel)
 {
 	ssize_t sz;
 	uint8_t buf[LOOP_SIZE];
-	long timeout;
 
-	timeout = 0;
+	sz = -1;
+	type = type & LPS_MASK;
 
 	if (type & LPS_LOOP) {
 		errno = EINVAL;
 		goto error;
 	}
-
-	type = type & LPS_MASK;
 
 	/* LPS command */
 	if (vantage_proc(fd, LPS, type, nel) == -1) {
@@ -104,24 +102,23 @@ vantage_lps(int fd, int type, struct vantage_loop *p, size_t nel)
 	}
 
 	/* Read LOOP records */
-	timeout = IO_TIMEOUT;
-
 	for (sz = 0; sz < nel; sz++) {
-		if (vantage_pread_to(fd, IO_CRC, buf, sizeof(buf), timeout) == -1) {
+		if (vantage_pread(fd, IO_CRC, buf, sizeof(buf)) == -1) {
 			goto error;
 		}
 
 		lps_decode(&p[sz], buf);
 
 		if (sz == 0) {
-			timeout += LPS_DELAY;
+			// TODO
+//			timeout += LPS_DELAY;
 		}
 	}
 
 	return sz;
 
 error:
-	if (timeout > 0) {
+	if (sz >= 0) {
 		uint8_t cr = CR;
 
 		/* Cancel */

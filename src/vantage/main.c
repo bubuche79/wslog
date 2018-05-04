@@ -118,12 +118,12 @@ strtoui(const char *s)
 }
 
 static time_t
-strtotime(const char *s, int sec)
+strtotime(const char *s, int all)
 {
 	struct tm tm;
 	const char *fmt;
 
-	if (sec) {
+	if (all) {
 		fmt = "%Y-%m-%dT%H:%M:%S";
 	} else {
 		fmt = "%Y-%m-%dT%H:%M";
@@ -598,13 +598,31 @@ error:
 	return 1;
 }
 
+static size_t
+ar_count(time_t after, time_t ar)
+{
+	size_t buflen;
+
+#if 0
+	buflen = divup(time(NULL) - after, ar);
+
+	if (RECORDS_COUNT < buflen) {
+		buflen = RECORDS_COUNT;
+	}
+#else
+	buflen = RECORDS_COUNT;
+#endif
+
+	return buflen;
+}
+
 static int
 main_dmpaft(int fd, int argc, char* const argv[])
 {
-	ssize_t sz;
+	ssize_t sz, buflen;
 	time_t after;
 	const char *s;
-	struct vantage_dmp dmp[DMPLEN];
+	struct vantage_dmp *buf;
 
 	check_empty_opts(argc, argv);
 
@@ -612,6 +630,7 @@ main_dmpaft(int fd, int argc, char* const argv[])
 		usage(stderr, 1);
 	}
 
+	buf = NULL;
 	s = argv[optind++];
 
 	if ((after = strtotime(s, 0)) == -1) {
@@ -625,22 +644,29 @@ main_dmpaft(int fd, int argc, char* const argv[])
 		goto error;
 	}
 
-	do {
-		if ((sz = vantage_dmpaft(fd, dmp, DMPLEN, after)) == -1) {
-			fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
-			goto error;
-		}
+	buflen = ar_count(after, cfg.ar_period * 60);
 
-		print_dmp_all(dmp, sz);
+	if ((buf = malloc(buflen * sizeof(*buf))) == NULL) {
+		fprintf(stderr, "malloc: %s\n", strerror(errno));
+		goto error;
+	}
+	if ((sz = vantage_dmpaft(fd, buf, buflen, after)) == -1) {
+		fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
+		goto error;
+	}
 
-		/* Next start point */
-		after = dmp[sz - 1].time;
-	} while (sz == DMPLEN);
+	print_dmp_all(buf, sz);
+
+	free(buf);
 
 	return 0;
 
 error:
-	return 1;
+	if (buf != NULL) {
+		free(buf);
+	}
+
+	return -1;
 }
 
 static int

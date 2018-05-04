@@ -321,13 +321,6 @@ error:
 }
 
 void
-ws_time_ms(struct timespec *ts, long ms)
-{
-	ts->tv_sec = ms / 1000;
-	ts->tv_nsec = ms - 1000 * ts->tv_sec;
-}
-
-void
 ws_itimer_delay(struct itimerspec *it, long freq, long delay)
 {
 	time_t now;

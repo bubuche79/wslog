@@ -251,7 +251,7 @@ vantage_dmpaft(int fd, struct vantage_dmp *p, size_t nel, time_t after)
 	/* Send timestamp */
 	dmp_localtime(buf, after);
 
-	if (vantage_pwrite(fd, IO_CRC|IO_ACK, buf, sizeof(buf)) == -1) {
+	if (vantage_pwrite(fd, IO_CRC|IO_ACK|IO_T100, buf, sizeof(buf)) == -1) {
 		goto error;
 	}
 
