@@ -1,4 +1,4 @@
-bin_PROGRAMS = \
+check_PROGRAMS = \
 	check_build
 
 check_build_SOURCES = \

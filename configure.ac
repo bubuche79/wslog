@@ -9,15 +9,15 @@ AM_PROG_AR
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
 
 # Checks for programs.
-LT_INIT
+LT_INIT([disable-static])
 AC_PROG_INSTALL
 
 # Checks for libraries.
-AC_CHECK_LIB([check], [srunner_create],	[HAVE_LIBCHECK=1])
-AC_CHECK_LIB([curl], [curl_global_init], [ ])
-AC_CHECK_LIB([sqlite3], [sqlite3_initialize], [ ])
+AC_CHECK_LIB([check], [srunner_create])
+AC_CHECK_LIB([curl], [curl_global_init])
+AC_CHECK_LIB([sqlite3], [sqlite3_initialize])
 
-AM_CONDITIONAL([USE_LIBCHECK], [test "x$HAVE_LIBCHECK" = "x1"])
+AM_CONDITIONAL([USE_LIBCHECK], [test "x$ac_cv_lib_check_srunner_create" = "xyes"])
 
 # Add Davis Vantage device support
 AC_ARG_ENABLE([vantage],

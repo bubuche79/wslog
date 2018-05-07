@@ -6,9 +6,9 @@ AM_CPPFLAGS = \
 AM_CFLAGS = \
 	$(inc_CFLAGS)
 
-lib_LTLIBRARIES = libwsview.la
+lib_LTLIBRARIES = wsview.la
 
-libwsview_la_SOURCES = \
+wsview_la_SOURCES = \
 	../wslogd/board.c \
 	../wslogd/dataset.c \
 	../wslogd/board.h \
@@ -16,11 +16,20 @@ libwsview_la_SOURCES = \
 	wsview.c \
 	wsview.h
 
-libwsview_la_LIBADD = \
+wsview_la_LDFLAGS = \
+	-module
+
+wsview_la_LIBADD = \
 	-L../libws -lws -llua -lsqlite3 -lrt -lpthread
 
-dist_data_DATA = \
-	cgi-bin/* \
+cluadir = $(libdir)/lua/5.3
+luadir = $(datadir)/lua/5.3
+wwwdir = $(localstatedir)/www
+
+nobase_dist_lua_DATA = \
 	wsview/*.lua \
-	wsview/sgi/*.lua \
+	wsview/sgi/*.lua
+
+nobase_dist_www_DATA = \
+	cgi-bin/* \
 	wsview-static/*.*
