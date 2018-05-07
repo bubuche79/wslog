@@ -1,7 +1,5 @@
 local rest = { }
 
-local util = require "luci.util"
---local wsview = require "wsview"
 local http = require "wsview.http"
 
 local drv
@@ -66,11 +64,13 @@ end
 local function init(env, db)
 	http.content("application/json")
 
+	db = false
+
 	if db and not cnx then
 		local driver = require "luasql.sqlite3"
 		local util = require "wsview.util"
 
-		local fname = util.getconfig()['archive.sqlite.db']
+		local fname = util.getconf('archive.sqlite.db')
 
 		drv = driver.sqlite3()
 		cnx = drv:connect(fname)
@@ -111,7 +111,7 @@ end
 function rest.current(env)
 	init(env)
 
---	local wsview = require "wsview"
+	local wsview = require "wsview"
 
 	http.write_json(wsview.current())
 	close(env)
@@ -126,10 +126,17 @@ function rest.archive(env)
 	local from = os.time(t) - 4 * 24 * 3600
 	local to = os.time(t)
 
-	local cur = archive(from, to)
+	if cnx then
+		local cur = archive(from, to)
 
-	dump_cur(cur)
-	close(env)
+		dump_cur(cur)
+		close(env)
+	else
+		local wsview = require "wsview"
+		local data = wsview.archive(from, to)
+
+		http.write_json(data)
+	end
 end
 
 function rest.month(env)
@@ -154,13 +161,17 @@ function rest.month(env)
 	local from = os.time({ year = y, month = m, day = 1, hour = 0 })
 	local to = os.time({ year = y, month = m+1, day = 1, hour = 0 })
 
---	local data = wsview.aggregate("month", from, to)
+	if cnx then
+		local cur = aggr_month(from, to)
 
---	http.write_json(data)
-	local cur = aggr_month(from, to)
+		dump_cur(cur)
+		close(env)
+	else
+		local wsview = require "wsview"
+		local data = wsview.aggregate("month", from, to)
 
-	dump_cur(cur)
-	close(env)
+		http.write_json(data)
+	end
 end
 
 function rest.year(env)
@@ -183,13 +194,17 @@ function rest.year(env)
 	local from = os.time({ year = y, month = 1, day = 1, hour = 0 })
 	local to = os.time({ year = y+1, month = 1, day = 1, hour = 0 })
 
---	local data = wsview.aggregate("year", from, to)
+	if cnx then
+		local cur = aggr_year(from, to)
 
---	http.write_json(data)
-	local cur = aggr_year(from, to)
+		dump_cur(cur)
+		close(env)
+	else
+		local wsview = require "wsview"
+		local data = wsview.aggregate("year", from, to)
 
-	dump_cur(cur)
-	close(env)
+		http.write_json(data)
+	end
 end
 
 return rest

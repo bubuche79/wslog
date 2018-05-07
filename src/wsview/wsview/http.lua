@@ -1,10 +1,28 @@
 local http = { }
 
-local jsonc = require "luci.jsonc"
-local protocol = require "luci.http.protocol"
+local json = require "json"
+local util = require "wsview.util"
 
 local io = {}
 local context = {}
+
+local statusmsg = {
+	[200] = "OK",
+	[206] = "Partial Content",
+	[301] = "Moved Permanently",
+	[302] = "Found",
+	[304] = "Not Modified",
+	[400] = "Bad Request",
+	[403] = "Forbidden",
+	[404] = "Not Found",
+	[405] = "Method Not Allowed",
+	[408] = "Request Time-out",
+	[411] = "Length Required",
+	[412] = "Precondition Failed",
+	[416] = "Requested range not satisfiable",
+	[500] = "Internal Server Error",
+	[503] = "Server Unavailable"
+}
 
 function http.io(recv, send)
 	io.recv = recv
@@ -50,7 +68,7 @@ end
 
 function http.status(code, message)
 	code = code or 200
-	message = message or protocol.statusmsg[code]
+	message = message or statusmsg[code]
 
 	http.header("Status", code .. " " .. message)
 end
@@ -86,7 +104,60 @@ function http.format(fmt, ...)
 end
 
 function http.write_json(x)
-	http.write(jsonc.stringify(x))
+	http.write(json.encode(x))
+end
+
+-- the "+" sign to " " - and return the decoded string.
+local function urldecode( str, no_plus )
+
+	local function __chrdec( hex )
+		return string.char( tonumber( hex, 16 ) )
+	end
+
+	if type(str) == "string" then
+		if not no_plus then
+			str = str:gsub( "+", " " )
+		end
+
+		str = str:gsub( "%%([a-fA-F0-9][a-fA-F0-9])", __chrdec )
+	end
+
+	return str
+end
+
+-- from given url or string. Returns a table with urldecoded values.
+-- Simple parameters are stored as string values associated with the parameter
+-- name within the table. Parameters with multiple values are stored as array
+-- containing the corresponding values.
+local function urldecode_params( url, tbl )
+
+	local params = tbl or { }
+
+	if url:find("?") then
+		url = url:gsub( "^.+%?([^?]+)", "%1" )
+	end
+
+	for pair in url:gmatch( "[^&;]+" ) do
+
+		-- find key and value
+		local key = urldecode( pair:match("^([^=]+)")     )
+		local val = urldecode( pair:match("^[^=]+=(.+)$") )
+
+		-- store
+		if type(key) == "string" and key:len() > 0 then
+			if type(val) ~= "string" then val = "" end
+
+			if not params[key] then
+				params[key] = val
+			elseif type(params[key]) ~= "table" then
+				params[key] = { params[key], val }
+			else
+				table.insert( params[key], val )
+			end
+		end
+	end
+
+	return params
 end
 
 function http.dispatch(env)
@@ -96,9 +167,9 @@ function http.dispatch(env)
 	if env.REQUEST_METHOD == "POST" then
 		local buf = io.recv()
 
-		protocol.urldecode_params(buf, params)
+		urldecode_params(buf, params)
 	else
-		protocol.urldecode_params(env.QUERY_STRING, params)
+		urldecode_params(env.QUERY_STRING, params)
 	end
 
 	-- Path
@@ -107,7 +178,7 @@ function http.dispatch(env)
 	path = string.sub(path, 2)
 	path = string.gsub(path, "/*$", "")
 
-	local s = string.split(path, "/+", #path, true)
+	local s = util.split(path, "/+", #path, true)
 
 	local hasmod, mod = pcall(require, "wsview." .. s[1])
 	local func = s[2] or "index"

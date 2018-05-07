@@ -28,7 +28,7 @@ db_open()
 {
 	if (db == NULL) {
 		sqlite3_initialize();
-		sqlite3_open_v2("/var/lib/wslogd.db", &db, SQLITE_OPEN_READONLY, NULL);
+		sqlite3_open_v2("/var/lib/wslog/wslogd.db", &db, SQLITE_OPEN_READONLY, NULL);
 	}
 }
 
