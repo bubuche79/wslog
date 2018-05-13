@@ -173,10 +173,14 @@ function http.dispatch(env)
 	end
 
 	-- Path
-	local path = env.PATH_INFO or "/home"
+	local path = env.PATH_INFO
 
-	path = string.sub(path, 2)
-	path = string.gsub(path, "/*$", "")
+	if not path or path == "/" then
+		path = "home"
+	else
+		path = string.sub(path, 2)
+		path = string.gsub(path, "/*$", "")
+	end
 
 	local s = util.split(path, "/+", #path, true)
 
