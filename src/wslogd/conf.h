@@ -9,6 +9,8 @@
  * Weather station configuration.
  */
 
+#define WS_CONF_SQLITE_DB "/var/lib/wslogd.db"
+
 struct ws_conf
 {
 	int log_facility;			/* Syslog facility */

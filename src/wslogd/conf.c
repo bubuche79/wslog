@@ -162,7 +162,7 @@ conf_init(struct ws_conf *cfg)
 
 	/* SQLite */
 	cfg->archive.sqlite.enabled = 1;
-	cfg->archive.sqlite.db = "/var/lib/wslogd.db";
+	cfg->archive.sqlite.db = WS_CONF_SQLITE_DB;
 
 	/* Wunderstation */
 	cfg->wunder.enabled = 0;

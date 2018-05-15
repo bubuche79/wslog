@@ -12,6 +12,7 @@
 
 #include "board.h"
 #include "dataset.h"
+#include "conf.h"
 #include "wsview.h"
 
 static int board = 0;
@@ -24,12 +25,10 @@ struct lua_table
 };
 
 static void
-db_open()
+db_open(const char *path)
 {
-	if (db == NULL) {
-		sqlite3_initialize();
-		sqlite3_open_v2("/var/lib/wslog/wslogd.db", &db, SQLITE_OPEN_READONLY, NULL);
-	}
+	sqlite3_initialize();
+	sqlite3_open_v2(path, &db, SQLITE_OPEN_READONLY, NULL);
 }
 
 static void
@@ -110,7 +109,9 @@ wsview_query(lua_State *L, const char *sql, time_t lower, time_t upper)
 	sqlite3_stmt *stmt;
 
 	/* Open database */
-	db_open();
+	if (db == NULL) {
+		db_open(WS_CONF_SQLITE_DB);
+	}
 
 	sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
 	sqlite3_bind_int64(stmt, 1, lower);
@@ -144,7 +145,7 @@ wsview_archive(lua_State *L)
 		  "windchill, "
 		  "heat_index "
 		"FROM ws_archive "
-		"WHERE ? <= time AND time < ? "
+		"WHERE ? < time AND time <= ? "
 		"ORDER BY time";
 
 	return wsview_query(L, sql, lower, upper);
@@ -159,7 +160,7 @@ wsview_aggr_day(lua_State *L, time_t lower, time_t upper)
 		  "MAX(hi_temp) AS hi_temp, "
 		  "MAX(hi_wind_speed) AS hi_wind_speed "
 		"FROM ws_archive "
-		"WHERE ? <= time AND time < ?";
+		"WHERE ? < time AND time <= ?";
 
 	return wsview_query(L, sql, lower, upper);
 }
@@ -176,9 +177,9 @@ wsview_aggr_month(lua_State *L, time_t lower, time_t upper)
 		  "MAX(hi_wind_speed) AS hi_wind_speed, "
 		  "AVG(barometer) AS barometer "
 		"FROM ws_archive "
-		"WHERE ? <= time AND time < ? "
-		"GROUP BY date(time, 'unixepoch', 'localtime') "
-		"ORDER BY date(time, 'unixepoch', 'localtime')";
+		"WHERE ? < time AND time <= ? "
+		"GROUP BY date(time - 1, 'unixepoch', 'localtime') "
+		"ORDER BY date(time - 1, 'unixepoch', 'localtime')";
 
 	return wsview_query(L, sql, lower, upper);
 }
@@ -193,13 +194,13 @@ wsview_aggr_year(lua_State *L, time_t lower, time_t upper)
 		  "SUM(rain_fall) AS rain, "
 		  "MAX(rain_fall) AS rain_24h "
 		"FROM ( "
-		  "SELECT date(time, 'unixepoch', 'localtime') AS day, "
+		  "SELECT date(time - 1, 'unixepoch', 'localtime') AS day, "
 		    "MIN(lo_temp) AS lo_temp, "
 		    "MAX(hi_temp) AS hi_temp, "
 		    "SUM(rain_fall) AS rain_fall "
 		  "FROM ws_archive "
-		  "WHERE ? <= time AND time < ? "
-		  "GROUP BY date(time, 'unixepoch', 'localtime') "
+		  "WHERE ? < time AND time <= ? "
+		  "GROUP BY date(time - 1, 'unixepoch', 'localtime') "
 		") q "
 		"GROUP BY substr(day, 1, 7) "
 		"ORDER BY substr(day, 1, 7)";
@@ -325,6 +326,16 @@ wsview_wind_dir(lua_State *L)
 }
 
 static int
+wsview_open(lua_State *L)
+{
+	const char *path = lua_tostring(L, 1);
+
+	db_open(path);
+
+	return 0;
+}
+
+static int
 wsview_close(lua_State *L)
 {
 	if (board) {
@@ -350,6 +361,7 @@ luaopen_wsview(lua_State *L)
 		{ "wind_dir", wsview_wind_dir },
 		{ "aggregate", wsview_aggregate },
 		{ "archive", wsview_archive },
+		{ "open", wsview_open },
 		{ "close", wsview_close },
 		{ NULL, NULL }
 	};
