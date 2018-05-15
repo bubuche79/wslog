@@ -8,7 +8,7 @@ ws23xx_SOURCES = \
 	util.h
 
 ws23xx_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../common -I..
+	$(inc_CPPFLAGS) -I..
 
 ws23xx_CFLAGS = \
 	$(inc_CFLAGS)

@@ -53,7 +53,7 @@ nobase_pkginclude_HEADERS += \
 endif
 
 libws_la_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../common -I..
+	$(inc_CPPFLAGS) -I..
 
 libws_la_CFLAGS = \
 	$(inc_CFLAGS)

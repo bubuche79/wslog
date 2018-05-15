@@ -6,7 +6,7 @@ vantage_SOURCES = \
 	main.c
 
 vantage_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../common -I..
+	$(inc_CPPFLAGS) -I..
 
 vantage_CFLAGS = \
 	$(inc_CFLAGS)

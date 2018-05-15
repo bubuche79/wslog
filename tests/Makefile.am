@@ -9,7 +9,7 @@ check_build_SOURCES = \
 	check_util.c \
 	check_vantage.c
 
-check_build_CPPFLAGS = -I../src/common -I../src
+check_build_CPPFLAGS = -I../src
 
 check_build_LDADD = -L../src/libws -lws -lcheck
 

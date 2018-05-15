@@ -5,7 +5,7 @@ luadir = $(datadir)/lua/5.3
 wwwdir = $(localstatedir)/www
 
 AM_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../common -I.. -I../wslogd
+	$(inc_CPPFLAGS) -I.. -I../wslogd
 
 AM_CFLAGS = \
 	$(inc_CFLAGS)

@@ -1,7 +1,7 @@
 include ../include.mk
 
 AM_CPPFLAGS = \
-	$(inc_CPPFLAGS) -I../common -I..
+	$(inc_CPPFLAGS) -I..
 
 AM_CFLAGS = \
 	$(inc_CFLAGS)
