@@ -270,6 +270,14 @@ static const struct ws_measure mem_addr[] =
 static const struct ws_measure *mem_id[array_size(mem_addr)];
 
 static void
+bufncpy(char *dest, const char *src, size_t n)
+{
+	strncpy(dest, src, n - 1);
+	dest[n-1] = 0;
+
+}
+
+static void
 usage(FILE *out, int status)
 {
 	fprintf(out, "Usage: " PROGNAME " [-h] [-V] [-D] [-d ms] <command> [<args>]\n");
@@ -370,7 +378,7 @@ decode_str_bit(const uint8_t *buf, int type, char *s, size_t len, size_t offset)
 	const struct ws_type *t = &types[type];
 	uint8_t v = ws23xx_bit(buf, NULL, offset, t->bit.b);
 
-	strncpy(s, v ? t->bit.set : t->bit.unset, len);
+	bufncpy(s, v ? t->bit.set : t->bit.unset, len);
 
 	return s;
 }
@@ -390,7 +398,7 @@ decode_str_text(const uint8_t *buf, int type, char *s, size_t len, size_t offset
 	if (t->text.a[i].value == NULL) {
 		snprintf(s, len, "%x (%s)", v, "error");
 	} else {
-		strncpy(s, t->text.a[i].value, len);
+		bufncpy(s, t->text.a[i].value, len);
 	}
 
 	return s;
@@ -520,7 +528,7 @@ ws23xx_desc(const struct ws_type *t, char *desc, size_t len)
 		break;
 
 	default:
-		strncpy(desc, t->desc, len);
+		bufncpy(desc, t->desc, len);
 		break;
 	}
 }
