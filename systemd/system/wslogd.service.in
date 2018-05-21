@@ -1,9 +1,9 @@
 [Unit]
-Description=Weather station logger
+Description=Weather Station Logger
 
 [Service]
 User=wslog
-ExecStart=/usr/bin/wslogd
+ExecStart=@prefix@/bin/wslogd
 ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]

@@ -31,8 +31,8 @@ AM_CONDITIONAL([USE_VANTAGE], [test "x$enable_vantage" = "xyes"])
 
 # Add WS23XX device support
 AC_ARG_ENABLE([ws23xx],
-	[AS_HELP_STRING([--disable-ws23xx], [Disable La Crosse Technology WS23XX support])],
-	[], [enable_ws23xx=yes])
+	[AS_HELP_STRING([--enable-ws23xx], [Enable La Crosse Technology WS23XX support])],
+	[], [enable_ws23xx=no])
 
 AS_IF([test "x$enable_ws23xx" != "xno"],
 	[AC_DEFINE(HAVE_WS23XX, 1, [La Crosse Technology WS23XX support])])
@@ -69,4 +69,6 @@ AC_CONFIG_FILES([Makefile
                  src/wsview/Makefile
                  tests/Makefile
                  ])
+AC_CONFIG_FILES(systemd/system/wslogd.service)
+
 AC_OUTPUT
