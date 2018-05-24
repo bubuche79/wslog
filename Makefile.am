@@ -1,4 +1,4 @@
-SUBDIRS = docs src
+SUBDIRS = src
 
 if USE_LIBCHECK
 SUBDIRS += tests

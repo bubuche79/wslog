@@ -64,8 +64,13 @@ wslogd_SOURCES = \
 	worker.h \
 	wslogd.h
 
+wslogd_CFLAGS = \
+	@SQLITE3_CFLAGS@ @LIBCURL_CFLAGS@
+
 wslogd_LDADD = \
-	-L. -lwslog -L../libws -lws -lsqlite3 -lcurl -lm -lrt -lpthread
+	-L. -lwslog -L../libws -lws \
+	@SQLITE3_LIBS@ @LIBCURL_LIBS@ \
+	-lm -lrt -lpthread
 
 EXTRA_wslogd_DEPENDENCIES = \
 	libwslog.a

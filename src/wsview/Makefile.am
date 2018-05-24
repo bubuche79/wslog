@@ -1,7 +1,9 @@
 include ../include.mk
 
-cluadir = $(libdir)/lua/5.3
-luadir = $(datadir)/lua/5.3
+LUA_MAJOR = 5.3
+
+cluadir = $(libdir)/lua/$(LUA_MAJOR)
+luadir = $(datadir)/lua/$(LUA_MAJOR)
 wwwdir = $(localstatedir)/www
 
 AM_CPPFLAGS = \
@@ -21,11 +23,16 @@ wsview_la_SOURCES = \
 	wsview.c \
 	wsview.h
 
+wsview_la_CFLAGS = \
+	@LUA_CFLAGS@ @SQLITE3_CFLAGS@
+
 wsview_la_LDFLAGS = \
 	-module -avoid-version
 
 wsview_la_LIBADD = \
-	-L../libws -lws -llua -lsqlite3 -lrt -lpthread
+	-L../libws -lws \
+	@LUA_LIBS@ @SQLITE3_LIBS@ \
+	-lm -lrt -lpthread 
 
 nobase_dist_lua_DATA = \
 	wsview/*.lua \
