@@ -1,0 +1,30 @@
+Source: wslog
+Section: misc
+Priority: optional
+Build-Depends: debhelper (>= 9),
+ pkg-config,
+ libsqlite3-dev,
+ libcurl-dev,
+ liblua5.3-dev
+Standards-Version: 4.1.2
+Maintainer: Gaëtan Buchetet <gae.buchetet@free.fr>
+
+Package: wslog
+Architecture: any
+Depends: libsqlite3-0,
+ libcurl4
+ ${misc:Depends}
+Description: weather station logger
+ This is an utility suite used to communicate with and collect data from weather
+ stations.
+
+Package: wslog-cgi
+Architecture: any
+Depends: wslog (= ${binary:Version}),
+ lua5.3
+ ${misc:Depends}
+Description: web interface for weather logger daemon
+
+Package: wslog-dev
+Architecture: all
+Description: development files for wslog
