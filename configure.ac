@@ -16,7 +16,7 @@ AC_PROG_INSTALL
 PKG_CHECK_MODULES([LIBCURL], [libcurl])
 PKG_CHECK_MODULES([SQLITE3], [sqlite3])
 PKG_CHECK_MODULES([CHECK], [check],, [with_check=no])
-PKG_CHECK_MODULES([LUA], [lua-5.3],, [with_lua=no])
+PKG_CHECK_MODULES([LUA], [lua-5.1],, [with_lua=no])
 
 AM_CONDITIONAL([USE_LIBCHECK], [test "x$with_check" != "xno"])
 

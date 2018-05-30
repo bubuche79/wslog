@@ -1,6 +1,6 @@
 include ../include.mk
 
-LUA_MAJOR = 5.3
+LUA_MAJOR = 5.1
 
 cluadir = $(libdir)/lua/$(LUA_MAJOR)
 luadir = $(datadir)/lua/$(LUA_MAJOR)
@@ -39,7 +39,8 @@ nobase_dist_lua_DATA = \
 	wsview/sgi/*.lua
 
 nobase_dist_www_DATA = \
-	wsview-static/*.*
+	wsview-static/*.* \
+	wsview-static/bootstrap/*.*
 
 nobase_dist_www_SCRIPTS = \
 	cgi-bin/*

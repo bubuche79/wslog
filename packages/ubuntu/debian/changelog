@@ -1,5 +1,5 @@
 wslog (0.8.4-1) unstable; urgency=medium
 
-  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+  * Initial release
 
  -- Gaëtan Buchetet <gae.buchetet@free.fr>  Tue, 01 May 2018 09:16:00 +0000

@@ -9,7 +9,7 @@ function template.header()
 <html>
 <head>
  <meta charset="utf-8">
- <link type="text/css" rel="stylesheet" href="/luci-static/bootstrap/cascade.css">
+ <link type="text/css" rel="stylesheet" href="/wsview-static/bootstrap/cascade.css">
  <link type="text/css" rel="stylesheet" href="/wsview-static/wsview.css">
  <script type="text/javascript" src="/wsview-static/wsview.js"></script>
 </head>

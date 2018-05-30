@@ -9,7 +9,7 @@
  * Weather station configuration.
  */
 
-#define WS_CONF_SQLITE_DB "/var/lib/wslogd.db"
+#define WS_CONF_SQLITE_DB "/var/lib/wslog/wslogd.db"
 
 struct ws_conf
 {

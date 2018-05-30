@@ -367,7 +367,11 @@ luaopen_wsview(lua_State *L)
 	};
 
 	lua_newtable(L);
+#if LUA_VERSION_NUM < 502
+	luaL_register(L, NULL, wslib);
+#else
 	luaL_setfuncs(L, wslib, 0);
+#endif
 
 	return 1;
 }

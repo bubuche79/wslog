@@ -8,7 +8,6 @@ case "$1" in
         adduser --quiet \
                 --system \
                 --group \
-                --ingroup dialout \
                 --no-create-home \
                 --disabled-password \
                 --home /var/lib/wslog \
