@@ -75,6 +75,10 @@ wslogd_LDADD = \
 EXTRA_wslogd_DEPENDENCIES = \
 	libwslog.a
 
+dist_man_MANS = \
+	wslogd.1 \
+	wslogd.conf.5
+
 dist_sysconf_DATA = \
 	wslogd.conf
 

@@ -1,0 +1,65 @@
+.Dd May 31, 2018
+.Dt WSLOGD 1
+.Os
+.Sh NAME
+.Nm wslogd
+.Nd weather station logger daemon
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl V
+.Op Fl c Ar path
+.Op Fl D
+.Op Fl i Ar freq
+.Sh DESCRIPTION
+The 
+.Nm
+command starts the weather station logger.
+.Pp
+It connects to the device, fetches weather data, and sends it to various
+locations, like a SQLite database, or a Weather Underground account.
+.Pp
+When the daemon reads from the device, it requests an exclusive lock using
+the
+.Xr flock 2
+function, and releases that lock on completion. That is, this is
+safe to use tools with the same locking mechanism while the daemon is running,
+like all utilities from the 'wslog' suite. 
+.Pp
+See
+.Xr wslogd.conf 5
+for more details on configuration.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl c Ar path
+Path of
+.Nm
+configuration file. Default: 
+.Pa /etc/wslogd.conf .
+.It Fl D
+Do not modify anything; just log what would be done.
+.Pp
+In dry mode, nothing is committed to database backends, and remote sites are not
+updated with new data. Should be used for testing purpose only. 
+.It Fl i Ar freq
+Set archive frequency to
+.Ar freq
+, in seconds.
+.Pp
+If set, it overrides the 'archive.freq' configuration parameter.
+.It Fl h
+Display
+.Nm
+short help and exit.
+.It Fl V
+Display the
+.Nm
+version and exit.
+.El
+.Sh SEE ALSO
+.Xr wslogd.conf 5 ,
+.Xr vantage 1
+.Sh WSLOG
+Part of the
+.Xr wslog 1
+suite.

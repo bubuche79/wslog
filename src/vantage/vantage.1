@@ -1,0 +1,113 @@
+.Dd May 31, 2018
+.Dt VANTAGE 1
+.Os
+.Sh NAME
+.Nm vantage
+.Nd vantage console utility
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl d Ar device
+.Ar command
+.Op Ar args
+.Sh DESCRIPTION
+The
+.Nm
+command is a low-level tool to send commands to Vantage Pro\[tm], Vantage
+Pro2\[tm] and Vantage Vue\[tm] consoles.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl d Ar device
+The serial console device. Default:
+.Pa /dev/ttyUSB0
+.
+.It Fl h
+Display
+.Nm
+short help and exit.
+.El
+.Sh VANTAGE COMMANDS
+.Bl -tag -width Ds
+.It Cm info
+Display console info.
+.It Cm test
+Test connectivity.
+'wrd'::
+Display weather station type.
+.It Cm rxcheck
+Display console diagnostic report.
+.Pp
+The console reports the following values: total packets received, total packets
+missed, number of resynchronizations, the largest number of packets received in
+a row, and the number of CRC errors detected.
+.Pp
+All values are recorded since midnight, or since the diagnostics are cleared
+manually.
+.It Cm ver
+Display firmware date.
+.Pp
+The date code is sent in the following format: "Mmm dd yyyy".
+.It Cm nver
+Display firmware version.
+.Pp
+The version sent in the following format: "x.xx".
+.It Cm settime Op Ar time
+Set time and date on console.
+.Pp
+The
+.Ar time
+argument shall have the "YYYY-MM-DDThh:mm:ss" format. When not specified, the
+system date and time is used.
+.It Cm gettime
+Get console time and date.
+.It Cm setper Ar min
+Set archive interval, in minutes.
+.Pp
+It sets the console archive interval. This is the interval that archive data
+records are recorded into the archive memory. The smaller this value is, the
+faster the archive memory will fill up. Valid values are 1, 5, 10, 15, 30, 60,
+and 120.
+.Pp
+This command automatically clears the archive memory. Use the 'clrlog' command
+to clear the archive memory only.
+.It Cm lps Op Ar n
+Display current weather.
+.It Cm dmp Op Ar n
+Download records.
+.It Cm dmpaft Op Ar time
+Download records after specified date and time.
+.Pp
+The
+Ar time
+format is "YYYY-MM-DDThh:mm".
+.It Cm getee Ar path
+Dump 4K EEPROM content into
+.Ar path
+file.
+.It Cm eebrd Ar addr Ar len
+Read binary data from EEPROM.
+.It Cm clrlog
+Clear archive data.
+.It Cm clrhighs Op Fl dmy
+Clear all daily
+.Fl ( d ) ,
+monthly
+.Fl ( m )
+or yearly
+.Fl ( y )
+high values.
+.It Cm clrlows Op Fl dmy
+Clear all daily
+.Fl ( d ) ,
+monthly
+.Fl ( m )
+or yearly
+.Fl ( y )
+low values.
+.El
+.Sh SEE ALSO
+.Xr wslogd 1
+.Sh WSLOG
+Part of the
+.Xr wslog 1
+suite.

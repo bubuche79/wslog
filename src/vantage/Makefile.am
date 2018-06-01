@@ -13,3 +13,6 @@ vantage_CFLAGS = \
 
 vantage_LDADD = \
 	-L../libws -lws
+
+dist_man_MANS = \
+	vantage.1
