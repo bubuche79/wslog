@@ -3,7 +3,7 @@ Description=Weather Station Logger
 
 [Service]
 User=wslog
-ExecStart=@prefix@/bin/wslogd
+ExecStart=/usr/bin/wslogd
 ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]

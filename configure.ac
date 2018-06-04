@@ -79,6 +79,4 @@ AC_CONFIG_FILES([
 	tests/Makefile
 ])
 
-AC_CONFIG_FILES(systemd/system/wslogd.service)
-
 AC_OUTPUT
