@@ -8,10 +8,10 @@
 #include <syslog.h>
 
 #include "libws/defs.h"
-#include "libws/util.h"
 #include "libws/vantage/util.h"
 #include "libws/vantage/vantage.h"
 
+#include "service/util.h"
 #include "driver/vantage.h"
 #include "conf.h"
 
@@ -81,41 +81,6 @@ vantage_unlock(int fd)
 error:
 	return -1;
 }
-
-#if 0
-static time_t
-vantage_rec_last(int fd)
-{
-	ssize_t sz;
-	time_t after;
-	struct vantage_dmp buf;
-
-	/*
-	 * Hopefully, there is one archive record in the last archive record
-	 * period. If this is not the case, try again with max archive record
-	 * delay (120 minutes). And then fall back on current timestamp (there
-	 * is no archive record).
-	 */
-	after = time(NULL) - cfg.ar_period * 60;
-
-	do {
-		if ((sz = vantage_dmpaft(fd, &buf, 1, after)) == -1) {
-			syslog(LOG_ERR, "vantage_dmpaft: %m");
-			goto error;
-		}
-
-		if (sz > 0) {
-			after = buf.time;
-		}
-		// TODO
-	} while (sz > 0);
-
-	return after;
-
-error:
-	return -1;
-}
-#endif
 
 static void
 conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
@@ -329,7 +294,7 @@ vantage_get_itimer(struct itimerspec *it, enum ws_timer type)
 //		syslog(LOG_NOTICE, "last archive: %s", ftime);
 
 		// TODO: check that archives are generated at rounded timestamps
-		ws_itimer_delay(it, cfg.ar_period * 60, ARCHIVE_DELAY);
+		itimer_setdelay(it, cfg.ar_period * 60, ARCHIVE_DELAY);
 	} else {
 		errno = EINVAL;
 		goto error;
@@ -394,6 +359,46 @@ vantage_get_archive(struct ws_archive *p, size_t nel, time_t after)
 	}
 
 	return sz;
+
+error:
+	(void) vantage_unlock(fd);
+
+	return -1;
+}
+
+int
+vantage_time(time_t *time)
+{
+	if (vantage_lock(fd) == -1) {
+		goto error;
+	}
+
+	if (vantage_gettime(fd, time) == -1) {
+		syslog(LOG_ERR, "vantage_gettime: %m");
+		goto error;
+	}
+
+	return vantage_unlock(fd);
+
+error:
+	(void) vantage_unlock(fd);
+
+	return -1;
+}
+
+int
+vantage_adjtime(time_t time)
+{
+	if (vantage_lock(fd) == -1) {
+		goto error;
+	}
+
+	if (vantage_settime(fd, time) == -1) {
+		syslog(LOG_ERR, "vantage_settime: %m");
+		goto error;
+	}
+
+	return vantage_unlock(fd);
 
 error:
 	(void) vantage_unlock(fd);

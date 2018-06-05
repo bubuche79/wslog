@@ -156,6 +156,11 @@ conf_init(struct ws_conf *cfg)
 	cfg->driver.virt.io_delay = 100;
 #endif
 
+	/* Time synchronization */
+	cfg->sync.enabled = 1;
+	cfg->sync.freq = 86400;
+	cfg->sync.max_drift = 2;
+
 	/* Archive */
 	cfg->archive.freq = 0;
 	cfg->archive.delay = 15;
@@ -215,7 +220,17 @@ conf_decode(void *p, const char *key, const char *value)
 		} else {
 			errno = EINVAL;
 		}
-	} else if (!strncmp(key, "archive.", 4)) {
+	} else if (!strncmp(key, "sync.", 4)) {
+		if (!strcmp(key, "sync.enabled")) {
+			ws_getint(value, &cfg->sync.enabled);
+		} else if (!strcmp(key, "sync.freq")) {
+			ws_getint(value, &cfg->sync.freq);
+		} else if (!strcmp(key, "sync.max_drift")) {
+			ws_getint(value, &cfg->sync.max_drift);
+		} else {
+			errno = EINVAL;
+		}
+	} else if (!strncmp(key, "archive.", 8)) {
 		if (!strcmp(key, "archive.freq")) {
 			ws_getint(value, &cfg->archive.freq);
 		} else if (!strcmp(key, "archive.delay")) {

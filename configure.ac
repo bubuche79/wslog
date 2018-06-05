@@ -33,10 +33,10 @@ AM_CONDITIONAL([USE_VANTAGE], [test "x$enable_vantage" != "xno"])
 
 # Add WS23XX device support
 AC_ARG_ENABLE([ws23xx],
-	AS_HELP_STRING([--enable-ws23xx], [Enable La Crosse Technology WS23XX support]),,
-	[enable_ws23xx=no])
+	AS_HELP_STRING([--disable-ws23xx], [Disable La Crosse Technology WS23XX support]),,
+	[enable_ws23xx=yes])
 
-AS_IF([test "x$enable_ws23xx" = "xyes"], [
+AS_IF([test "x$enable_ws23xx" != "xno"], [
 	AC_DEFINE(HAVE_WS23XX, 1, [La Crosse Technology WS23XX support])
 ])
 
@@ -44,10 +44,10 @@ AM_CONDITIONAL([USE_WS23XX], [test "x$enable_ws23xx" = "xyes"])
 
 # Add virtual device support
 AC_ARG_ENABLE([virt],
-	[AS_HELP_STRING([--enable-virt], [Enable virtual device support])],,
+	AS_HELP_STRING([--enable-virt], [Enable virtual device support]),,
 	[enable_virt=no])
 
-AS_IF([test "x$enable_virt" = "xyes"],
+AS_IF([test "x$enable_virt" = "xyes"], [
 	AC_DEFINE(HAVE_VIRT, 1, [Virtual device support])
 ])
 

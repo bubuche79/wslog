@@ -59,6 +59,13 @@ struct ws_conf
 	struct
 	{
 		int enabled;			/* Enabled flag */
+		int freq;			/* Synchronization frequency, in seconds */
+		int max_drift;			/* Max drift */
+	} sync;
+
+	struct
+	{
+		int enabled;			/* Enabled flag */
 		int https;			/* HTTPS flag */
 		const char *station;		/* Station id */
 		const char *password;		/* Account password */

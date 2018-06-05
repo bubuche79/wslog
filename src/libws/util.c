@@ -319,16 +319,3 @@ error:
 	}
 	return -1;
 }
-
-void
-ws_itimer_delay(struct itimerspec *it, long freq, long delay)
-{
-	time_t now;
-
-	time(&now);
-
-	it->it_interval.tv_nsec = 0;
-	it->it_interval.tv_sec = freq;
-	it->it_value.tv_sec = (freq - now % freq) + delay;
-	it->it_value.tv_nsec = 0;
-}

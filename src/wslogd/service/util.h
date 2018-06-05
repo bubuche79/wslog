@@ -8,7 +8,8 @@ extern "C" {
 #endif
 
 void itimer_set(struct itimerspec* it, long sec);
-void itimer_add_delay(struct itimerspec *it, const struct itimerspec *ref, long delay);
+void itimer_delay(struct itimerspec *it, const struct itimerspec *ref, long delay);
+void itimer_setdelay(struct itimerspec *it, long freq, long delay);
 
 #ifdef __cplusplus
 }

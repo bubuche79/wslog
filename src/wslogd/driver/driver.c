@@ -177,6 +177,59 @@ drv_get_archive(struct ws_archive *ar, size_t nel, time_t after)
 	return ret;
 }
 
+int
+drv_time(time_t *time)
+{
+	ssize_t ret;
+
+	switch (driver) {
+#ifdef HAVE_VANTAGE
+	case VANTAGE:
+		ret = vantage_time(time);
+		break;
+#endif
+#ifdef HAVE_VIRT
+	case VIRT:
+		ret = virt_time(time);
+		break;
+#endif
+	default:
+		errno = ENOTSUP;
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
+/**
+ * Set console date and time.
+ */
+int
+drv_settime(time_t time)
+{
+	ssize_t ret;
+
+	switch (driver) {
+#ifdef HAVE_VANTAGE
+	case VANTAGE:
+		ret = vantage_adjtime(time);
+		break;
+#endif
+#ifdef HAVE_VIRT
+	case VIRT:
+		ret = virt_adjtime(time);
+		break;
+#endif
+	default:
+		errno = ENOTSUP;
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
 /**
  * Set archive interval timer.
  *

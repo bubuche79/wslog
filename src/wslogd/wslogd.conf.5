@@ -16,55 +16,86 @@ The syslog facility. Valid facility names are:
 (the default),
 .Cm local0
 to
-.Cm local7
+.Cm local7 .
 .It Cm log_level
-Restrict logging to the specified level. Valid levels are: 'err', 'warning',
-or 'notice', 'info' and 'debug'. Default: notice.
+Restrict logging to the specified level. Valid levels are: 
+.Cm err ,
+.Cm warning ,
+.Cm notice
+(the default),
+.Cm info
+and
+.Cm debug .
 .El
 .Sh STATION OPTIONS
 .Bl -tag -width Ds
-.It Cm station.driver (string)
-The console driver. Shall be one of: 'vantage', 'ws23xx', 'virt'.
+.It Cm station.driver
+The console driver. Shall be one of:
+.Cm vantage , 
+.Cm ws23xx
+and
+.Cm virt.
+.Pp
+ Pease refer to the section below for more details on console specific options.
+ Note that some drivers may not be available, depending on options used at
+ compilation time.
+.It Cm sync.enabled
+Turn on clock time synchronization between console and the system. Default: 1.
+.It Cm sync.freq
+Number of seconds between synchronization checks. Default: 86400.
+.It Cm sync.max_drift
+Maximum drift, in seconds, allowed between console time and system time. The
+console time is adjusted when it is beyond the limit. Default: 2.
 .El
 .Sh VANTAGE DRIVER OPTIONS
 .Bl -tag -width Ds
-.It Cm driver.vantage.tty (string)
+.It Cm driver.vantage.tty
 The serial console device. Default:
 .Pa /dev/ttyUSB0 .
-.It Cm driver.vantage.bauds (int)
-The serial bauds rate. Valid values are 1200, 2400, 4800, 9600, 14400,
-and 19200. The value shall match the console setup value. Default: 19200.
+.It Cm driver.vantage.bauds
+The serial bauds rate. Valid values are
+.Cm 1200 ,
+.Cm 2400 ,
+.Cm 4800 ,
+.Cm 9600 ,
+.Cm 14400 ,
+and
+.Cm 19200
+(the default). The value shall match the console setup value.
 .El
 .Sh WS23XX DRIVER OPTIONS
 .Bl -tag -width Ds
-.It Cm driver.ws23xx.tty (string)
+.It Cm driver.ws23xx.tty
 The serial console device. Default:
 .Pa /dev/ttyUSB0 .
 .El
 .Sh VIRTUAL DRIVER OPTIONS
 The virual console should be used for testing purpose only.
 .Bl -tag -width Ds
-.It Cm driver.virt.hw_archive (int)
+.It Cm driver.virt.hw_archive
 Turn on hardware archive. Default: 1.
-.It Cm driver.virt.io_delay (int)
+.It Cm driver.virt.io_delay
 Virtual I/O delay, in milliseconds. Default: 100.
 .El
 .Sh ARCHIVE OPTIONS
 .Bl -tag -width Ds
-.It Cm archive.freq (int)
+.It Cm archive.freq
 Archive frequency, in seconds. Default: 0.
 .Pp
-When the value is set to zero, the *wslogd* daemon probes the device to get
-the hardware archive interval, when supported. 1800 is used otherwise.
-.It Cm archive.delay (int)
+When the value is set to zero, the
+.Xr wslogd 1 
+daemon probes the device to get its hardware archive interval, and use the value.
+If hardware archive is not supported by the console, then software archive is
+used (every 1800 seconds).
+.It Cm archive.delay
 Delay, in seconds, before fetching new data from the device. Default: 15.
 .Pp
 That delay allows the console to internally build and write archive data. For
 example, if archive interval is 30 minutes and the delay is 15 seconds, then
 console data will be requested at 00:00:15, 00:30:15, etc. 
-.It Cm archive.sqlite.enabled (int)
+.It Cm archive.sqlite.enabled
 Enable SQLite database backend. Default: 1.
-.It Cm archive.sqlite.db (string)
+.It Cm archive.sqlite.db
 Path to the SQLite database. Default:
 .Pa /var/lib/wslog/wslogd.db .
 .Pp
@@ -75,21 +106,21 @@ exist. It is not recommended to create the file by yourself.
 .El
 .Sh WEATHER UNDERGROUND SERVICE OPTIONS
 .Bl -tag -width Ds
-.It Cm wunder.enabled (int)
+.It Cm wunder.enabled
 Enable report to Weather Underground. Default: 0.
-.It Cm wunder.https (int)
+.It Cm wunder.https
 Use HTTPS to report data. Default: 1.
 .Pp
 Unless you have good reasons to do so, it is not recommended to turn of HTTPS,
 as
 .Xr wslogd 1
 would send your password in clear.
-.It Cm wunder.station (string)
+.It Cm wunder.station
 The Weather Underground station id (mandatory).
-.It Cm wunder.password (string)
+.It Cm wunder.password
 The Weather Underground password (mandatory).
-.It Cm wunder.freq (int)
-Default: 300
+.It Cm wunder.freq
+Default: 300.
 .El
 .Sh SEE ALSO
 .Xr wslogd 1

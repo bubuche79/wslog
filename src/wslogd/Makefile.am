@@ -12,9 +12,11 @@ libwslog_a_SOURCES = \
 	board.c \
 	conf.c \
 	driver/driver.c \
+	service/util.c \
 	conf.h \
 	board.h \
-	driver/driver.h
+	driver/driver.h \
+	service/util.c
 
 if USE_VANTAGE
 libwslog_a_SOURCES += \
@@ -50,6 +52,7 @@ wslogd_SOURCES = \
 	db/sqlite.c \
 	service/archive.c \
 	service/sensor.c \
+	service/sync.c \
 	service/util.c \
 	service/wunder.c \
 	worker.c \
@@ -59,6 +62,7 @@ wslogd_SOURCES = \
 	db/sqlite.h \
 	service/archive.h \
 	service/sensor.h \
+	service/sync.h \
 	service/util.h \
 	service/wunder.h \
 	worker.h \

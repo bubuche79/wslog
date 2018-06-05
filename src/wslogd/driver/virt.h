@@ -24,6 +24,9 @@ int virt_get_itimer(struct itimerspec *it, enum ws_timer type);
 int virt_get_loop(struct ws_loop *p);
 ssize_t virt_get_archive(struct ws_archive *p, size_t nel, time_t after);
 
+int virt_time(time_t *time);
+int virt_adjtime(time_t time);
+
 #ifdef __cplusplus
 }
 #endif

@@ -8,9 +8,9 @@
 #include <errno.h>
 
 #include "libws/defs.h"
-#include "libws/util.h"
 
 #include "conf.h"
+#include "service/util.h"
 #include "driver/driver.h"
 #include "driver/virt.h"
 
@@ -89,10 +89,12 @@ virt_init(void)
 	hw_archive = confp->driver.virt.hw_archive;
 	delay = confp->driver.virt.io_delay;
 
-	if (delay== 0) {
+	if (delay == 0) {
 		delay = IO_DELAY;
 	}
-	ws_time_ms(&io_delay, delay);
+
+	io_delay.tv_sec = delay / 1000 ;
+	io_delay.tv_nsec = delay * 1000000 - io_delay.tv_sec;
 
 	if (virt_io_delay() == -1) {
 		return -1;
@@ -125,11 +127,11 @@ virt_get_itimer(struct itimerspec *it, enum ws_timer type)
 	switch (type)
 	{
 	case WS_ITIMER_LOOP:
-		ws_itimer_delay(it, LOOP_INTERVAL, 0);
+		itimer_setdelay(it, LOOP_INTERVAL, 0);
 		ret = 0;
 		break;
 	case WS_ITIMER_ARCHIVE:
-		ws_itimer_delay(it, ARCHIVE_INTERVAL, ARCHIVE_DELAY);
+		itimer_setdelay(it, ARCHIVE_INTERVAL, ARCHIVE_DELAY);
 		ret = 0;
 		break;
 	default:
@@ -169,4 +171,29 @@ virt_get_archive(struct ws_archive *p, size_t nel, time_t after)
 	}
 
 	return i;
+}
+
+int
+virt_time(time_t *t)
+{
+	if (virt_io_delay() == -1) {
+		return -1;
+	}
+
+	time(t);
+
+	return 0;
+}
+
+int
+virt_adjtime(time_t t)
+{
+	if (virt_io_delay() == -1) {
+		return -1;
+	}
+
+	errno = ENOTSUP;
+	syslog(LOG_WARNING, "Virtual device: %m");
+
+	return -1;
 }

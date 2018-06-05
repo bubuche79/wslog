@@ -38,6 +38,8 @@ int drv_get_loop(struct ws_loop *p);
 
 ssize_t drv_get_archive(struct ws_archive *p, size_t nel, time_t after);
 
+int drv_time(time_t *time);
+int drv_settime(time_t time);
 int drv_set_artimer(long itmin, long next);
 
 #ifdef __cplusplus

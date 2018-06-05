@@ -21,6 +21,7 @@
 #include "service/util.h"
 #include "service/archive.h"
 #include "service/sensor.h"
+#include "service/sync.h"
 #include "service/wunder.h"
 #include "worker.h"
 
@@ -212,6 +213,9 @@ threads_init(void)
 
 	threads_nel = 2;
 
+	if (confp->sync.enabled) {
+		threads_nel++;
+	}
 	if (confp->wunder.enabled) {
 		threads_nel++;
 	}
@@ -222,6 +226,20 @@ threads_init(void)
 	}
 
 	i = 0;
+
+	/* Time synchronization */
+	if (confp->sync.enabled) {
+		if (sync_init(&threads[i].w_itimer) == -1) {
+			goto error;
+		}
+		threads[i].w_signo = signo(i);
+		threads[i].w_action = sync_timer;
+		threads[i].w_destroy = sync_destroy;
+
+		i++;
+	} else {
+		syslog(LOG_WARNING, "Console time synchronization disabled");
+	}
 
 	/* Sensor */
 	if (sensor_init(&threads[i].w_itimer) == -1) {
