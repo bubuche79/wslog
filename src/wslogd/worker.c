@@ -190,12 +190,12 @@ nloops_count()
 	long long duration;
 
 	/* Sensor interval */
-	step = timespec_ms(&threads[0].w_itimer.it_interval);
+	step = timespec_ms(&threads[1].w_itimer.it_interval);
 
 	/* Longest duration */
 	duration = 0;
 
-	for (i = 1; i < threads_nel; i++) {
+	for (i = 2; i < threads_nel; i++) {
 		long long d = timespec_ms(&threads[i].w_itimer.it_interval);
 
 		if (duration < d) {
