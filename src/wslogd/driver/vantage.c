@@ -97,7 +97,7 @@ conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 		p->wl_mask |= WF_LO_TEMP;
 		p->lo_temp = vantage_temp(d->lo_temp, 1);
 	}
-	if (d->hi_temp != INT16_MAX) {
+	if (d->hi_temp != INT16_MIN) {
 		p->wl_mask |= WF_HI_TEMP;
 		p->hi_temp = vantage_temp(d->hi_temp, 1);
 	}

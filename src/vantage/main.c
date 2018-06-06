@@ -24,28 +24,28 @@ usage(FILE *out, int status)
 	fprintf(out, "Usage: " PROGNAME " [-h] [-d dev] <command> [<args>]\n");
 	fprintf(out, "\n");
 	fprintf(out, "Options:\n");
-	fprintf(out, "   -h              display this\n");
-	fprintf(out, "   -d device       TTY console device\n");
+	fprintf(out, "  -h                     display this\n");
+	fprintf(out, "  -d device              TTY console device\n");
 	fprintf(out, "Available " PROGNAME " commands:\n");
-	fprintf(out, "   info            display console info\n");
+	fprintf(out, "  info                   display console info\n");
 	fprintf(out, "\n");
 	fprintf(out, "Available low-level " PROGNAME " commands:\n");
-	fprintf(out, "   test            test connectivity\n");
-	fprintf(out, "   wrd             display weather station type\n");
-	fprintf(out, "   rxcheck         display console diagnostic report\n");
-	fprintf(out, "   ver             display firmware date\n");
-	fprintf(out, "   nver            display firmware version\n");
-	fprintf(out, "   settime [time]  set console time and date\n");
-	fprintf(out, "   gettime         get console time and date\n");
-	fprintf(out, "   setper min      set archive interval, in minutes\n");
-	fprintf(out, "   lps [n]         display current weather\n");
-	fprintf(out, "   dmp [n]         download records\n");
-	fprintf(out, "   dmpaft time     download records after specified date and time\n");
-	fprintf(out, "   getee file      dump 4K EEPROM content\n");
-	fprintf(out, "   eebrd addr len  read binary data from EEPROM\n");
-	fprintf(out, "   clrlog          clear archive data\n");
-	fprintf(out, "   clrhighs [-dmy] clear daily, monthly or yearly high values\n");
-	fprintf(out, "   clrlows [-dmy]  clear daily, monthly or yearly low values\n");
+	fprintf(out, "  test                   test connectivity\n");
+	fprintf(out, "  wrd                    display weather station type\n");
+	fprintf(out, "  rxcheck                display console diagnostic report\n");
+	fprintf(out, "  ver                    display firmware date\n");
+	fprintf(out, "  nver                   display firmware version\n");
+	fprintf(out, "  settime [time]         set console time and date\n");
+	fprintf(out, "  gettime                get console time and date\n");
+	fprintf(out, "  setper min             set archive interval, in minutes\n");
+	fprintf(out, "  lps [n]                display current weather\n");
+	fprintf(out, "  dmp [n]                download records\n");
+	fprintf(out, "  dmpaft [-n cnt] time   download records after specified date and time\n");
+	fprintf(out, "  getee file             dump 4K EEPROM content\n");
+	fprintf(out, "  eebrd addr len         read binary data from EEPROM\n");
+	fprintf(out, "  clrlog                 clear archive data\n");
+	fprintf(out, "  clrhighs [-dmy]        clear daily, monthly or yearly high values\n");
+	fprintf(out, "  clrlows [-dmy]         clear daily, monthly or yearly low values\n");
 
 	exit(status);
 }
@@ -212,29 +212,51 @@ print_dmp(const struct vantage_dmp *d)
 	localftime_r(ftime, sizeof(ftime), &d->time, "%F %T");
 
 	printf("Timestamp: %s\n", ftime);
-	printf("Temperature: %.1f°C\n", vantage_temp(d->temp, 1));
-	printf("High temperature: %.1f°C\n", vantage_temp(d->hi_temp, 1));
-	printf("Low temperature: %.1f°C\n", vantage_temp(d->lo_temp, 1));
-	printf("Humidity: %hhu%%\n", d->humidity);
+	if (d->temp != INT16_MAX) {
+		printf("Temperature: %.1f°C\n", vantage_temp(d->temp, 1));
+	}
+	if (d->lo_temp != INT16_MAX) {
+		printf("Low temperature: %.1f°C\n", vantage_temp(d->lo_temp, 1));
+	}
+	if (d->hi_temp != INT16_MIN) {
+		printf("High temperature: %.1f°C\n", vantage_temp(d->hi_temp, 1));
+	}
+	if (d->humidity != UINT8_MAX) {
+		printf("Humidity: %hhu%%\n", d->humidity);
+	}
 	printf("Rain fall: %1.fmm\n", vantage_rain(d->rain, cfg.sb.rain_cup));
 	printf("High rain rate: %1.fmm/hour\n", vantage_rain(d->hi_rain_rate, cfg.sb.rain_cup));
-	printf("Barometer: %.1fhPa\n", vantage_pressure(d->barometer, 3));
+	if (d->barometer != 0) {
+		printf("Barometer: %.1fhPa\n", vantage_pressure(d->barometer, 3));
+	}
 	if (d->solar_rad != INT16_MAX) {
 		printf("Solar radiation: %hhdw/m²\n", d->solar_rad);
 	}
 	printf("Number of wind samples: %hhu\n", d->wind_samples);
-	printf("Average wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed, 0));
-	printf("Main wind direction: %s\n", vantage_dir(d->main_wind_dir));
-	printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed, 0));
-	printf("Direction of high wind speed: %s\n", vantage_dir(d->hi_wind_dir));
+	if (d->avg_wind_speed != UINT8_MAX) {
+		printf("Average wind speed: %.1fm/s\n", vantage_speed(d->avg_wind_speed, 0));
+	}
+	if (d->main_wind_dir != UINT8_MAX) {
+		printf("Main wind direction: %s\n", vantage_dir(d->main_wind_dir));
+	}
+	if (d->hi_wind_speed != UINT8_MAX) {
+		printf("High wind speed: %.1fm/s\n", vantage_speed(d->hi_wind_speed, 0));
+	}
+	if (d->hi_wind_dir != UINT8_MAX) {
+		printf("Direction of high wind speed: %s\n", vantage_dir(d->hi_wind_dir));
+	}
 	if (d->avg_uv != UINT8_MAX) {
 		printf("Average UV: %.1f\n", vantage_val(d->avg_uv, 1));
 	}
 	if (d->et) {
 		printf("1-hour ET: %.3fmm\n", vantage_meter(d->et, 3) / 1000);
 	}
-	printf("Inside temperature: %.1f°C\n", vantage_temp(d->in_temp, 1));
-	printf("Inside humidity: %hhu%%\n", d->in_humidity);
+	if (d->in_temp != INT16_MAX) {
+		printf("Inside temperature: %.1f°C\n", vantage_temp(d->in_temp, 1));
+	}
+	if (d->in_humidity != UINT8_MAX) {
+		printf("Inside humidity: %hhu%%\n", d->in_humidity);
+	}
 }
 
 static void
@@ -619,12 +641,25 @@ ar_count(time_t after, time_t ar)
 static int
 main_dmpaft(int fd, int argc, char* const argv[])
 {
-	ssize_t sz, buflen;
+	int c;
+	size_t n = 0;
+
+	ssize_t sz;
 	time_t after;
 	const char *s;
 	struct vantage_dmp *buf;
 
-	check_empty_opts(argc, argv);
+	/* Parse sub-command */
+	while ((c = getopt(argc, argv, "n:")) != -1) {
+		switch (c) {
+		case 'n':
+			n = atoi(optarg);
+			break;
+		default:
+			usage_opt(stderr, c, 1);
+			break;
+		}
+	}
 
 	if (optind + 1 != argc) {
 		usage(stderr, 1);
@@ -644,13 +679,15 @@ main_dmpaft(int fd, int argc, char* const argv[])
 		goto error;
 	}
 
-	buflen = ar_count(after, cfg.ar_period * 60);
+	if (n == 0) {
+		n = ar_count(after, cfg.ar_period * 60);
+	}
 
-	if ((buf = malloc(buflen * sizeof(*buf))) == NULL) {
+	if ((buf = malloc(n * sizeof(*buf))) == NULL) {
 		fprintf(stderr, "malloc: %s\n", strerror(errno));
 		goto error;
 	}
-	if ((sz = vantage_dmpaft(fd, buf, buflen, after)) == -1) {
+	if ((sz = vantage_dmpaft(fd, buf, n, after)) == -1) {
 		fprintf(stderr, "vantage_dmpaft: %s\n", strerror(errno));
 		goto error;
 	}
@@ -807,6 +844,8 @@ main(int argc, char * const argv[])
 
 	const char *device = NULL;
 	const char *cmd = NULL;
+
+	setenv("POSIXLY_CORRECT", "1", 1);
 
 	/* Parse arguments */
 	while ((c = getopt(argc, argv, "hd:")) != -1) {
