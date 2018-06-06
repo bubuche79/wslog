@@ -119,6 +119,10 @@ conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 		p->in_humidity = d->in_humidity;
 	}
 
+	if (d->wind_samples != 0) {
+		p->wl_mask |= WF_WIND_SAMPLES;
+		p->wind_samples = d->wind_samples;
+	}
 	if (d->avg_wind_speed != UINT8_MAX) {
 		p->wl_mask |= WF_WIND_SPEED;
 		p->avg_wind_speed = vantage_speed(d->avg_wind_speed, 0);
