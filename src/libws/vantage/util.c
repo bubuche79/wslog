@@ -41,7 +41,7 @@ static const struct proc_def CMDS[] =
 	{ "PUTRAIN %ld\n", IO_ACK },
 	{ "PUTET %ld\n", IO_ACK },
 	{ "DMP\n", IO_ACK },
-	{ "DMPAFT\n", IO_ACK },
+	{ "DMPAFT\n", IO_ACK|IO_T10 },
 	{ "GETEE\n", IO_ACK },
 	{ "EERD %hX %lX\n", 0 },
 	{ "EEWR %hX %hX\n", IO_OK },
@@ -72,6 +72,20 @@ static const struct proc_def CMDS[] =
 };
 
 const struct timespec IO_TIMEOUT = { .tv_sec = 0, .tv_nsec = 200000000 };
+
+static void
+vantage_to(int flags, struct timespec *ts)
+{
+	if (flags & IO_TMASK) {
+		long tenth = (flags & IO_TMASK) >> 8;
+
+		ts->tv_sec = tenth / 10;
+		ts->tv_nsec = (tenth - 10 * ts->tv_sec) * 100000000;
+	} else {
+		ts->tv_sec = IO_TIMEOUT.tv_sec;
+		ts->tv_nsec = IO_TIMEOUT.tv_nsec;
+	}
+}
 
 static int
 vantage_ack_ck(int fd, const uint8_t *ack, size_t acklen, const struct timespec *ts)
@@ -185,7 +199,7 @@ vantage_pread(int fd, int flags, void *buf, size_t len)
 		goto error;
 	}
 
-	if (vantage_read_to(fd, buf, len, &IO_TIMEOUT) == -1) {
+	if (vantage_read(fd, buf, len) == -1) {
 		goto error;
 	}
 
@@ -246,15 +260,7 @@ vantage_pwrite(int fd, int flags, const void *buf, size_t len)
 	if (flags & IO_ACK_MASK) {
 		struct timespec ts;
 
-		if (flags & IO_TMASK) {
-			long tenth = (flags & IO_TMASK) >> 8;
-
-			ts.tv_sec = tenth / 10;
-			ts.tv_nsec = (tenth - 10 * ts.tv_sec) * 100000000;
-		} else {
-			ts.tv_sec = IO_TIMEOUT.tv_sec;
-			ts.tv_nsec = IO_TIMEOUT.tv_nsec;
-		}
+		vantage_to(flags, &ts);
 
 		if (vantage_ack(fd, flags & IO_ACK_MASK, &ts) == -1) {
 			goto error;
