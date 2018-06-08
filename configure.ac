@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 LT_PREREQ([2.4.6])
-AC_INIT([wslog], [0.8.5], [gae.buchetet@free.fr])
+AC_INIT([wslog], [0.8.6], [gae.buchetet@free.fr])
 AC_CONFIG_HEADERS([config.h])
 
 AC_USE_SYSTEM_EXTENSIONS
