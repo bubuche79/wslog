@@ -36,8 +36,8 @@ function graphics.charts(ns, defs, p)
 	local path = url_path(p)
 
 	http.write([[<div class="graphics-charts">]])
-	http.write([[<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment-with-locales.min.js"></script>]])
-	http.write([[<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>]])
+	http.write([[<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script>]])
+	http.write([[<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>]])
 
 	for i = 1, #defs do
 		local n = defs[i].name
