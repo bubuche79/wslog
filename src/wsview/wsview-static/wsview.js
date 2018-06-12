@@ -1,135 +1,102 @@
-function scale_min(a) {
-	return 5 * parseInt((a + 4) / 5) - 5;
-}
-
-function scale_max(a) {
-	return 5 * parseInt(a / 5) + 5;
-}
-
-function time_get(t) {
+function parse(t) {
 	if (typeof(t) == 'number') {
-		t = new Date(t * 1000);
+		t = moment.unix(t);
 	} else {
-		t = new Date(t);
+		t = moment(t);
 	}
 
 	return t;
 }
 
-function time_start(date, period) {
-	if (period == 'month') {
-		date.setDate(1);
-	} else if (period == 'year') {
-		date.setMonth(0);
-	}
+function time_next(t, unit) {
+	t.add(1, unit);
 }
 
-function time_end(date, period) {
-	if (period == 'month') {
-		date.setDate(1);
-		date.setMonth(date.getMonth() + 1);
-	} else if (period == 'year') {
-		date.setMonth(0);
-		date.setYear(date.getYear() + 1);
-	}
-}
-
-function time_next(date, period) {
-	if (period == 'month') {
-		date.setDate(date.getDate() + 1);
-	} else if (period = 'year') {
-		date.setMonth(date.getMonth() + 1);
-	}
-}
-
-function get_labels(json, period) {
+function get_labels(json) {
 	var labels = [];
 
-	var x = time_get(json[0].time);
-	var last = time_get(json[json.length-1].time);
+	var x = parse(json.from);
+	var last = parse(json.to);
 
-	if (period != null) {
-		time_start(x, period);
-		time_end(last, period);
-	}
+	for (var i = 0; i < json.data.length; i++) {
+		var time = parse(json.data[i].time);
 
-	for (var i = 0; i < json.length; i++) {
-		var time = time_get(json[i].time);
-
-		while (x.getTime() < time.getTime()) {
-			labels.push(new Date(x));
-			time_next(x, period);
+		while (x.isBefore(time)) {
+			labels.push(x.clone());
+			time_next(x, json.unit);
 		}
 
 		labels.push(time);
-		time_next(x, period);
+		time_next(x, json.unit);
 	}
 
-	while (x.getTime() < last.getTime()) {
-		labels.push(new Date(x));
-		time_next(x, period);
+	while (x.isBefore(last)) {
+		labels.push(x.clone());
+		time_next(x, json.unit);
 	}
 
 	return labels;
 }
 
-function get_data(json, field, period) {
+function get_data(json, field) {
 	var data = [];
 
-	var x = time_get(json[0].time);
+	var x = parse(json.from);
 
-	if (period != null) {
-		time_start(x, period);
-	}
+	for (var i = 0; i < json.data.length; i++) {
+		var time = parse(json.data[i].time);
 
-	for (var i = 0; i < json.length; i++) {
-		var time = time_get(json[i].time);
-
-		while (x.getTime() < time.getTime()) {
+		while (x.isBefore(time)) {
 			data.push(null);
-			time_next(x, period);
+			time_next(x, json.unit);
 		}
 
-		data.push(json[i][field]);
-		time_next(x, period);
+		data.push(json.data[i][field]);
+		time_next(x, json.unit);
 	}
 
 	return data;
 }
 
-function get_type(config) {
-	var type = 'line';
-	var datasets = config.datasets;
+function tooltip_label(config, item, data) {
+	var result = null;
+	var dataset = data.datasets[item.datasetIndex];
 
-	for (i = 0; i < datasets.length; i++) {
-		if (datasets[i].type != 'line') {
-			type = datasets[i].type;
+	if (dataset.data[item.index] != null) {
+		var unit = '';
+
+		for (i = 0; i < config.options.axes.length; i++) {
+			if (dataset.yAxisID == config.options.axes[i].id) {
+				unit = config.options.axes[i].unit;
+			}
 		}
+
+		result = dataset.label + ' : ' + item.yLabel.toFixed(1) + ' ' + unit;
 	}
 
-	return type;
+	return result;
 }
 
-function create_chart(json, config, period) {
+function create_chart(json, config) {
 	var time_unit;
 	var title_fmt;
 	var time_step;
 
-	if (period == null) {
-	} else if (period == 'month') {
+	if (json.unit == null) {
+	} else if (json.unit == 'day') {
 		time_unit = 'day';
 		time_step = 2;
 		title_fmt = 'D MMMM YYYY';
-	} else if (period == 'year') {
+	} else if (json.unit == 'month') {
 		time_unit = 'month';
 		time_step = 1;
 		title_fmt = 'MMMM YYYY';
 	}
 
 	var chartjs = {
-		type: get_type(config),
+		type: 'bar',
 		data: {
-			labels: get_labels(json, period),
+			labels: get_labels(json),
 			datasets: [],
 		},
 		options: {
@@ -147,26 +114,8 @@ function create_chart(json, config, period) {
 				position: 'nearest',
 				bodySpacing: 5,
 				callbacks: {
-					title: function(items, data) {
-						return moment(items[0].xLabel).format(title_fmt);
-					},
 					label: function(item, data) {
-						var result = null;
-						var dataset = data.datasets[item.datasetIndex];
-
-						if (dataset.data[item.index] != null) {
-							var unit = '';
-
-							for (i = 0; i < config.options.axes.length; i++) {
-								if (dataset.yAxisID == config.options.axes[i].id) {
-									unit = config.options.axes[i].unit;
-								}
-							}
-
-							result = dataset.label + ' : ' + item.yLabel.toFixed(1) + ' ' + unit;
-						}
-
-						return result;
+						return tooltip_label(config, item, data);
 					}
 				}
 			},
@@ -178,9 +127,8 @@ function create_chart(json, config, period) {
 					},
 					time: {
 						unit: time_unit,
-						parser: moment,
 						stepSize: time_step,
-//						min: time_min,
+						tooltipFormat: title_fmt,
 						displayFormats: {
 							hour: 'HH:mm',
 							day: 'D',
@@ -189,7 +137,6 @@ function create_chart(json, config, period) {
 					},
 					scaleLabel: {
 						display: true,
-//						labelString: x_label,
 						fontStyle: 'bold'
 					}
 				}],
@@ -208,7 +155,7 @@ function create_chart(json, config, period) {
 			yAxisID: dataset.axis,
 			backgroundColor: dataset.color,
 			borderColor: dataset.color,
-			data: get_data(json, dataset.field, period)
+			data: get_data(json, dataset.field)
 		};
 
 		if (dataset.type == 'line') {
@@ -334,7 +281,7 @@ function archive_wind(json) {
 	return create_chart(json, options);
 }
 
-function aggr_wind(json, period) {
+function aggr_wind(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -362,10 +309,10 @@ function aggr_wind(json, period) {
 		}
 	};
 
-	return create_chart(json, options, period);
+	return create_chart(json, options);
 };
 
-function aggr_barometer(json, period) {
+function aggr_barometer(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -386,10 +333,10 @@ function aggr_barometer(json, period) {
 		}
 	};
 
-	return create_chart(json, options, period);
+	return create_chart(json, options);
 };
 
-function aggr_temp(json, period) {
+function aggr_temp(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -417,10 +364,10 @@ function aggr_temp(json, period) {
 		}
 	};
 
-	return create_chart(json, options, period);
+	return create_chart(json, options);
 };
 
-function aggr_temp_rain(json, period) {
+function aggr_temp_rain(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
@@ -459,24 +406,24 @@ function aggr_temp_rain(json, period) {
 		}
 	};
 
-	return create_chart(json, options, period);
+	return create_chart(json, options);
 };
 
-function aggr_rain(json, period) {
+function aggr_rain(json) {
 	var options = {
 		datasets: [{
-			type: 'bar',
-			label: 'Précipitations',
-			field: 'rain',
-			axis: 'y-axis-1',
-			color: 'rgba(162, 190, 163, 1)'
-		},{
 			type: 'line',
 			label: 'Précipitations maximales sur 24h',
 			field: 'rain_24h',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
 			color: 'rgba(18, 137, 186, 1)'
+		},{
+			type: 'bar',
+			label: 'Précipitations',
+			field: 'rain',
+			axis: 'y-axis-1',
+			color: 'rgba(162, 190, 163, 1)'
 		}],
 		options: {
 			title: 'Précipitations',
@@ -489,7 +436,7 @@ function aggr_rain(json, period) {
 		}
 	};
 
-	return create_chart(json, options, period);
+	return create_chart(json, options);
 };
 
 function tr_cell_val(tr, value) {
@@ -510,11 +457,11 @@ function mk_table(root, json, fields) {
 
 	for (var i = 0; i < json.length; i++) {
 		var tr = tbl.insertRow();
-		var time = time_get(json[i].time);
+		var time = parse(json.data[i].time);
 
 		tr_cell_val(tr, time);
 		for (var j = 0; j < fields.length; j++) {
-			tr_cell(tr, json[i], fields[j]);
+			tr_cell(tr, json.data[i], fields[j]);
 		}
 	}
 
