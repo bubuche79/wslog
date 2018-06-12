@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <lauxlib.h>
@@ -110,7 +111,12 @@ wsview_query(lua_State *L, const char *sql, time_t lower, time_t upper)
 
 	/* Open database */
 	if (db == NULL) {
-		db_open(WS_CONF_SQLITE_DB);
+		const char *path = getenv("WSLOG_SQLITE3");
+
+		if (path == NULL) {
+			path = WS_CONF_SQLITE_DB;
+		}
+		db_open(path);
 	}
 
 	sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
@@ -155,20 +161,6 @@ static int
 wsview_aggr_day(lua_State *L, time_t lower, time_t upper)
 {
 	const char sql[] =
-		"SELECT MIN(lo_temp) AS lo_temp, "
-		  "AVG(temp) AS avg_temp, "
-		  "MAX(hi_temp) AS hi_temp, "
-		  "MAX(hi_wind_speed) AS hi_wind_speed "
-		"FROM ws_archive "
-		"WHERE ? < time AND time <= ?";
-
-	return wsview_query(L, sql, lower, upper);
-}
-
-static int
-wsview_aggr_month(lua_State *L, time_t lower, time_t upper)
-{
-	const char sql[] =
 		"SELECT date(time, 'unixepoch', 'localtime') AS time, "
 		  "MIN(lo_temp) AS lo_temp, "
 		  "MAX(hi_temp) AS hi_temp, "
@@ -185,7 +177,7 @@ wsview_aggr_month(lua_State *L, time_t lower, time_t upper)
 }
 
 static int
-wsview_aggr_year(lua_State *L, time_t lower, time_t upper)
+wsview_aggr_month(lua_State *L, time_t lower, time_t upper)
 {
 	const char sql[] =
 		"SELECT substr(day, 1, 7) AS time, "
@@ -220,8 +212,6 @@ wsview_aggregate(lua_State *L)
 		ret = wsview_aggr_day(L, lower, upper);
 	} else if (!strcmp("month", method)) {
 		ret = wsview_aggr_month(L, lower, upper);
-	} else if (!strcmp("year", method)) {
-		ret = wsview_aggr_year(L, lower, upper);
 	} else {
 		ret = 0;
 	}
