@@ -8,9 +8,9 @@ local function url_path(p)
 
 	if p.period then
 		if p.period == 'month' then
-			path = "month/" .. p.year .. "/" .. p.month
+			path = "day/" .. p.year .. "/" .. p.month
 		else
-			path = "year/" .. p.year
+			path = "month/" .. p.year
 		end
 	else
 		path = "archive"
@@ -69,7 +69,9 @@ end
 function graphics.table(defs, p)
 	local path = url_path(p)
 
-	http.write([[<div id="graphics-tables" class="tables"><script>]])
+	http.write([[<div id="graphics-tables" class="tables">]])
+	http.write([[<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script>]])
+	http.write([[<script>moment.locale('fr');]])
 	http.format([[var root = document.getElementById("graphics-tables");]])
 	http.format([[fetch('/cgi-bin/wsview/rest/%s')]], path)
 	http.write([[.then(function(response) { return response.json(); }).then(function(json) {]])

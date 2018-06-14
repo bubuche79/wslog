@@ -1,3 +1,7 @@
+function capitalize(s) {
+	return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function parse(t) {
 	if (typeof(t) == 'number') {
 		t = moment.unix(t);
@@ -10,6 +14,16 @@ function parse(t) {
 
 function time_next(t, unit) {
 	t.add(1, unit);
+}
+
+// Compute additional metrics
+function compute(data) {
+	var v = 0;
+
+	for (var i = 0; i < data.length; i++) {
+		v += data[i].rain;
+		data[i].rain_sum = v;
+	}
 }
 
 function get_labels(json) {
@@ -58,6 +72,7 @@ function get_data(json, field) {
 	return data;
 }
 
+// TODO use same order than legend
 function tooltip_label(config, item, data) {
 	var result = null;
 	var dataset = data.datasets[item.datasetIndex];
@@ -106,7 +121,8 @@ function create_chart(json, config) {
 				text: config.options.title
 			},
 			legend: {
-				position: 'bottom'
+				position: 'bottom',
+				reverse: config.options.reverse
 			},
 			tooltips: {
 				mode: 'index',
@@ -182,11 +198,6 @@ function create_chart(json, config) {
 			type: 'linear',
 			position: axes.position,
 			id: axes.id,
-			ticks: {
-//				min: scale_min(temp_min.min),
-//				max: scale_max(temp_max.max),
-//				stepSize: 5
-			},
 			scaleLabel: {
 				display: true,
 				labelString: axes.label + ' (' + axes.unit + ')',
@@ -285,18 +296,18 @@ function aggr_wind(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
-			label: 'Rafale',
-			field: 'hi_wind_speed',
-			axis: 'y-axis-1',
-			pointStyle: 'circle',
-			color: 'rgba(86, 65, 112, 1)'
-		},{
-			type: 'line',
 			label: 'Vent moyen',
 			field: 'avg_wind_speed',
 			axis: 'y-axis-1',
 			pointStyle: 'rect',
 			color: 'rgba(128, 105, 155, 1)'
+		},{
+			type: 'line',
+			label: 'Rafale',
+			field: 'hi_wind_speed',
+			axis: 'y-axis-1',
+			pointStyle: 'circle',
+			color: 'rgba(86, 65, 112, 1)'
 		}],
 		options: {
 			title: 'Vent',
@@ -340,18 +351,18 @@ function aggr_temp(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
-			label: 'Température maximale',
-			field: 'hi_temp',
-			axis: 'y-axis-1',
-			pointStyle: 'rect',
-			color: 'rgba(170, 70, 70, 1)'
-		},{
-			type: 'line',
 			label: 'Température minimale',
 			field: 'lo_temp',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
 			color: 'rgba(69, 114, 167, 1)'
+		},{
+			type: 'line',
+			label: 'Température maximale',
+			field: 'hi_temp',
+			axis: 'y-axis-1',
+			pointStyle: 'rect',
+			color: 'rgba(170, 70, 70, 1)'
 		}],
 		options: {
 			title: 'Températures',
@@ -371,18 +382,18 @@ function aggr_temp_rain(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
-			label: 'Température maximale',
-			field: 'hi_temp',
-			axis: 'y-axis-1',
-			pointStyle: 'rect',
-			color: 'rgba(170, 70, 70, 1)'
-		},{
-			type: 'line',
 			label: 'Température minimale',
 			field: 'lo_temp',
 			axis: 'y-axis-1',
 			pointStyle: 'circle',
 			color: 'rgba(69, 114, 167, 1)'
+		},{
+			type: 'line',
+			label: 'Température maximale',
+			field: 'hi_temp',
+			axis: 'y-axis-1',
+			pointStyle: 'rect',
+			color: 'rgba(170, 70, 70, 1)'
 		},{
 			type: 'bar',
 			label: 'Précipitations',
@@ -413,6 +424,13 @@ function aggr_rain(json) {
 	var options = {
 		datasets: [{
 			type: 'line',
+			label: 'Cumul annuel',
+			field: 'rain_sum',
+			axis: 'y-axis-2',
+			pointStyle: 'rect',
+			color: 'rgba(0, 0, 0, 1)'
+		},{
+			type: 'line',
 			label: 'Précipitations maximales sur 24h',
 			field: 'rain_24h',
 			axis: 'y-axis-1',
@@ -427,14 +445,22 @@ function aggr_rain(json) {
 		}],
 		options: {
 			title: 'Précipitations',
+			reverse: true,
 			axes: [{
 				id: 'y-axis-1',
 				position: 'left',
 				label: 'Précipitations',
 				unit: 'mm'
+			},{
+				id: 'y-axis-2',
+				position: 'right',
+				label: 'Cumul annuel',
+				unit: 'mm'
 			}]
 		}
 	};
+
+	compute(json.data);
 
 	return create_chart(json, options);
 };
@@ -447,19 +473,35 @@ function tr_cell_val(tr, value) {
 
 function tr_cell(tr, row, field) {
 	var td = tr.insertCell();
+	var v = row[field.field];
 
-	td.appendChild(document.createTextNode(row[field]));
+	if (v != null) {
+		v = v.toFixed(1) + ' ' + field.unit;
+	} else {
+		v = '';
+	}
+
+	td.appendChild(document.createTextNode(v));
 }
 
 function mk_table(root, json, fields) {
+	var title_fmt;
+
+	if (json.unit == null) {
+	} else if (json.unit == 'day') {
+		title_fmt = 'dddd D';
+	} else if (json.unit == 'month') {
+		title_fmt = 'MMMM';
+	}
+
 	var body = document.body;
 	var tbl = document.createElement('table');
 
-	for (var i = 0; i < json.length; i++) {
+	for (var i = 0; i < json.data.length; i++) {
 		var tr = tbl.insertRow();
 		var time = parse(json.data[i].time);
 
-		tr_cell_val(tr, time);
+		tr_cell_val(tr, capitalize(time.format(title_fmt)));
 		for (var j = 0; j < fields.length; j++) {
 			tr_cell(tr, json.data[i], fields[j]);
 		}
@@ -469,13 +511,25 @@ function mk_table(root, json, fields) {
 }
 
 function table_archive(root, json) {
-	var fields = [ "temp" ];
+	var fields = [ 'temp' ];
 
 	mk_table(root, json, fields);
 }
 
 function table_aggr(root, json) {
-	var fields = [ "lo_temp", "hi_temp", "rain_fall", "hi_wind_speed" ];
+	var fields = [{
+		field: 'lo_temp',
+		unit: '°C'
+	},{
+		field: 'hi_temp',
+		unit: '°C'
+	},{
+		field: 'rain_fall',
+		unit: 'mm'
+	},{
+		field: 'hi_wind_speed',
+		unit: 'm/s'
+	}];
 
 	mk_table(root, json, fields);
 }
