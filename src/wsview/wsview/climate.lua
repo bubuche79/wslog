@@ -21,7 +21,15 @@ local function climate_charts(p)
 end
 
 local function climate_table(p)
-	graphics.table({ name = "aggr" }, p)
+	local name
+
+	if p.period == 'month' then
+		name = 'aggr_day';
+	else
+		name = 'aggr_month';
+	end
+
+	graphics.table({ name = name }, p)
 end
 
 local function add_input_year(selected, last)

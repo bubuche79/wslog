@@ -476,11 +476,12 @@ function tr_cell(tr, row, field) {
 function mk_table(root, json, fields) {
 	var title_fmt;
 
-	if (json.unit == null) {
-	} else if (json.unit == 'day') {
+	if (json.unit == 'day') {
 		title_fmt = 'dddd D';
 	} else if (json.unit == 'month') {
 		title_fmt = 'MMMM';
+	} else {
+		title_fmt = 'HH:mm';
 	}
 
 	var body = document.body;
@@ -500,12 +501,27 @@ function mk_table(root, json, fields) {
 }
 
 function table_archive(root, json) {
-	var fields = [ 'temp' ];
+	var fields = [{
+		field: 'temp',
+		unit: '°C'
+	},{
+		field: 'rain_fall',
+		unit: 'mm'
+	},{
+		field: 'humidity',
+		unit: '%'
+	},{
+		field: 'avg_wind_speed',
+		unit: 'm/s'
+	},{
+		field: 'barometer',
+		unit: 'hPa'
+	}];
 
 	mk_table(root, json, fields);
 }
 
-function table_aggr(root, json) {
+function table_aggr_day(root, json) {
 	var fields = [{
 		field: 'lo_temp',
 		unit: '°C'
@@ -518,6 +534,24 @@ function table_aggr(root, json) {
 	},{
 		field: 'hi_wind_speed',
 		unit: 'm/s'
+	},{
+		field: 'barometer',
+		unit: 'hPa'
+	}];
+
+	mk_table(root, json, fields);
+}
+
+function table_aggr_month(root, json) {
+	var fields = [{
+		field: 'lo_temp',
+		unit: '°C'
+	},{
+		field: 'hi_temp',
+		unit: '°C'
+	},{
+		field: 'rain',
+		unit: 'mm'
 	}];
 
 	mk_table(root, json, fields);

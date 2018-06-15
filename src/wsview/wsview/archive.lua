@@ -27,6 +27,12 @@ local function main(env, p)
 
 	http.write([[</ul>]])
 
+	if next(env.ARGS) then
+		p.year = tonumber(env.ARGS[1])
+		p.month = tonumber(env.ARGS[2])
+		p.day = tonumber(env.ARGS[3])
+	end
+
 	if (p.view == "table") then
 		archive_table(p)
 	else

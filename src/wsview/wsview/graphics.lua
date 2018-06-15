@@ -13,7 +13,11 @@ local function url_path(p)
 			path = "month/" .. p.year
 		end
 	else
-		path = "archive"
+		if p.year then
+			path = "archive/" .. p.year .. "/" .. p.month .. "/" .. p.day
+		else
+			path = "archive"
+		end
 	end
 
 	return path
