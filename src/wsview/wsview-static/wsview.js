@@ -12,8 +12,18 @@ function parse(t) {
 	return t;
 }
 
-function time_next(t, unit) {
-	t.add(1, unit);
+function parse_min(data) {
+	return parse(data.from);
+}
+
+function parse_max(data) {
+	var t = parse(data.to);
+
+	if (data.unit != null) {
+		t.subtract(1, data.unit);
+	}
+
+	return t;
 }
 
 // Compute additional metrics
@@ -29,24 +39,10 @@ function compute(data) {
 function get_labels(json) {
 	var labels = [];
 
-	var x = parse(json.from);
-	var last = parse(json.to);
-
 	for (var i = 0; i < json.data.length; i++) {
 		var time = parse(json.data[i].time);
 
-		while (x.isBefore(time)) {
-			labels.push(x.clone());
-			time_next(x, json.unit);
-		}
-
 		labels.push(time);
-		time_next(x, json.unit);
-	}
-
-	while (x.isBefore(last)) {
-		labels.push(x.clone());
-		time_next(x, json.unit);
 	}
 
 	return labels;
@@ -55,18 +51,10 @@ function get_labels(json) {
 function get_data(json, field) {
 	var data = [];
 
-	var x = parse(json.from);
-
 	for (var i = 0; i < json.data.length; i++) {
 		var time = parse(json.data[i].time);
 
-		while (x.isBefore(time)) {
-			data.push(null);
-			time_next(x, json.unit);
-		}
-
 		data.push(json.data[i][field]);
-		time_next(x, json.unit);
 	}
 
 	return data;
@@ -97,8 +85,7 @@ function create_chart(json, config) {
 	var title_fmt;
 	var time_step;
 
-	if (json.unit == null) {
-	} else if (json.unit == 'day') {
+	if (json.unit == 'day') {
 		time_unit = 'day';
 		time_step = 2;
 		title_fmt = 'D MMMM YYYY';
@@ -145,6 +132,8 @@ function create_chart(json, config) {
 						unit: time_unit,
 						stepSize: time_step,
 						tooltipFormat: title_fmt,
+						min: parse_min(json),
+						max: parse_max(json),
 						displayFormats: {
 							hour: 'HH:mm',
 							day: 'D',

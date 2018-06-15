@@ -32,17 +32,29 @@ function rest.current(env)
 end
 
 function rest.archive(env)
-	local y, m
-	local t = os.date("*t")
+	local res = {}
 
 	init(env)
 
-	local from = os.time(t) - 4 * 24 * 3600
-	local to = os.time(t)
+	if next(env.ARGS) == nil then
+		local t = os.date("*t")
 
-	local data = wsview.archive(from, to)
+		res.to = os.time(t)
+		res.from = res.to - 4 * 24 * 3600
+	else
+		local y, m, d
 
-	http.write_json(data)
+		y = tonumber(env.ARGS[1])
+		m = tonumber(env.ARGS[2])
+		d = tonumber(env.ARGS[3])
+
+		res.from = os.time({ year = y, month = m, day = d, hour = 0 })
+		res.to = os.time({ year = y, month = m, day = d+1, hour = 0 })
+	end
+
+	res.data = wsview.archive(res.from, res.to)
+
+	http.write_json(res)
 	close(env)
 end
 
