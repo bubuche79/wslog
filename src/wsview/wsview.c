@@ -161,7 +161,7 @@ static int
 wsview_aggr_day(lua_State *L, time_t lower, time_t upper)
 {
 	const char sql[] =
-		"SELECT date(time, 'unixepoch', 'localtime') AS time, "
+		"SELECT date(time - 1, 'unixepoch', 'localtime') AS time, "
 		  "MIN(lo_temp) AS lo_temp, "
 		  "MAX(hi_temp) AS hi_temp, "
 		  "SUM(rain_fall) AS rain_fall, "
