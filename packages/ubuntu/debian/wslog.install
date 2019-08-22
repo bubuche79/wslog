@@ -1,4 +1,4 @@
 etc
 usr/bin
-usr/lib/*-linux-gnu/libws.so*
+usr/lib/*-linux-gnu/libws.so.*
 usr/share/wslog

@@ -8,16 +8,19 @@ Build-Depends: debhelper (>= 11),
  liblua5.1-dev,
  check
 Standards-Version: 4.1.2
-Maintainer: Gaëtan Buchetet <gae.buchetet@free.fr>
+Maintainer: bubuche <gae.buchetet@free.fr>
 
 Package: wslog
 Architecture: any
+Pre-Depends: adduser
 Depends: libsqlite3-0,
  libcurl4,
- ${misc:Depends}
+ ${misc:Depends},
+ ${shlibs:Depends}
 Description: weather station logger
  This is an utility suite used to communicate with and collect data from weather
- stations.
+ stations. It is a set of lightweight tools that were first designed to work on
+ openwrt and now targets raspberry-like hardware.
 
 Package: wslog-cgi
 Architecture: any
@@ -25,9 +28,13 @@ Depends: wslog (= ${binary:Version}),
  lua5.1,
  liblua5.1-0,
  lua-json,
- ${misc:Depends}
+ ${misc:Depends},
+ ${shlibs:Depends}
 Description: web interface for weather logger daemon
+ Basic web interface using lua.
 
 Package: wslog-dev
-Architecture: all
+Depends: ${misc:Depends}
+Architecture: any
 Description: development files for wslog
+ C header files for the library.
