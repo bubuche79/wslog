@@ -9,7 +9,7 @@
 int
 main(void)
 {
-	int number_failed;
+	int ntests_failed;
 	SRunner *sr;
 
 	sr = srunner_create(NULL);
@@ -22,8 +22,8 @@ main(void)
 	srunner_add_suite(sr, suite_vantage());
 
 	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
+	ntests_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 
-	return (number_failed == 0) ? 0 : 1;
+	return (ntests_failed == 0) ? 0 : 1;
 }

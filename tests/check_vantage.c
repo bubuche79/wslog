@@ -13,10 +13,10 @@
 
 START_TEST(test_vantage_time)
 {
-	const time_t time = 1054884600;
+	const time_t time = 1054891800;
 	const uint8_t buf[] = { 0xc6, 0x06, 0xa2, 0x03 };
 
-	setenv("TZ", "CET", 1);
+	setenv("TZ", "UTC", 1);
 	tzset();
 
 	ck_assert_uint_eq(time, dmp_mktime(buf, 0));
