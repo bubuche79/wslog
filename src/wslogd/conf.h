@@ -60,7 +60,7 @@ struct ws_conf
 	{
 		int enabled;			/* Enabled flag */
 		int freq;			/* Synchronization frequency, in seconds */
-		int max_drift;			/* Max drift */
+		int max_drift;			/* Max drift, in seconds */
 	} sync;
 
 	struct

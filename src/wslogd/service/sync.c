@@ -19,12 +19,11 @@ sync_init(struct itimerspec *it)
 		freq = 86400;
 	}
 
-	itimer_set(it, freq);
-
-	/* Synchronize at startup */
-	if (sync_timer() == -1) {
-		goto error;
-	}
+	/*
+	 * Delay first synchronization, to make sure that the system clock
+	 * is correctly set upon startup when there is no RTC backup battery.
+	 */
+	itimer_setdelay(it, freq, 300);
 
 #ifdef DEBUG
 	syslog(LOG_INFO, "sync.freq: %ld\n", it->it_interval.tv_sec);
