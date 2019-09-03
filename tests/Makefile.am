@@ -1,3 +1,5 @@
+TESTS = check_build
+
 check_PROGRAMS = \
 	check_build
 
@@ -17,6 +19,3 @@ check_build_CPPFLAGS = \
 check_build_LDADD = \
 	-L../src/libws -lws \
 	@CHECK_LIBS@
-
-check:
-	./check_build

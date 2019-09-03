@@ -2,15 +2,17 @@ AC_PREREQ([2.69])
 LT_PREREQ([2.4.6])
 AC_INIT([wslog], [0.8.8], [gae.buchetet@free.fr])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIRS([m4])
 
 AC_USE_SYSTEM_EXTENSIONS
 
 AM_PROG_AR
-AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
+AM_INIT_AUTOMAKE([1.10 subdir-objects dist-xz -Wall -Werror])
 
 # Checks for programs.
+AC_PROG_CC
+AC_PROG_LIBTOOL
 LT_INIT([disable-static])
-AC_PROG_INSTALL
 
 # Checks for libraries.
 PKG_CHECK_MODULES([LIBCURL], [libcurl])
