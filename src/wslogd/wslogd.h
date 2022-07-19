@@ -3,14 +3,6 @@
 
 #define S_I644 (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int dry_run;
-
-#ifdef __cplusplus
-}
-#endif
+extern int dry_run;
 
 #endif /* _WSLOGD_H */

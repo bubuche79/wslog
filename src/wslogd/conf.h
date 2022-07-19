@@ -73,7 +73,7 @@ struct ws_conf
 	} wunder;
 };
 
-struct ws_conf *confp;
+extern struct ws_conf *confp;
 
 #ifdef __cplusplus
 extern "C" {
