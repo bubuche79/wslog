@@ -37,7 +37,7 @@ sensor_init(struct itimerspec *it)
 	 * sensor time otherwise, when supported by the driver.
 	 */
 	if (confp->driver.freq == 0) {
-		if (drv_get_itimer(it, WS_ITIMER_LOOP) == -1) {
+		if (drv_get_rt_itimer(it) == -1) {
 			goto error;
 		}
 	} else {
@@ -68,7 +68,7 @@ sensor_timer(void)
 	buf.time.tv_sec = 0;
 
 	/* Read sensors */
-	if (drv_get_loop(&buf) == -1) {
+	if (drv_get_rt(&buf) == -1) {
 		goto error;
 	}
 

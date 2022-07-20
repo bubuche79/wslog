@@ -116,35 +116,7 @@ virt_destroy(void)
 }
 
 int
-virt_get_itimer(struct itimerspec *it, enum ws_timer type)
-{
-	int ret;
-
-	if (virt_io_delay() == -1) {
-		return -1;
-	}
-
-	switch (type)
-	{
-	case WS_ITIMER_LOOP:
-		itimer_setdelay(it, LOOP_INTERVAL, 0);
-		ret = 0;
-		break;
-	case WS_ITIMER_ARCHIVE:
-		itimer_setdelay(it, ARCHIVE_INTERVAL, ARCHIVE_DELAY);
-		ret = 0;
-		break;
-	default:
-		errno = EINVAL;
-		ret = -1;
-		break;
-	}
-
-	return ret;
-}
-
-int
-virt_get_loop(struct ws_loop *p)
+virt_get_rt(struct ws_loop *p)
 {
 	time_t now;
 
@@ -154,8 +126,20 @@ virt_get_loop(struct ws_loop *p)
 	return 0;
 }
 
+int
+virt_get_rt_itimer(struct itimerspec *it)
+{
+	if (virt_io_delay() == -1) {
+		return -1;
+	}
+
+	itimer_setdelay(it, LOOP_INTERVAL, 0);
+
+	return 0;
+}
+
 ssize_t
-virt_get_archive(struct ws_archive *p, size_t nel, time_t after)
+virt_get_ar(struct ws_archive *p, size_t nel, time_t after)
 {
 	int i;
 	time_t now;
@@ -171,6 +155,18 @@ virt_get_archive(struct ws_archive *p, size_t nel, time_t after)
 	}
 
 	return i;
+}
+
+int
+virt_get_ar_itimer(struct itimerspec *it)
+{
+	if (virt_io_delay() == -1) {
+		return -1;
+	}
+
+	itimer_setdelay(it, ARCHIVE_INTERVAL, ARCHIVE_DELAY);
+
+	return 0;
 }
 
 int

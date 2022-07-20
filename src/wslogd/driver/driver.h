@@ -10,12 +10,6 @@
 extern "C" {
 #endif
 
-enum ws_timer
-{
-	WS_ITIMER_LOOP,
-	WS_ITIMER_ARCHIVE
-};
-
 enum ws_driver
 {
 #if HAVE_VANTAGE
@@ -33,14 +27,14 @@ enum ws_driver
 int drv_init(void);
 int drv_destroy(void);
 
-int drv_get_itimer(struct itimerspec *p, enum ws_timer);
-int drv_get_loop(struct ws_loop *p);
+int drv_get_rt(struct ws_loop *p);
+int drv_get_rt_itimer(struct itimerspec *p);
 
-ssize_t drv_get_archive(struct ws_archive *p, size_t nel, time_t after);
+ssize_t drv_get_ar(struct ws_archive *p, size_t nel, time_t after);
+int drv_get_ar_itimer(struct itimerspec *p);
 
 int drv_time(time_t *time);
 int drv_settime(time_t time);
-int drv_set_artimer(long itmin, long next);
 
 #ifdef __cplusplus
 }

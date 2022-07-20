@@ -19,7 +19,7 @@
 static void
 usage(FILE *std, int status)
 {
-	fprintf(std, "Usage: " PROGNAME " [-i min] [-l cnt] [-h] [-V] [-S] [-c config]\n");
+	fprintf(std, "Usage: " PROGNAME " [-l cnt] [-h] [-V] [-S] [-c config]\n");
 
 	exit(status);
 }
@@ -95,19 +95,15 @@ main(int argc, char *argv[])
 	/* Default parameters */
 	size_t nel = 10;
 	int use_sensors = 0;
-	long interval = 0;
 	const char *config = "/etc/wslogd.conf";
 
 	(void) setlocale(LC_ALL, "C");
 
 	/* Parse command line */
-	while ((c = getopt(argc, argv, "hVc:i:l:S")) != -1) {
+	while ((c = getopt(argc, argv, "hVc:l:S")) != -1) {
 		switch (c) {
 		case 'c':
 			config = optarg;
-			break;
-		case 'i':
-			interval = atol(optarg);
 			break;
 		case 'l':
 			nel = atoi(optarg);
@@ -136,34 +132,22 @@ main(int argc, char *argv[])
 		goto error;
 	}
 
-	if (interval > 0) {
-		if (drv_init() == -1) {
-			goto error;
-		}
-		if (drv_set_artimer(interval, 0) == -1) {
-			goto error;
-		}
-		if (drv_destroy() == -1) {
-			goto error;
-		}
+	/* Open shared board */
+	if (board_open(0) == -1) {
+		fprintf(stderr, "boad_open: %s\n", strerror(errno));
+		goto error;
+	}
+
+	/* Display */
+	if (use_sensors) {
+		dump_loop(nel);
 	} else {
-		/* Open shared board */
-		if (board_open(0) == -1) {
-			fprintf(stderr, "boad_open: %s\n", strerror(errno));
-			goto error;
-		}
+		dump_ar(nel);
+	}
 
-		/* Display */
-		if (use_sensors) {
-			dump_loop(nel);
-		} else {
-			dump_ar(nel);
-		}
-
-		if (board_unlink() == -1) {
-			fprintf(stderr, "board_unlink: %s\n", strerror(errno));
-			goto error;
-		}
+	if (board_unlink() == -1) {
+		fprintf(stderr, "board_unlink: %s\n", strerror(errno));
+		goto error;
 	}
 
 	exit(0);

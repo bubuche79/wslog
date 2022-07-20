@@ -17,9 +17,11 @@ extern "C" {
 int ws23xx_init(void);
 int ws23xx_destroy(void);
 
-int ws23xx_get_itimer(struct itimerspec *p, enum ws_timer type);
-int ws23xx_get_loop(struct ws_loop *p);
-ssize_t ws23xx_get_archive(struct ws_archive *p, size_t nel, time_t after);
+int ws23xx_get_rt(struct ws_loop *p);
+int ws23xx_get_rt_itimer(struct itimerspec *p);
+
+ssize_t ws23xx_get_ar(struct ws_archive *p, size_t nel, time_t after);
+int ws23xx_get_ar_itimer(struct itimerspec *p);
 
 int ws23xx_set_artimer(long itmin, long next);
 

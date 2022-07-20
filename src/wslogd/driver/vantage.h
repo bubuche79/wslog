@@ -18,9 +18,11 @@ extern "C" {
 int vantage_init(void);
 int vantage_destroy(void);
 
-int vantage_get_itimer(struct itimerspec *p, enum ws_timer type);
-int vantage_get_loop(struct ws_loop *p);
-ssize_t vantage_get_archive(struct ws_archive *p, size_t nel, time_t after);
+int vantage_get_rt(struct ws_loop *p);
+int vantage_get_rt_itimer(struct itimerspec *p);
+
+ssize_t vantage_get_ar(struct ws_archive *p, size_t nel, time_t after);
+int vantage_get_ar_itimer(struct itimerspec *p);
 
 int vantage_time(time_t *time);
 int vantage_adjtime(time_t time);

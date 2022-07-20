@@ -77,7 +77,7 @@ bulk_fetch()
 
 	/* Fetch records, and save them into database */
 	do {
-		sz = drv_get_archive(arbuf, AR_LEN, current);
+		sz = drv_get_ar(arbuf, AR_LEN, current);
 		if (sz == -1) {
 			goto error;
 		} else if (sz > 0) {
@@ -119,7 +119,7 @@ archive_init(struct itimerspec *it)
 	 * Then use configuration supplied frequency. When not set, use the station
 	 * archive time otherwise, when supported by the driver.
 	 */
-	if (drv_get_itimer(it, WS_ITIMER_ARCHIVE) == -1) {
+	if (drv_get_ar_itimer(it) == -1) {
 		if (errno == ENOTSUP) {
 			hw_archive = 0;
 			itimer_setdelay(it, ARCHIVE_INTERVAL, 0);
@@ -213,7 +213,7 @@ archive_timer(void)
 
 	/* Device archive */
 	if (hw_archive) {
-		if ((sz = drv_get_archive(&arbuf, 1, current)) == -1) {
+		if ((sz = drv_get_ar(&arbuf, 1, current)) == -1) {
 			goto error;
 		}
 

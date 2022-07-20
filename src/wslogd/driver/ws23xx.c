@@ -151,74 +151,7 @@ ws23xx_destroy(void)
 }
 
 int
-ws23xx_get_itimer(struct itimerspec *it, enum ws_timer type)
-{
-	uint8_t buf[8];
-
-	it->it_interval.tv_nsec = 0;
-	it->it_value.tv_nsec = 0;
-
-	if (pthread_mutex_lock(&mutex) == -1) {
-		return -1;
-	}
-
-	if (WS_ITIMER_LOOP == type) {
-		uint8_t cnx_type;
-		float cnx_countdown;
-
-		if (ws23xx_read_safe(fd, 0x54d, 4, buf) == -1) {
-			goto error;
-		}
-
-		ws23xx_connection(buf, &cnx_type, 0);
-		ws23xx_interval_sec(buf, &cnx_countdown, 2);
-
-		switch (cnx_type) {
-		case 0:				/* cable */
-			it->it_interval.tv_sec = 8;
-			it->it_value.tv_sec = lround(cnx_countdown) + 2;
-			break;
-
-		case 15:			/* wireless */
-			it->it_interval.tv_sec = 128;
-			it->it_value.tv_sec = lround(cnx_countdown) + 10;
-			break;
-
-		default:
-			goto error;
-			break;
-		}
-	} else if (WS_ITIMER_ARCHIVE == type) {
-		uint16_t save_int;
-		time_t last_sample;
-
-		if (ws23xx_read_safe(fd, 0x6b2, 16, buf) == -1) {
-			goto error;
-		}
-
-		ws23xx_interval_min(buf, &save_int, 0);
-		ws23xx_timestamp(buf, &last_sample, 6);
-
-		it->it_interval.tv_sec = (save_int + 1) * 60;
-		it->it_value.tv_sec = last_sample + it->it_interval.tv_sec - time(NULL) + 10;
-	} else {
-		errno = EINVAL;
-		goto error;
-	}
-
-	if (pthread_mutex_unlock(&mutex) == -1) {
-		return -1;
-	}
-
-	return 0;
-
-error:
-	(void) pthread_mutex_unlock(&mutex);
-	return -1;
-}
-
-int
-ws23xx_get_loop(struct ws_loop *p)
+ws23xx_get_rt(struct ws_loop *p)
 {
 	uint8_t cnx_type;
 	uint8_t wind_invalid;
@@ -317,9 +250,58 @@ error:
 	return -1;
 }
 
+int
+ws23xx_get_rt_itimer(struct itimerspec *it)
+{
+	uint8_t buf[8];
+
+	it->it_interval.tv_nsec = 0;
+	it->it_value.tv_nsec = 0;
+
+	if (pthread_mutex_lock(&mutex) == -1) {
+		return -1;
+	}
+
+	uint8_t cnx_type;
+	float cnx_countdown;
+
+	if (ws23xx_read_safe(fd, 0x54d, 4, buf) == -1) {
+		goto error;
+	}
+
+	ws23xx_connection(buf, &cnx_type, 0);
+	ws23xx_interval_sec(buf, &cnx_countdown, 2);
+
+	switch (cnx_type) {
+	case 0:				/* cable */
+		it->it_interval.tv_sec = 8;
+		it->it_value.tv_sec = lround(cnx_countdown) + 2;
+		break;
+
+	case 15:			/* wireless */
+		it->it_interval.tv_sec = 128;
+		it->it_value.tv_sec = lround(cnx_countdown) + 10;
+		break;
+
+	default:
+		goto error;
+		break;
+	}
+
+	if (pthread_mutex_unlock(&mutex) == -1) {
+		return -1;
+	}
+
+	return 0;
+
+error:
+	(void) pthread_mutex_unlock(&mutex);
+	return -1;
+}
+
 // TODO: handle after argument
 ssize_t
-ws23xx_get_archive(struct ws_archive *ar, size_t nel, time_t after)
+ws23xx_get_ar(struct ws_archive *ar, size_t nel, time_t after)
 {
 	ssize_t i, res;
 	struct ws23xx_ar arbuf[nel];
@@ -363,6 +345,42 @@ ws23xx_get_archive(struct ws_archive *ar, size_t nel, time_t after)
 	}
 
 	return res;
+
+error:
+	(void) pthread_mutex_unlock(&mutex);
+	return -1;
+}
+
+int
+ws23xx_get_ar_itimer(struct itimerspec *it)
+{
+	uint8_t buf[8];
+
+	it->it_interval.tv_nsec = 0;
+	it->it_value.tv_nsec = 0;
+
+	if (pthread_mutex_lock(&mutex) == -1) {
+		return -1;
+	}
+
+	uint16_t save_int;
+	time_t last_sample;
+
+	if (ws23xx_read_safe(fd, 0x6b2, 16, buf) == -1) {
+		goto error;
+	}
+
+	ws23xx_interval_min(buf, &save_int, 0);
+	ws23xx_timestamp(buf, &last_sample, 6);
+
+	it->it_interval.tv_sec = (save_int + 1) * 60;
+	it->it_value.tv_sec = last_sample + it->it_interval.tv_sec - time(NULL) + 10;
+
+	if (pthread_mutex_unlock(&mutex) == -1) {
+		return -1;
+	}
+
+	return 0;
 
 error:
 	(void) pthread_mutex_unlock(&mutex);

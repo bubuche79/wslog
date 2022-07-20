@@ -277,40 +277,7 @@ error:
 }
 
 int
-vantage_get_itimer(struct itimerspec *it, enum ws_timer type)
-{
-	if (WS_ITIMER_LOOP == type) {
-		it->it_interval.tv_sec = 2;
-		it->it_interval.tv_nsec = 500*1000;
-		it->it_value.tv_sec = 0;
-		it->it_value.tv_nsec = 0;
-	} else if (WS_ITIMER_ARCHIVE == type) {
-//		char ftime[20];
-//		size_t current;
-//
-//		/* Compute last archive record timestamp */
-//		if ((current = vantage_rec_last(fd)) == -1) {
-//			goto error;
-//		}
-//
-//		localftime_r(ftime, sizeof(ftime), &current, "%F %R");
-//		syslog(LOG_NOTICE, "last archive: %s", ftime);
-
-		// TODO: check that archives are generated at rounded timestamps
-		itimer_setdelay(it, cfg.ar_period * 60, ARCHIVE_DELAY);
-	} else {
-		errno = EINVAL;
-		goto error;
-	}
-
-	return 0;
-
-error:
-	return -1;
-}
-
-int
-vantage_get_loop(struct ws_loop *p)
+vantage_get_rt(struct ws_loop *p)
 {
 	struct vantage_loop lbuf;
 
@@ -337,8 +304,20 @@ error:
 	return -1;
 }
 
+int
+vantage_get_rt_itimer(struct itimerspec *it)
+{
+	/* Every 2.5 seconds */
+	it->it_interval.tv_sec = 2;
+	it->it_interval.tv_nsec = 500*1000;
+	it->it_value.tv_sec = 0;
+	it->it_value.tv_nsec = 0;
+
+	return 0;
+}
+
 ssize_t
-vantage_get_archive(struct ws_archive *p, size_t nel, time_t after)
+vantage_get_ar(struct ws_archive *p, size_t nel, time_t after)
 {
 	ssize_t i, sz;
 	struct vantage_dmp buf[nel];
@@ -367,6 +346,26 @@ error:
 	(void) vantage_unlock(fd);
 
 	return -1;
+}
+
+int
+vantage_get_ar_itimer(struct itimerspec *it)
+{
+//		char ftime[20];
+//		size_t current;
+//
+//		/* Compute last archive record timestamp */
+//		if ((current = vantage_rec_last(fd)) == -1) {
+//			goto error;
+//		}
+//
+//		localftime_r(ftime, sizeof(ftime), &current, "%F %R");
+//		syslog(LOG_NOTICE, "last archive: %s", ftime);
+
+	// TODO: check that archives are generated at rounded timestamps
+	itimer_setdelay(it, cfg.ar_period * 60, ARCHIVE_DELAY);
+
+	return 0;
 }
 
 int
