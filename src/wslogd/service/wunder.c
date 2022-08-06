@@ -14,6 +14,7 @@
 #include "libws/util.h"
 
 #include "conf.h"
+#include "curl.h"
 #include "board.h"
 #include "wslogd.h"
 #include "service/util.h"
@@ -91,12 +92,6 @@ http_write(char *ptr, size_t size, size_t nmemb, struct ws_http *s)
 	memcpy(s->buf, ptr, sz);
 
 	return sz;
-}
-
-static void
-curl_log(const char *fn, CURLcode code)
-{
-	syslog(LOG_ERR, "%s: %s (%d)", fn, curl_easy_strerror(code), code);
 }
 
 static int
@@ -255,12 +250,6 @@ wunder_init(struct itimerspec *it)
 	}
 
 	/* Initialize */
-	code = curl_global_init(CURL_GLOBAL_DEFAULT);
-	if (code != CURLE_OK) {
-		curl_log("curl_global_init", code);
-		goto error;
-	}
-
 	freq = confp->wunder.freq;
 	if (freq == 0) {
 		freq = 600;
@@ -315,7 +304,5 @@ error:
 int
 wunder_destroy(void)
 {
-	curl_global_cleanup();
-
 	return 0;
 }
