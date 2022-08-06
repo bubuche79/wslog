@@ -20,7 +20,7 @@
 #include "wunder.h"
 
 #define URL_LEN		512
-#define URL 		"weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+#define STATIC_URL 		"weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
 static long freq;
 
@@ -115,7 +115,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 
 	/* Compute GET request */
 	ret = snprintf(str, len,
-			"%s://" URL "?%s=%s&%s=%s&%s=%s&%s=%s.%.3ld",
+			"%s://" STATIC_URL "?%s=%s&%s=%s&%s=%s&%s=%s.%.3ld",
 			confp->wunder.https ? "https" : "http",
 			"action", "updateraw",
 			"ID", confp->wunder.station,

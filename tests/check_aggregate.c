@@ -110,12 +110,12 @@ suite_aggregate(void)
 
 	/* Core test cases */
 	tc_core = tcase_create("core");
-
 	tcase_add_test(tc_core, test_min);
 	tcase_add_test(tc_core, test_max);
 	tcase_add_test(tc_core, test_sum);
 	tcase_add_test(tc_core, test_avg);
 	tcase_add_test(tc_core, test_count);
+
 	suite_add_tcase(s, tc_core);
 
 	return s;
