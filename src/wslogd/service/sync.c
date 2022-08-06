@@ -9,14 +9,22 @@
 #include "service/util.h"
 #include "service/sync.h"
 
-static long freq;		/* Sync. frequency */
+static long freq;		/* Sync. frequency, in seconds */
+static long max_drift;		/* Max drift, in seconds */
+static long panic_drift;	/* Do not synchronize beyond this limit */
 
 int
 sync_init(struct itimerspec *it)
 {
 	freq = confp->sync.freq;
+	max_drift = confp->sync.max_drift;
+	panic_drift = 1000;
+
 	if (freq == 0) {
-		freq = 86400;
+		freq = 7200;
+	}
+	if (max_drift == 0) {
+		max_drift = 2;
 	}
 
 	/*
@@ -51,7 +59,9 @@ sync_timer(void)
 	diff = dev_time - now;
 
 	/* Beyond limit, adjust time */
-	if (labs(diff) > confp->sync.max_drift) {
+	if (labs(diff) > panic_drift) {
+		syslog(LOG_CRIT, "Time beyond limit (%lds)", diff);
+	} else if (labs(diff) > confp->sync.max_drift) {
 		if (drv_settime(now) == -1) {
 			goto error;
 		}

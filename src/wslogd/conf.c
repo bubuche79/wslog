@@ -158,7 +158,7 @@ conf_init(struct ws_conf *cfg)
 
 	/* Time synchronization */
 	cfg->sync.enabled = 0;
-	cfg->sync.freq = 86400;
+	cfg->sync.freq = 7200;
 	cfg->sync.max_drift = 2;
 
 	/* Archive */
