@@ -5,29 +5,10 @@
 #include <time.h>
 #include <syslog.h>
 
-#include "board.h"
 #include "conf.h"
 #include "driver/driver.h"
 #include "service/util.h"
 #include "service/sensor.h"
-
-static int
-sensor_push(const struct ws_loop *p)
-{
-	if (board_lock() == -1) {
-		syslog(LOG_ERR, "board_lock: %m");
-		return -1;
-	}
-
-	board_push(p);
-
-	if (board_unlock() == -1) {
-		syslog(LOG_ERR, "board_unlock: %m");
-		return -1;
-	}
-
-	return 0;
-}
 
 int
 sensor_init(struct itimerspec *it)
@@ -61,32 +42,25 @@ error:
 }
 
 int
-sensor_timer(void)
+sensor_sig_timer(struct ws_loop *rt)
 {
-	struct ws_loop buf;
-
-	buf.time.tv_sec = 0;
+	rt->time.tv_sec = 0;
 
 	/* Read sensors */
-	if (drv_get_rt(&buf) == -1) {
+	if (drv_get_rt(rt) == -1) {
 		goto error;
 	}
 
-	if (buf.time.tv_sec == 0) {
-		if (clock_gettime(CLOCK_REALTIME, &buf.time) == -1) {
+	if (rt->time.tv_sec == 0) {
+		if (clock_gettime(CLOCK_REALTIME, &rt->time) == -1) {
 			syslog(LOG_ERR, "clock_gettime(): %m");
 			goto error;
 		}
 	}
 
-	/* Push loop event in board */
-	if (sensor_push(&buf) == -1) {
-		goto error;
-	}
-
 #if DEBUG
 	syslog(LOG_DEBUG, "Sensor: %.1f°C %hhu%% %.1fhPa",
-			buf.temp, buf.humidity, buf.barometer);
+			rt->temp, rt->humidity, rt->barometer);
 #endif
 
 	return 0;

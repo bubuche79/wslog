@@ -206,41 +206,40 @@ error:
 }
 
 int
-archive_timer(void)
+archive_sig_timer(struct ws_archive *ar)
 {
 	ssize_t sz;
-	struct ws_archive arbuf;
 
 	/* Device archive */
 	if (hw_archive) {
-		if ((sz = drv_get_ar(&arbuf, 1, current)) == -1) {
+		if ((sz = drv_get_ar(ar, 1, current)) == -1) {
 			goto error;
 		}
 
 		if (sz > 0) {
-			current = arbuf.time;
+			current = ar->time;
 		}
 	} else {
-		arbuf.wl_mask = 0;
+		ar->wl_mask = 0;
 		sz = 1;
 	}
 
 	/* Update board */
-	sz = push_record(&arbuf, sz);
+	sz = push_record(ar, sz);
 	if (sz == -1) {
 		goto error;
 	} else if (sz > 0) {
 #ifdef DEBUG
 		char ftime[20];
 
-		localftime_r(ftime, sizeof(ftime), &arbuf.time, "%F %T");
+		localftime_r(ftime, sizeof(ftime), ar->time, "%F %T");
 		syslog(LOG_DEBUG, "Record: %s %.1f°C %hhu%% %.1fhPa",
-				ftime, arbuf.temp, arbuf.humidity, arbuf.barometer);
+				ftime, ar->temp, ar->humidity, ar->barometer);
 #endif
 
 		/* Save to database */
 		if (confp->archive.sqlite.enabled) {
-			if (sqlite_insert(&arbuf, sz) == -1) {
+			if (sqlite_insert(ar, sz) == -1) {
 				goto error;
 			}
 		}

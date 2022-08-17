@@ -14,7 +14,7 @@ static long max_drift;		/* Max drift, in seconds */
 static long panic_drift;	/* Do not synchronize beyond this limit */
 
 int
-sync_init(struct itimerspec *it)
+sync_init(int *flags, struct itimerspec *it)
 {
 	freq = confp->sync.freq;
 	max_drift = confp->sync.max_drift;
@@ -37,6 +37,8 @@ sync_init(struct itimerspec *it)
 	syslog(LOG_INFO, "sync.freq: %ld\n", it->it_interval.tv_sec);
 #endif
 
+	*flags = SRV_TIMER;
+
 	syslog(LOG_INFO, "Time synchronization service ready");
 
 	return 0;
@@ -46,7 +48,7 @@ error:
 }
 
 int
-sync_timer(void)
+sync_sig_timer(void)
 {
 	time_t dev_time;
 	time_t now, diff;

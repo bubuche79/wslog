@@ -11,9 +11,10 @@
 extern "C" {
 #endif
 
-int sync_init(struct itimerspec *it);
-int sync_timer(void);
+int sync_init(int *flags, struct itimerspec *it);
 int sync_destroy(void);
+
+int sync_sig_timer(void);
 
 #ifdef __cplusplus
 }
