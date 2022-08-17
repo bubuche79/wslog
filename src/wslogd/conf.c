@@ -157,7 +157,7 @@ conf_init(struct ws_conf *cfg)
 #endif
 
 	/* Time synchronization */
-	cfg->sync.enabled = 0;
+	cfg->sync.enabled = 1;
 	cfg->sync.freq = 7200;
 	cfg->sync.max_drift = 2;
 
@@ -168,6 +168,10 @@ conf_init(struct ws_conf *cfg)
 	/* SQLite */
 	cfg->archive.sqlite.enabled = 1;
 	cfg->archive.sqlite.db = WS_CONF_SQLITE_DB;
+
+	/* StatIC */
+	cfg->stat_ic.enabled = 0;
+	cfg->stat_ic.freq = 600;
 
 	/* Wunderstation */
 	cfg->wunder.enabled = 0;
@@ -239,6 +243,20 @@ conf_decode(void *p, const char *key, const char *value)
 			ws_getbool(value, &cfg->archive.sqlite.enabled);
 		} else if (!strcmp(key, "archive.sqlite.db")) {
 			cfg->archive.sqlite.db = strdup(value);
+		} else {
+			errno = EINVAL;
+		}
+	} else if (!strncmp(key, "static.", 7)) {
+		if (!strcmp(key, "static.enabled")) {
+			ws_getbool(value, &cfg->stat_ic.enabled);
+		} else if (!strcmp(key, "static.station")) {
+			cfg->stat_ic.station = strdup(value);
+		} else if (!strcmp(key, "static.username")) {
+			cfg->stat_ic.username = strdup(value);
+		} else if (!strcmp(key, "static.password")) {
+			cfg->stat_ic.password = strdup(value);
+		} else if (!strcmp(key, "static.freq")) {
+			ws_getint(value, &cfg->stat_ic.freq);
 		} else {
 			errno = EINVAL;
 		}

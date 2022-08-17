@@ -132,7 +132,7 @@ struct ws_archive
 #endif
 	float dew_point; 		/* Dew point (°C) */
 	float windchill;		/* Windchill temperature (°C) */
-	float heat_index;		/* Head index (°C) */
+	float heat_index;		/* Heat index (°C) */
 
 	float in_temp;			/* Indoor temperature (°C) */
 	uint8_t in_humidity;		/* Indoor humidity (%) */

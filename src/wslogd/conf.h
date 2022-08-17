@@ -66,6 +66,15 @@ struct ws_conf
 	struct
 	{
 		int enabled;			/* Enabled flag */
+		const char *station;		/* Station id */
+		const char *username;		/* Username id */
+		const char *password;		/* Account password */
+		int freq;			/* Update frequency, in seconds */
+	} stat_ic;
+
+	struct
+	{
+		int enabled;			/* Enabled flag */
 		int https;			/* HTTPS flag */
 		const char *station;		/* Station id */
 		const char *password;		/* Account password */
