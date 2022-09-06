@@ -17,6 +17,7 @@
 #define WF_WIND_SPEED 		_WF_FLAG(WS_WIND_SPEED)
 #define WF_WIND_DIR 		_WF_FLAG(WS_WIND_DIR)
 #define WF_WIND_SAMPLES		_WF_FLAG(WS_WIND_SAMPLES)
+#define WF_10M_WIND_SPEED	_WF_FLAG(WS_10M_WIND_SPEED)
 #define WF_HI_WIND_SPEED	_WF_FLAG(WS_HI_WIND_SPEED)
 #define WF_HI_WIND_DIR		_WF_FLAG(WS_HI_WIND_DIR)
 #define WF_RAIN			_WF_FLAG(WS_RAIN)
@@ -45,6 +46,7 @@ enum
 	WS_WIND_SPEED,
 	WS_WIND_DIR,
 	WS_WIND_SAMPLES,
+	WS_10M_WIND_SPEED,
 	WS_HI_WIND_SPEED,
 	WS_HI_WIND_DIR,
 	WS_RAIN,
@@ -82,6 +84,7 @@ struct ws_loop
 	uint8_t humidity; 		/* Humidity (%) */
 	float wind_speed;		/* Wind speed (m/s) */
 	uint16_t wind_dir;		/* Wind direction (°) */
+	float wind_10m_speed;		/* 10-minutes wind speed (m/s) */
 	float hi_wind_10m_speed;	/* 10-minutes wind gust speed (m/s) */
 	uint16_t hi_wind_10m_dir;	/* 10-minutes wind gust direction (°) */
 	float rain_day;			/* Daily rain (mm) */
