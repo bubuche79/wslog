@@ -53,7 +53,6 @@ wslogd_SOURCES = \
 	db/sqlite.c \
 	service/archive.c \
 	service/sensor.c \
-	service/socket.c \
 	service/sync.c \
 	service/util.c \
 	service/wunder.c \
@@ -64,7 +63,6 @@ wslogd_SOURCES = \
 	db/sqlite.h \
 	service/archive.h \
 	service/sensor.h \
-	service/socket.h \
 	service/sync.h \
 	service/util.h \
 	service/wunder.h \

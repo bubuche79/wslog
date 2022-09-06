@@ -22,7 +22,6 @@
 #include "service/util.h"
 #include "service/archive.h"
 #include "service/sensor.h"
-#include "service/socket.h"
 #include "service/sync.h"
 #include "service/wunder.h"
 #include "worker.h"
@@ -291,16 +290,6 @@ threads_init(void)
 	} else {
 		syslog(LOG_WARNING, "Console time synchronization disabled");
 	}
-
-	/* Networking */
-	if (sock_init() == -1) {
-		goto error;
-	}
-	threads[i].w_signo = signo(i);
-	threads[i].w_main = sock_main;
-	threads[i].w_destroy = sock_destroy;
-
-	i++;
 
 	/* Archive */
 	if (archive_init(&threads[i].w_itimer) == -1) {
