@@ -34,7 +34,7 @@ sync_init(int *flags, struct itimerspec *it)
 	itimer_setdelay(it, freq, 300);
 
 #ifdef DEBUG
-	syslog(LOG_INFO, "sync.freq: %ld\n", it->it_interval.tv_sec);
+	syslog(LOG_INFO, "sync.freq=%ld\n", it->it_interval.tv_sec);
 #endif
 
 	*flags = SRV_TIMER;

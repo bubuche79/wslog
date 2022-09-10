@@ -129,7 +129,7 @@ conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 	}
 	if (d->main_wind_dir != UINT8_MAX) {
 		p->wl_mask |= WF_WIND_DIR;
-		p->avg_wind_dir= d->main_wind_dir;
+		p->avg_wind_dir = d->main_wind_dir;
 	}
 	if (d->hi_wind_speed != UINT8_MAX) {
 		p->wl_mask |= WF_HI_WIND_SPEED;

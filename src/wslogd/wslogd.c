@@ -45,6 +45,10 @@ loop_init(void)
 	openlog(PROGNAME, LOG_PID, confp->log_facility);
 	(void) setlogmask(LOG_UPTO(confp->log_level));
 
+	if (dry_run) {
+		syslog(LOG_WARNING, "Dry run mode");
+	}
+
 	/* Need libcurl */
 	if (confp->wunder.enabled || confp->stat_ic.enabled) {
 		CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);

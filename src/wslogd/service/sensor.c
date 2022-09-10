@@ -29,8 +29,9 @@ sensor_init(struct itimerspec *it)
 	}
 
 #ifdef DEBUG
-	syslog(LOG_INFO, "driver.freq: %ld\n", it->it_interval.tv_sec);
-	syslog(LOG_INFO, "driver.delay: %ld\n", it->it_value.tv_sec);
+	syslog(LOG_INFO, "driver.freq=%ld.%ld\n", it->it_interval.tv_sec,
+			it->it_interval.tv_nsec / 1000000);
+	syslog(LOG_INFO, "driver.delay=%ld\n", it->it_value.tv_sec);
 #endif
 
 	syslog(LOG_INFO, "Sensor service ready");

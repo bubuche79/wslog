@@ -21,7 +21,7 @@
 		} \
 		err = aggr_finish(&abuf, &actual); \
 		ck_assert_int_eq(rc, err); \
-		ck_assert_double_eq_tol(v, actual, 0.01); \
+		ck_assert_int_eq(v, nearbyint(actual)); \
 	} while (0)
 
 static const int a1[] = { 1, 3, 6, 8 };

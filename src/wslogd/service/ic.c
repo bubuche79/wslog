@@ -51,6 +51,7 @@ static long freq;
 static int datfd;		/* Output file */
 
 static time_t next;
+static int datidx;
 static struct ic dat[2];
 
 static void
@@ -90,19 +91,19 @@ ic_write(int fd, const struct ic *p)
 	ret = dprintf(fd, "# INFORMATIONS\n"
 			"id_station=%s\n"
 			"type=txt\n"
-			"version=%s\n"
+			"version=%s-%s\n"
 			"date_releve=%s\n"
 			"heure_releve_utc=%s\n",
 			confp->stat_ic.station,
-			PACKAGE_VERSION,
+			PACKAGE_NAME, PACKAGE_VERSION,
 			date, time_utc);
 
 	dwrite(fd, "temperature=%.1f\n", p->temp);
-	dwrite(fd, "pression=%1.f\n", p->barometer);
+	dwrite(fd, "pression=%.1f\n", p->barometer);
 	dwrite(fd, "humidite=%hhu\n", p->humidity);
-	dwrite(fd, "point_de_rosee=%1.f\n", p->dew_point);
+	dwrite(fd, "point_de_rosee=%.1f\n", p->dew_point);
 	dwrite(fd, "vent_dir_moy=%d\n", (int) p->wind_10m_dir);
-	dwrite(fd, "vent_moyen=%1.f\n", p->wind_10m_speed);
+	dwrite(fd, "vent_moyen=%.1f\n", p->wind_10m_speed);
 	dwrite(fd, "vent_rafales=%.1f\n", p->hi_wind_10m_speed);
 	dwrite(fd, "pluie_intensite=%.1f\n", p->rain_rate);
 //	dwrite(fd, "pluie_intensite_maxi_1h=%.1f\n", p->hi_rain_rate_1h);
@@ -207,6 +208,9 @@ ic_init(int *flags, struct itimerspec *it)
 	*flags = SRV_EVENT_RT | SRV_EVENT_AR;
 
 	/* Internal data */
+	datidx = 0;
+	next = 0;
+
 	ic_reset(&dat[0]);
 	ic_reset(&dat[1]);
 
@@ -230,11 +234,12 @@ ic_sig_rt(const struct ws_loop *rt)
 	struct ic *p;
 
 	if (!next || rt->time.tv_sec < next) {
-		p = &dat[0];
+		p = &dat[datidx];
 	} else {
-		p = &dat[1];
+		p = &dat[(datidx + 1) & 1];
 	}
 
+	p->dew_point = rt->dew_point;
 	p->rain_rate = rt->rain_rate;
 	p->rain_1h = rt->rain_1h;
 	p->rain_day = rt->rain_day;
@@ -249,23 +254,26 @@ ic_sig_rt(const struct ws_loop *rt)
 int
 ic_sig_ar(const struct ws_archive *ar)
 {
-	struct ic *curr = &dat[0];
+	struct ic *curr = &dat[datidx];
 
 	curr->time = ar->time;
 
 	curr->temp = ar->temp;
 	curr->barometer = ar->barometer;
 	curr->humidity = ar->humidity;
-	curr->dew_point = ar->dew_point;
-//	curr->wind_10m_dir = ar->avg_wind_dir;
+//	curr->dew_point = ar->dew_point;
+	curr->wind_10m_dir = ar->avg_wind_dir * 22.5;
 	curr->wind_10m_speed = ar->avg_wind_speed * 3.6;
 	curr->hi_wind_10m_speed = ar->hi_wind_speed * 3.6;
 
 	/* Aggregate */
 //	curr->rain_year += ar->rain_fall;
-
+//
 	if (curr->wind_10m_speed > 0) {
-		aggr_finish(&curr->aggr.wind_10m_dir, &curr->wind_10m_dir);
+		double aggr;
+
+		aggr_finish(&curr->aggr.wind_10m_dir, &aggr);
+		syslog(LOG_INFO, "aggr/ar: %d %d\n", (int) aggr, (int) curr->wind_10m_dir);
 	}
 
 	/* Process archive element */
@@ -276,10 +284,10 @@ ic_sig_ar(const struct ws_archive *ar)
 	}
 
 	/* Next archive time */
-	next = ar->time + confp->archive.freq;
+	ic_reset(curr);
 
-	memcpy(curr, &dat[1], sizeof(*curr));
-	ic_reset(&dat[1]);
+	datidx = (datidx + 1) & 1;
+	next = ar->time + freq;
 
 	return 0;
 

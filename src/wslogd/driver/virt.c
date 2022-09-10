@@ -21,7 +21,7 @@
 
 #define LOOP_INTERVAL		2
 #define ARCHIVE_INTERVAL	60
-#define ARCHIVE_DELAY		5
+#define ARCHIVE_DELAY		10
 
 static int hw_archive;
 static struct timespec io_delay;

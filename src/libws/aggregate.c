@@ -21,6 +21,22 @@ rad2deg(double rad)
 }
 
 void
+aggr_init(struct aggr_data *p, enum aggr_type type)
+{
+	p->type = type;
+	p->count = 0;
+
+	switch (p->type) {
+	case AGGR_AVG:
+	case AGGR_SUM:
+		p->current = 0;
+		break;
+	default:
+		break;
+	}
+}
+
+void
 aggr_update(struct aggr_data *p, double value)
 {
 	switch (p->type)
