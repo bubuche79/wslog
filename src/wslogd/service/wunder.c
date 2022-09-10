@@ -240,7 +240,7 @@ error:
 }
 
 int
-wunder_init(struct itimerspec *it)
+wunder_init(int *flags, struct itimerspec *it)
 {
 	CURLcode code;
 
@@ -264,7 +264,7 @@ error:
 }
 
 int
-wunder_timer(void)
+wunder_sig_timer(void)
 {
 	struct ws_loop arbuf;
 	const struct ws_loop *p;

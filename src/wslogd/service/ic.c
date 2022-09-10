@@ -82,7 +82,7 @@ ic_write(int fd, const struct ic *p)
 	char date[20];
 	char time_utc[20];
 
-	lseek(fd, 0, SEEK_SET);
+	ftruncate(fd, 0);
 
 	gmftime(date, sizeof(date), &p->time, "%d/%m/%y");
 	gmftime(time_utc, sizeof(time_utc), &p->time, "%H:%M");
@@ -101,16 +101,16 @@ ic_write(int fd, const struct ic *p)
 	dwrite(fd, "pression=%1.f\n", p->barometer);
 	dwrite(fd, "humidite=%hhu\n", p->humidity);
 	dwrite(fd, "point_de_rosee=%1.f\n", p->dew_point);
-	dwrite(fd, "vent_dir_moy=%0.f\n", p->wind_10m_dir);
-	dwrite(fd, "vent_moyen%1.f\n", p->wind_10m_speed);
+	dwrite(fd, "vent_dir_moy=%d\n", (int) p->wind_10m_dir);
+	dwrite(fd, "vent_moyen=%1.f\n", p->wind_10m_speed);
 	dwrite(fd, "vent_rafales=%.1f\n", p->hi_wind_10m_speed);
 	dwrite(fd, "pluie_intensite=%.1f\n", p->rain_rate);
-	dwrite(fd, "pluie_intensite_maxi_1h=%.1f\n", p->hi_rain_rate_1h);
+//	dwrite(fd, "pluie_intensite_maxi_1h=%.1f\n", p->hi_rain_rate_1h);
 	dprintf(fd, "# PARAMETRES TEMPS PASSE\n");
 	dprintf(fd, "pluie_cumul_1h=%.1f\n", p->rain_1h);
 	dprintf(fd, "pluie_cumul=%.1f\n", p->rain_day);
 	dprintf(fd, "pluie_cumul_heure_utc=%s\n", time_utc);
-	dprintf(fd, "pluie_cumul_annee=%s\n", p->rain_year);
+//	dprintf(fd, "pluie_cumul_annee=%.1f\n", p->rain_year);
 //	."pluie_intensite_maxi=$max_rainRate_today\n"
 //	."pluie_intensite_maxi_heure_utc=$max_rainRate_todayTime\n"
 //	"tn_heure_utc=$min_temp_todayTime\n"
@@ -185,6 +185,7 @@ ic_init(int *flags, struct itimerspec *it)
 {
 	char template[20] = "/tmp/wslogXXXXXX";
 
+	/* Check parameters */
 	if (!confp->stat_ic.station || !confp->stat_ic.username || !confp->stat_ic.password) {
 		syslog(LOG_ERR, "StatIC: station, username or password not set");
 		goto error;
@@ -205,6 +206,10 @@ ic_init(int *flags, struct itimerspec *it)
 
 	*flags = SRV_EVENT_RT | SRV_EVENT_AR;
 
+	/* Internal data */
+	ic_reset(&dat[0]);
+	ic_reset(&dat[1]);
+
 	return 0;
 
 error:
@@ -224,7 +229,7 @@ ic_sig_rt(const struct ws_loop *rt)
 {
 	struct ic *p;
 
-	if (rt->time.tv_sec < next) {
+	if (!next || rt->time.tv_sec < next) {
 		p = &dat[0];
 	} else {
 		p = &dat[1];
