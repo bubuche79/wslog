@@ -75,32 +75,32 @@ struct ws_loop
 	struct timespec time;		/* Data time */
 	uint32_t wl_mask;		/* Fields mask */
 
-	float barometer;		/* Barometer, sea level pressure (hPa) */
+	double barometer;		/* Barometer, sea level pressure (hPa) */
 #if 0
-	float pressure;			/* Absolute pressure (hPa) */
-	float altimeter;		/* altimeter, altitude corrected pressure (hPa) */
+	double pressure;		/* Absolute pressure (hPa) */
+	double altimeter;		/* altimeter, altitude corrected pressure (hPa) */
 #endif
-	float temp;			/* Temperature (°C) */
+	double temp;			/* Temperature (°C) */
 	uint8_t humidity; 		/* Humidity (%) */
-	float wind_speed;		/* Wind speed (m/s) */
+	double wind_speed;		/* Wind speed (m/s) */
 	uint16_t wind_dir;		/* Wind direction (°) */
-	float wind_10m_speed;		/* 10-minutes wind speed (m/s) */
-	float hi_wind_10m_speed;	/* 10-minutes wind gust speed (m/s) */
+	double wind_10m_speed;		/* 10-minutes wind speed (m/s) */
+	double hi_wind_10m_speed;	/* 10-minutes wind gust speed (m/s) */
 	uint16_t hi_wind_10m_dir;	/* 10-minutes wind gust direction (°) */
-	float rain_day;			/* Daily rain (mm) */
-	float rain_rate;		/* Rain rate (mm/hr) */
-	float rain_1h;			/* Accumulated rain in the past hour (mm) */
-	float rain_24h;			/* Accumulated rain in the past 24 hours (mm) */
+	double rain_day;		/* Daily rain (mm) */
+	double rain_rate;		/* Rain rate (mm/hr) */
+	double rain_1h;			/* Accumulated rain in the past hour (mm) */
+	double rain_24h;		/* Accumulated rain in the past 24 hours (mm) */
 #if 0
-	float sample_et;		/* Sample evapotranspiration (mm) */
+	double sample_et;		/* Sample evapotranspiration (mm) */
 #endif
 	uint16_t solar_rad;		/* Solar radiation (W/m³) */
-	float uv;			/* UV index */
-	float dew_point; 		/* Dew point (°C) */
-	float windchill;		/* Windchill temperature (°C) */
-	float heat_index;		/* Heat index (°C) */
+	double uv;			/* UV index */
+	double dew_point; 		/* Dew point (°C) */
+	double windchill;		/* Windchill temperature (°C) */
+	double heat_index;		/* Heat index (°C) */
 
-	float in_temp;			/* Indoor temperature (°C) */
+	double in_temp;			/* Indoor temperature (°C) */
 	uint8_t in_humidity;		/* Indoor humidity (%) */
 };
 
@@ -110,34 +110,34 @@ struct ws_archive
 	time_t interval;		/* Archive interval, in seconds */
 	uint32_t wl_mask;		/* Fields mask */
 
-	float barometer;		/* Barometer, sea level pressure (hPa) */
+	double barometer;		/* Barometer, sea level pressure (hPa) */
 #if 0
-	float pressure;			/* Absolute pressure (hPa) */
-	float altimeter;		/* Altimeter, altitude corrected pressure (hPa) */
+	double pressure;		/* Absolute pressure (hPa) */
+	double altimeter;		/* Altimeter, altitude corrected pressure (hPa) */
 #endif
-	float temp;			/* Temperature (°C) */
-	float hi_temp;			/* High temperature (°C) */
-	float lo_temp;			/* Low temperature (°C) */
+	double temp;			/* Temperature (°C) */
+	double hi_temp;			/* High temperature (°C) */
+	double lo_temp;			/* Low temperature (°C) */
 	uint8_t humidity; 		/* Humidity (%) */
-	float avg_wind_speed;		/* Wind speed (m/s) */
+	double avg_wind_speed;		/* Wind speed (m/s) */
 	uint16_t avg_wind_dir;		/* Wind direction (°) */
 	uint16_t wind_samples;		/* Wind samples */
-	float hi_wind_speed;		/* High wind speed (m/s) */
+	double hi_wind_speed;		/* High wind speed (m/s) */
 	uint16_t hi_wind_dir;		/* High wind direction (°) */
-	float rain_fall;		/* Sample rain fall (mm) */
-	float hi_rain_rate;		/* High rain rate (mm/hr) */
+	double rain_fall;		/* Sample rain fall (mm) */
+	double hi_rain_rate;		/* High rain rate (mm/hr) */
 #if 0
-	float rain_1h;			/* accumulated rain in the past hour (mm) */
-	float rain_24h;			/* accumulated rain in the past 24 hours (mm) */
-	float sample_et;		/* sample evapotranspiration (mm) */
+	double rain_1h;			/* accumulated rain in the past hour (mm) */
+	double rain_24h;		/* accumulated rain in the past 24 hours (mm) */
+	double sample_et;		/* sample evapotranspiration (mm) */
 	uint16_t radiation;		/* solar radiation (W/m³) */
-	float uv;			/* UV index */
+	double uv;			/* UV index */
 #endif
-	float dew_point; 		/* Dew point (°C) */
-	float windchill;		/* Windchill temperature (°C) */
-	float heat_index;		/* Heat index (°C) */
+	double dew_point; 		/* Dew point (°C) */
+	double windchill;		/* Windchill temperature (°C) */
+	double heat_index;		/* Heat index (°C) */
 
-	float in_temp;			/* Indoor temperature (°C) */
+	double in_temp;			/* Indoor temperature (°C) */
 	uint8_t in_humidity;		/* Indoor humidity (%) */
 };
 
