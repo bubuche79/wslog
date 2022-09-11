@@ -10,6 +10,20 @@
 
 #include "suites.h"
 
+#define ck_assert_avgdeg(arr, len, rc, v) \
+	do { \
+		int i, err; \
+		double actual; \
+		struct aggr abuf; \
+		aggr_init_avgdeg(&abuf); \
+		for (i = 0; i < len; i++) { \
+			aggr_add(&abuf, arr[i]); \
+		} \
+		err = aggr_finish(&abuf, &actual); \
+		ck_assert_int_eq(rc, err); \
+		ck_assert_int_eq(v, nearbyint(actual)); \
+	} while (0)
+
 static const int a1[] = { 1, 3, 6, 8 };
 static const int a2[] = { 8, 6, 5, 2, 0 };
 static const int a3[] = { -1, 0, 4 };
@@ -60,6 +74,21 @@ aggr_count(const int *arr, size_t len)
 	return aggr(arr, len, AGGR_COUNT);
 }
 
+static int
+aggr_avgdeg(const double *arr, size_t len, double *v)
+{
+	int i;
+	struct aggr abuf;
+
+	aggr_init_avgdeg(&abuf);
+
+	for (i = 0; i < len; i++) {
+		aggr_add(&abuf, arr[i]);
+	}
+
+	return aggr_finish(&abuf, v);
+}
+
 START_TEST(test_min)
 {
 	ck_assert_double_eq(aggr_min(a1, array_size(a1)), 1.0);
@@ -92,6 +121,21 @@ START_TEST(test_avg)
 }
 END_TEST
 
+START_TEST(test_avgdeg)
+{
+	double set1[] = { 30, 330, 30 };
+	double set2[] = { 90, 180, 270, 360 };
+	double set3[] = { 10, 20, 30 };
+
+	ck_assert_avgdeg(set1, 0, -1, 0);
+	ck_assert_avgdeg(set1, 1, 0, 30);
+	ck_assert_avgdeg(set1, 2, 0, 360);
+
+	ck_assert_avgdeg(set2, 4, 0, 270);
+	ck_assert_avgdeg(set3, 3, 0, 20);
+}
+END_TEST
+
 START_TEST(test_count)
 {
 	ck_assert_double_eq(aggr_count(a1, array_size(a1)), 4.0);
@@ -110,12 +154,13 @@ suite_aggregate(void)
 
 	/* Core test cases */
 	tc_core = tcase_create("core");
-
 	tcase_add_test(tc_core, test_min);
 	tcase_add_test(tc_core, test_max);
 	tcase_add_test(tc_core, test_sum);
 	tcase_add_test(tc_core, test_avg);
+	tcase_add_test(tc_core, test_avgdeg);
 	tcase_add_test(tc_core, test_count);
+
 	suite_add_tcase(s, tc_core);
 
 	return s;

@@ -129,7 +129,7 @@ conv_ar_dmp(struct ws_archive *p, const struct vantage_dmp *d)
 	}
 	if (d->main_wind_dir != UINT8_MAX) {
 		p->wl_mask |= WF_WIND_DIR;
-		p->avg_wind_dir= d->main_wind_dir;
+		p->avg_wind_dir = d->main_wind_dir;
 	}
 	if (d->hi_wind_speed != UINT8_MAX) {
 		p->wl_mask |= WF_HI_WIND_SPEED;
@@ -166,13 +166,17 @@ conv_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 	if (d->wind_dir != 0) {
 		p->wl_mask |= WF_WIND_SPEED | WF_WIND_DIR;
 		p->wind_speed = vantage_speed(d->wind_speed, 0);
-		p->wind_dir= d->wind_dir;
+		p->wind_dir = d->wind_dir;
 	}
 
+	if (d->wind_avg_10m != 0) {
+		p->wl_mask |= WF_10M_WIND_SPEED;
+		p->wind_10m_speed = vantage_speed(d->wind_avg_10m, 0);
+	}
 	if (d->wind_hi_10m_dir != 0) {
 		p->wl_mask |= WF_HI_WIND_SPEED | WF_HI_WIND_DIR;
 		p->hi_wind_10m_speed = vantage_speed(d->wind_hi_10m_speed, 0);
-		p->hi_wind_10m_dir= d->wind_hi_10m_dir;
+		p->hi_wind_10m_dir = d->wind_hi_10m_dir;
 	}
 
 	if (d->dew_point != INT8_MAX) {

@@ -13,6 +13,7 @@
 
 #include "libws/conf.h"
 
+#include "curl.h"
 #include "conf.h"
 #include "worker.h"
 
@@ -44,7 +45,23 @@ loop_init(void)
 	openlog(PROGNAME, LOG_PID, confp->log_facility);
 	(void) setlogmask(LOG_UPTO(confp->log_level));
 
+	if (dry_run) {
+		syslog(LOG_WARNING, "Dry run mode");
+	}
+
+	/* Need libcurl */
+	if (confp->wunder.enabled || confp->stat_ic.enabled) {
+		CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);
+		if (code != CURLE_OK) {
+			curl_log("curl_global_init", code);
+			goto error;
+		}
+	}
+
 	return 0;
+
+error:
+	return -1;
 }
 
 static int
@@ -66,6 +83,16 @@ loop_reinit(const char *config_file)
 
 error:
 	return -1;
+}
+
+static void
+loop_destroy()
+{
+	if (confp->wunder.enabled || confp->stat_ic.enabled) {
+		curl_global_cleanup();
+	}
+
+	closelog();
 }
 
 int
@@ -145,7 +172,7 @@ exit:
 		syslog(LOG_ERR, "Shutdown complete (abort)");
 	}
 
-	closelog();
+	loop_destroy();
 
 	exit(ret);
 }

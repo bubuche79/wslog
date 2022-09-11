@@ -26,8 +26,8 @@ suite_util(void)
 
 	/* Core test cases */
 	tc_core = tcase_create("core");
-
 	tcase_add_test(tc_core, test_round_scale);
+
 	suite_add_tcase(s, tc_core);
 
 	return s;

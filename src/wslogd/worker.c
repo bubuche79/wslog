@@ -22,25 +22,31 @@
 #include "service/util.h"
 #include "service/archive.h"
 #include "service/sensor.h"
+#include "service/ic.h"
 #include "service/sync.h"
 #include "service/wunder.h"
 #include "worker.h"
 
-#define signo(i)	(SIGRTMIN + (i))
+#define sigrtno(i)	(SIGRTMIN + (i))
 
 struct worker
 {
-	int w_signo;			/* Signal number */
+	int signo;				/* Signal number */
 
-	int (*w_main) (void);		/* Simple thread runner */
+	int (*wmain)(void);			/* Simple thread runner */
+	int (*wdestroy)(void);			/* Destroy */
 
-	struct itimerspec w_itimer;	/* Interval timer */
-	int (*w_action) (void);		/* Action on timer signal */
+	int flags;				/* Event flags */
+	struct itimerspec itimer;		/* Interval timer */
+	int (*ef_timer)(void);			/* Action on timer signal */
+	int (*ef_rt)(const struct ws_loop *);	/* Action on real-time sensor data */
+	int (*ef_ar)(const struct ws_archive *);	/* Action on archive data*/
 
-	int (*w_destroy) (void);
+	struct ws_loop rt;
+	struct ws_archive ar;
 
-	pthread_t w_thread;		/* Thread id */
-	int w_failures;			/* Number of failures */
+	pthread_t tid;				/* Thread id */
+	int failures;				/* Number of failures */
 };
 
 static int startup = 1;
@@ -105,11 +111,13 @@ sigtimer_main(void *arg)
 
 	/* Blocked signals */
 	(void) sigemptyset(&set);
-	(void) sigaddset(&set, dt->w_signo);
+	(void) sigaddset(&set, dt->signo);
 
 	/* Create timer */
-	if (sigtimer_create(dt->w_signo, &dt->w_itimer, &timer) == -1) {
-		goto error;
+	if (dt->ef_timer) {
+		if (sigtimer_create(dt->signo, &dt->itimer, &timer) == -1) {
+			goto error;
+		}
 	}
 
 	/* Signal notifications */
@@ -123,17 +131,34 @@ sigtimer_main(void *arg)
 			if (hangup_pending || shutdown_pending) {
 				/* Stop requested */
 			} else {
-				if (dt->w_action() == -1) {
-					dt->w_failures++;
+				int dt_ret = -1;
+				int si_code = info.si_code;
+
+				if (si_code == SI_TIMER) {
+					dt_ret = dt->ef_timer();
+				} else if (si_code == SI_QUEUE) {
+					int ef_code = info.si_value.sival_int;
+
+					if (ef_code == SRV_EVENT_RT) {
+						dt_ret = dt->ef_rt(&dt->rt);
+					} else if (ef_code == SRV_EVENT_AR) {
+						dt_ret = dt->ef_ar(&dt->ar);
+					}
+				}
+
+				if (dt_ret == -1) {
+					dt->failures++;
 				}
 			}
 		}
 	}
 
-	(void) timer_delete(&timer);
+	if (dt->ef_timer) {
+		(void) timer_delete(&timer);
+	}
 
 	/* Cleanup */
-	if (dt->w_destroy() == -1) {
+	if (dt->wdestroy() == -1) {
 		return NULL;
 	}
 	return NULL;
@@ -141,7 +166,7 @@ sigtimer_main(void *arg)
 error:
 	errsv = errno;
 	(void) timer_delete(&timer);
-	(void) dt->w_destroy();
+	(void) dt->wdestroy();
 
 	errno = errsv;
 	return NULL;
@@ -155,12 +180,12 @@ sigthread_main(void *arg)
 	dt = (struct worker *) arg;
 
 	while (!shutdown_pending && !hangup_pending) {
-		if (dt->w_main() == -1) {
-			dt->w_failures++;
+		if (dt->wmain() == -1) {
+			dt->failures++;
 		}
 	}
 
-	if (dt->w_destroy() == -1) {
+	if (dt->wdestroy() == -1) {
 		return NULL;
 	}
 	return NULL;
@@ -171,13 +196,13 @@ sigthread_create(struct worker *dt)
 {
 	void *(*func) (void *);
 
-	if (dt->w_main) {
+	if (dt->wmain) {
 		func = sigthread_main;
 	} else {
 		func = sigtimer_main;
 	}
 
-	if (pthread_create(&dt->w_thread, NULL, func, dt) == -1) {
+	if (pthread_create(&dt->tid, NULL, func, dt) == -1) {
 		syslog(LOG_ERR, "pthread_create: %m");
 		return -1;
 	}
@@ -191,20 +216,20 @@ sigthread_kill(struct worker *dt)
 	void *th_res;
 
 	/* Kill thread */
-	if (dt->w_main) {
-		if (pthread_cancel(dt->w_thread) == -1) {
+	if (dt->wmain) {
+		if (pthread_cancel(dt->tid) == -1) {
 			syslog(LOG_ERR, "pthread_cancel: %m");
 			goto error;
 		}
 	} else {
-		if (pthread_kill(dt->w_thread, dt->w_signo) == -1) {
-			syslog(LOG_ERR, "pthread_kill %d: %m", dt->w_signo);
+		if (pthread_kill(dt->tid, dt->signo) == -1) {
+			syslog(LOG_ERR, "pthread_kill %d: %m", dt->signo);
 			goto error;
 		}
 	}
 
 	/* Wait for thread to complete */
-	if (pthread_join(dt->w_thread, &th_res) == -1) {
+	if (pthread_join(dt->tid, &th_res) == -1) {
 		syslog(LOG_ERR, "pthread_join: %m");
 		goto error;
 	}
@@ -213,6 +238,60 @@ sigthread_kill(struct worker *dt)
 
 error:
 	return -1;
+}
+
+static int
+sigevent_sensor()
+{
+	int ret;
+	struct ws_loop rt;
+
+	ret = sensor_sig_timer(&rt);
+
+	/* Notify other threads */
+	if (ret == 0) {
+		int i;
+
+		for (i = 0; i < threads_nel; i++) {
+			struct worker *dt = &threads[i];
+
+			if (dt->flags & SRV_EVENT_RT) {
+				union sigval val = { SRV_EVENT_RT };
+
+				memcpy(&dt->rt, &rt, sizeof(rt));
+				pthread_sigqueue(dt->tid, dt->signo, val);
+			}
+		}
+	}
+
+	return ret;
+}
+
+static int
+sigevent_archive()
+{
+	int ret;
+	struct ws_archive ar;
+
+	ret = archive_sig_timer(&ar);
+
+	/* Notify other threads */
+	if (ret == 0) {
+		int i;
+
+		for (i = 0; i < threads_nel; i++) {
+			struct worker *dt = &threads[i];
+
+			if (threads[i].flags & SRV_EVENT_AR) {
+				union sigval val = { SRV_EVENT_AR };
+
+				memcpy(&dt->ar, &ar, sizeof(ar));
+				pthread_sigqueue(dt->tid, dt->signo, val);
+			}
+		}
+	}
+
+	return ret;
 }
 
 static long long
@@ -230,13 +309,13 @@ nloops_count()
 	long long duration;
 
 	/* Sensor interval */
-	step = timespec_ms(&threads[0].w_itimer.it_interval);
+	step = timespec_ms(&threads[0].itimer.it_interval);
 
 	/* Longest duration */
 	duration = 0;
 
 	for (i = 1; i < threads_nel; i++) {
-		long long d = timespec_ms(&threads[i].w_itimer.it_interval);
+		long long d = timespec_ms(&threads[i].itimer.it_interval);
 
 		if (duration < d) {
 			duration = d;
@@ -257,59 +336,76 @@ threads_init(void)
 	if (confp->sync.enabled) {
 		threads_nel++;
 	}
+	if (confp->stat_ic.enabled) {
+		threads_nel++;
+	}
 	if (confp->wunder.enabled) {
 		threads_nel++;
 	}
 
 	for (i = 0; i < threads_nel; i++) {
-		threads[i].w_thread = (pthread_t) -1;
+		threads[i].tid = (pthread_t) -1;
 	}
 
 	i = 0;
 
 	/* Sensor */
-	if (sensor_init(&threads[i].w_itimer) == -1) {
+	if (sensor_init(&threads[i].itimer) == -1) {
 		goto error;
 	}
-	threads[i].w_signo = signo(i);
-	threads[i].w_action = sensor_timer;
-	threads[i].w_destroy = sensor_destroy;
+	threads[i].signo = sigrtno(i);
+	threads[i].ef_timer = sigevent_sensor;
+	threads[i].wdestroy = sensor_destroy;
+
+	i++;
+
+	/* Archive */
+	if (archive_init(&threads[i].itimer) == -1) {
+		goto error;
+	}
+	threads[i].signo = sigrtno(i);
+	threads[i].ef_timer = sigevent_archive;
+	threads[i].wdestroy = archive_destroy;
 
 	i++;
 
 	/* Time synchronization */
 	if (confp->sync.enabled) {
-		if (sync_init(&threads[i].w_itimer) == -1) {
+		if (sync_init(&threads[i].flags, &threads[i].itimer) == -1) {
 			goto error;
 		}
-		threads[i].w_signo = signo(i);
-		threads[i].w_action = sync_timer;
-		threads[i].w_destroy = sync_destroy;
+		threads[i].signo = sigrtno(i);
+		threads[i].ef_timer = sync_sig_timer;
+		threads[i].wdestroy = sync_destroy;
 
 		i++;
 	} else {
 		syslog(LOG_WARNING, "Console time synchronization disabled");
 	}
 
-	/* Archive */
-	if (archive_init(&threads[i].w_itimer) == -1) {
-		goto error;
-	}
-	threads[i].w_signo = signo(i);
-	threads[i].w_action = archive_timer;
-	threads[i].w_destroy = archive_destroy;
-
-	i++;
-
-	/* Wunderground */
-	if (confp->wunder.enabled) {
-		if (wunder_init(&threads[i].w_itimer) == -1) {
+	/* StatIC */
+	if (confp->stat_ic.enabled) {
+		if (ic_init(&threads[i].flags, &threads[i].itimer) == -1) {
 			goto error;
 		}
 
-		threads[i].w_signo = signo(i);
-		threads[i].w_action = wunder_timer;
-		threads[i].w_destroy = wunder_destroy;
+		threads[i].signo = sigrtno(i);
+		threads[i].ef_ar = ic_sig_ar;
+		threads[i].ef_rt = ic_sig_rt;
+		threads[i].wdestroy = ic_destroy;
+
+		i++;
+	}
+
+	/* Wunderground */
+	if (confp->wunder.enabled) {
+		if (wunder_init(&threads[i].flags, &threads[i].itimer) == -1) {
+			goto error;
+		}
+
+		threads[i].signo = sigrtno(i);
+		threads[i].ef_timer = wunder_sig_timer;
+		threads[i].wdestroy = wunder_destroy;
 
 		i++;
 	}
@@ -331,7 +427,7 @@ threads_create(void)
 	(void) sigemptyset(&set);
 
 	for (i = 0; i < threads_nel; i++) {
-		(void) sigaddset(&set, threads[i].w_signo);
+		(void) sigaddset(&set, threads[i].signo);
 	}
 
 	if (pthread_sigmask(SIG_BLOCK, &set, NULL) == -1) {
@@ -364,12 +460,12 @@ threads_kill(void)
 	for (i = 0; i < threads_nel; i++) {
 		struct worker *dt = &threads[i];
 
-		if (dt->w_thread != (pthread_t) -1) {
+		if (dt->tid != (pthread_t) -1) {
 			if (sigthread_kill(dt) == -1) {
 				ret = -1;
 			}
 
-			dt->w_thread = (pthread_t) -1;
+			dt->tid = (pthread_t) -1;
 		}
 	}
 

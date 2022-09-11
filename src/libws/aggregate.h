@@ -24,9 +24,33 @@ struct aggr_data
 	double current;
 };
 
+struct aggr
+{
+	void (*sfunc)(struct aggr *, double);
+	int (*ffunc)(const struct aggr *, double *);
+
+	unsigned int count;
+
+	union {
+		double d64;
+
+		struct {
+			double scos;
+			double ssin;
+		} angle;
+	};
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void aggr_init_avg(struct aggr *p);
+void aggr_init_avgdeg(struct aggr *p);
+void aggr_init_max(struct aggr *p);
+
+void aggr_add(struct aggr *p, double v);
+int aggr_finish(const struct aggr *p, double *v);
 
 void aggr_init(struct aggr_data *p, enum aggr_type type);
 void aggr_update(struct aggr_data *p, double value);

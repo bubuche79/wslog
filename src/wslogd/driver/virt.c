@@ -19,9 +19,9 @@
 #define RAD			(PI/180.0)
 #define PERIOD_FACTOR		4
 
-#define LOOP_INTERVAL		10
-#define ARCHIVE_INTERVAL	300
-#define ARCHIVE_DELAY		1
+#define LOOP_INTERVAL		2
+#define ARCHIVE_INTERVAL	60
+#define ARCHIVE_DELAY		10
 
 static int hw_archive;
 static struct timespec io_delay;
@@ -55,13 +55,13 @@ virt_io_delay()
 }
 
 static void
-virt_loop(struct ws_loop *p, int idx)
+virt_loop(struct ws_loop *p, time_t time)
 {
-	p->barometer = virt_sin(950, 1020, idx);
-	p->temp = virt_sin(15, 25, idx);
-	p->humidity = virt_sin(60, 80, idx);
-	p->wind_speed = virt_sin(0, 2, idx);
-	p->wind_dir = virt_sin(225, 315, idx);
+	p->barometer = virt_sin(950, 1020, time);
+	p->temp = virt_sin(15, 25, time);
+	p->humidity = virt_sin(60, 80, time);
+	p->wind_speed = virt_sin(0, 2, time);
+	p->wind_dir = virt_sin(225, 315, time);
 
 	/* Supported sensors */
 	p->wl_mask = WF_BAROMETER|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;

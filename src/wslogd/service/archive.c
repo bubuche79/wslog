@@ -18,7 +18,7 @@
 #include "service/archive.h"
 
 #define WSLOG_EPOCH 1514764800		/* Mon, 1 Jan 2018 00:00:00 */
-#define ARCHIVE_INTERVAL 1800		/* Default archive interval */
+#define ARCHIVE_INTERVAL 600		/* Default archive interval */
 #define AR_LEN 64			/* Archive buffer size */
 
 static enum ws_driver driver;		/* Driver */
@@ -152,50 +152,61 @@ archive_init(struct itimerspec *it)
 		}
 	}
 
-#ifdef DEBUG
-	syslog(LOG_INFO, "archive.freq: %ld\n", it->it_interval.tv_sec);
-	syslog(LOG_INFO, "archive.delay: %ld\n", it->it_value.tv_sec);
-	syslog(LOG_INFO, "archive.hardware: %d\n", hw_archive);
-#endif
-
 	freq = it->it_interval.tv_sec;
-	current = WSLOG_EPOCH;
 
+	/*
+	 * Records are saved into database.
+	 *
+	 * Initialize the database handle, load all missed records since last
+	 * database update, and adjust internal state variables.
+	 */
 	if (confp->archive.sqlite.enabled) {
-		ssize_t sz;
-		struct ws_archive arbuf;
-
-		/* Initialize database */
 		if (sqlite_init() == -1) {
 			goto error;
 		}
 
-		/* Timestamp of last database record */
-		sz = sqlite_select_last(&arbuf, 1);
-		if (sz == -1) {
-			goto error;
-		}
-
-		if (sz > 0) {
-			char ftime[20];
-
-			current = arbuf.time;
-
-			localftime_r(ftime, sizeof(ftime), &current, "%F %T");
-			syslog(LOG_NOTICE, "Last db record: %s", ftime);
-		}
-
-		/* Load console records after that point */
+		/* Use console records */
 		if (hw_archive) {
+			ssize_t sz;
+			struct ws_archive arbuf;
+
+			/* Timestamp of last database record */
+			sz = sqlite_select_last(&arbuf, 1);
+			if (sz == -1) {
+				goto error;
+			}
+
+			if (sz > 0) {
+				char ftime[20];
+
+				current = arbuf.time;
+
+				localftime_r(ftime, sizeof(ftime), &current, "%F %T");
+				syslog(LOG_NOTICE, "Last db record: %s", ftime);
+			} else {
+				current = WSLOG_EPOCH;
+			}
+
+			/* Load console records after that point */
 			if (bulk_fetch() == -1) {
+				goto error;
+			}
+
+			/* Adjust timer delay */
+			if (drv_get_ar_itimer(it) == -1) {
 				goto error;
 			}
 		}
 	} else {
-		// TODO: pick last archive record timestamp (idem in final else above)
+		/* Start from now on */
+		time(&current);
 	}
 
-	// TODO resync timer, as operations above may be long
+#ifdef DEBUG
+	syslog(LOG_INFO, "archive.freq=%ld\n", it->it_interval.tv_sec);
+	syslog(LOG_INFO, "archive.delay=%ld\n", it->it_value.tv_sec);
+	syslog(LOG_INFO, "archive.hardware=%d\n", hw_archive);
+#endif
 
 	syslog(LOG_INFO, "Archive service ready");
 
@@ -206,41 +217,40 @@ error:
 }
 
 int
-archive_timer(void)
+archive_sig_timer(struct ws_archive *ar)
 {
 	ssize_t sz;
-	struct ws_archive arbuf;
 
 	/* Device archive */
 	if (hw_archive) {
-		if ((sz = drv_get_ar(&arbuf, 1, current)) == -1) {
+		if ((sz = drv_get_ar(ar, 1, current)) == -1) {
 			goto error;
 		}
 
 		if (sz > 0) {
-			current = arbuf.time;
+			current = ar->time;
 		}
 	} else {
-		arbuf.wl_mask = 0;
+		ar->wl_mask = 0;
 		sz = 1;
 	}
 
 	/* Update board */
-	sz = push_record(&arbuf, sz);
+	sz = push_record(ar, sz);
 	if (sz == -1) {
 		goto error;
 	} else if (sz > 0) {
 #ifdef DEBUG
 		char ftime[20];
 
-		localftime_r(ftime, sizeof(ftime), &arbuf.time, "%F %T");
+		localftime_r(ftime, sizeof(ftime), &ar->time, "%F %T");
 		syslog(LOG_DEBUG, "Record: %s %.1f°C %hhu%% %.1fhPa",
-				ftime, arbuf.temp, arbuf.humidity, arbuf.barometer);
+				ftime, ar->temp, ar->humidity, ar->barometer);
 #endif
 
 		/* Save to database */
 		if (confp->archive.sqlite.enabled) {
-			if (sqlite_insert(&arbuf, sz) == -1) {
+			if (sqlite_insert(ar, sz) == -1) {
 				goto error;
 			}
 		}

@@ -11,9 +11,10 @@
 extern "C" {
 #endif
 
-int wunder_init(struct itimerspec *it);
-int wunder_timer(void);
+int wunder_init(int *flags, struct itimerspec *it);
 int wunder_destroy(void);
+
+int wunder_sig_timer(void);
 
 #ifdef __cplusplus
 }

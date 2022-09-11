@@ -19,5 +19,5 @@ CREATE TABLE ws_archive
   heat_index REAL,
   in_temp REAL,
   in_humidity INTEGER,
-  PRIMARY KEY (time)
+  CONSTRAINT ws_archive_pk PRIMARY KEY (time)
 ) ;

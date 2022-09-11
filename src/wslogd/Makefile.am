@@ -11,10 +11,12 @@ noinst_LIBRARIES = libwslog.a
 libwslog_a_SOURCES = \
 	board.c \
 	conf.c \
+	curl.c \
 	driver/driver.c \
 	service/util.c \
-	conf.h \
 	board.h \
+	conf.h \
+	curl.h \
 	driver/driver.h \
 	service/util.c
 
@@ -52,6 +54,7 @@ wslogd_SOURCES = \
 	dataset.c \
 	db/sqlite.c \
 	service/archive.c \
+	service/ic.c \
 	service/sensor.c \
 	service/sync.c \
 	service/util.c \
@@ -62,6 +65,7 @@ wslogd_SOURCES = \
 	dataset.h \
 	db/sqlite.h \
 	service/archive.h \
+	service/ic.h \
 	service/sensor.h \
 	service/sync.h \
 	service/util.h \

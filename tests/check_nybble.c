@@ -108,7 +108,6 @@ suite_nybble(void)
 
 	/* Core test cases */
 	tc_core = tcase_create("core");
-
 	tcase_add_test(tc_core, test_nybget);
 	tcase_add_test(tc_core, test_nybset_auto);
 	tcase_add_test(tc_core, test_nybtoul);

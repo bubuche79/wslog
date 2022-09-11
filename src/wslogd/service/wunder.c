@@ -14,13 +14,14 @@
 #include "libws/util.h"
 
 #include "conf.h"
+#include "curl.h"
 #include "board.h"
 #include "wslogd.h"
 #include "service/util.h"
 #include "wunder.h"
 
 #define URL_LEN		512
-#define URL 		"weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+#define STATIC_URL 		"weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
 static long freq;
 
@@ -93,12 +94,6 @@ http_write(char *ptr, size_t size, size_t nmemb, struct ws_http *s)
 	return sz;
 }
 
-static void
-curl_log(const char *fn, CURLcode code)
-{
-	syslog(LOG_ERR, "%s: %s (%d)", fn, curl_easy_strerror(code), code);
-}
-
 static int
 wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 {
@@ -115,7 +110,7 @@ wunder_url(char *str, size_t len, CURL *h, const struct ws_loop *p)
 
 	/* Compute GET request */
 	ret = snprintf(str, len,
-			"%s://" URL "?%s=%s&%s=%s&%s=%s&%s=%s.%.3ld",
+			"%s://" STATIC_URL "?%s=%s&%s=%s&%s=%s&%s=%s.%.3ld",
 			confp->wunder.https ? "https" : "http",
 			"action", "updateraw",
 			"ID", confp->wunder.station,
@@ -245,7 +240,7 @@ error:
 }
 
 int
-wunder_init(struct itimerspec *it)
+wunder_init(int *flags, struct itimerspec *it)
 {
 	CURLcode code;
 
@@ -255,12 +250,6 @@ wunder_init(struct itimerspec *it)
 	}
 
 	/* Initialize */
-	code = curl_global_init(CURL_GLOBAL_DEFAULT);
-	if (code != CURLE_OK) {
-		curl_log("curl_global_init", code);
-		goto error;
-	}
-
 	freq = confp->wunder.freq;
 	if (freq == 0) {
 		freq = 600;
@@ -275,7 +264,7 @@ error:
 }
 
 int
-wunder_timer(void)
+wunder_sig_timer(void)
 {
 	struct ws_loop arbuf;
 	const struct ws_loop *p;
@@ -315,7 +304,5 @@ error:
 int
 wunder_destroy(void)
 {
-	curl_global_cleanup();
-
 	return 0;
 }

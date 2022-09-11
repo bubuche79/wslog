@@ -3,6 +3,10 @@
 
 #include <time.h>
 
+#define SRV_TIMER	1
+#define SRV_EVENT_RT	2
+#define SRV_EVENT_AR	4
+
 #ifdef __cplusplus
 extern "C" {
 #endif
