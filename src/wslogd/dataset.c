@@ -50,7 +50,7 @@ ws_get(uint32_t mask, int flag, double value, double *v)
 }
 
 static int
-ws_set_float(uint32_t *mask, int flag, float *value, double v)
+ws_set_double(uint32_t *mask, int flag, double *value, double v)
 {
 	*mask |= flag;
 	*value = v;
@@ -195,39 +195,39 @@ ws_get_in_humidity(const struct ws_archive *p, double *v)
 int
 ws_set_barometer(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_BAROMETER, &p->barometer, v);
+	return ws_set_double(&p->wl_mask, WF_BAROMETER, &p->barometer, v);
 }
 
 #if 0
 int
 ws_set_pressure(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_PRESSURE, &p->pressure, v);
+	return ws_set_double(&p->wl_mask, WF_PRESSURE, &p->pressure, v);
 }
 
 int
 ws_set_altimeter(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_ALTIMETER, &p->altimeter, v);
+	return ws_set_double(&p->wl_mask, WF_ALTIMETER, &p->altimeter, v);
 }
 #endif
 
 int
 ws_set_temp(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_TEMP, &p->temp, v);
+	return ws_set_double(&p->wl_mask, WF_TEMP, &p->temp, v);
 }
 
 int
 ws_set_hi_temp(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_HI_TEMP, &p->hi_temp, v);
+	return ws_set_double(&p->wl_mask, WF_HI_TEMP, &p->hi_temp, v);
 }
 
 int
 ws_set_lo_temp(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_LO_TEMP, &p->lo_temp, v);
+	return ws_set_double(&p->wl_mask, WF_LO_TEMP, &p->lo_temp, v);
 }
 
 int
@@ -239,7 +239,7 @@ ws_set_humidity(struct ws_archive *p, double v)
 int
 ws_set_wind_speed(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_WIND_SPEED, &p->avg_wind_speed, v);
+	return ws_set_double(&p->wl_mask, WF_WIND_SPEED, &p->avg_wind_speed, v);
 }
 
 int
@@ -257,7 +257,7 @@ ws_set_wind_samples(struct ws_archive *p, double v)
 int
 ws_set_hi_wind_speed(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_HI_WIND_SPEED, &p->hi_wind_speed, v);
+	return ws_set_double(&p->wl_mask, WF_HI_WIND_SPEED, &p->hi_wind_speed, v);
 }
 
 int
@@ -269,37 +269,37 @@ ws_set_hi_wind_dir(struct ws_archive *p, double v)
 int
 ws_set_rain(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_RAIN, &p->rain_fall, v);
+	return ws_set_double(&p->wl_mask, WF_RAIN, &p->rain_fall, v);
 }
 
 int
 ws_set_hi_rain_rate(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_HI_RAIN_RATE, &p->hi_rain_rate, v);
+	return ws_set_double(&p->wl_mask, WF_HI_RAIN_RATE, &p->hi_rain_rate, v);
 }
 
 int
 ws_set_dew_point(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_DEW_POINT, &p->dew_point, v);
+	return ws_set_double(&p->wl_mask, WF_DEW_POINT, &p->dew_point, v);
 }
 
 int
 ws_set_windchill(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_WINDCHILL, &p->windchill, v);
+	return ws_set_double(&p->wl_mask, WF_WINDCHILL, &p->windchill, v);
 }
 
 int
 ws_set_heat_index(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_HEAT_INDEX, &p->heat_index, v);
+	return ws_set_double(&p->wl_mask, WF_HEAT_INDEX, &p->heat_index, v);
 }
 
 int
 ws_set_in_temp(struct ws_archive *p, double v)
 {
-	return ws_set_float(&p->wl_mask, WF_IN_TEMP, &p->in_temp, v);
+	return ws_set_double(&p->wl_mask, WF_IN_TEMP, &p->in_temp, v);
 }
 
 int
