@@ -86,7 +86,7 @@ ic_write(int fd, const struct ic *p)
 	lseek(fd, 0, SEEK_SET);
 	ftruncate(fd, 0);
 
-	gmftime(date, sizeof(date), &p->time, "%d/%m/%y");
+	gmftime(date, sizeof(date), &p->time, "%d/%m/%Y");
 	gmftime(time_utc, sizeof(time_utc), &p->time, "%H:%M");
 
 	ret = dprintf(fd, "# INFORMATIONS\n"
