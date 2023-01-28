@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #define _WF_FLAG(p) 		(1 << (p))
+#define WF_ISSET(mask, flag)	(((mask) & (flag)) == (flag))
 
 #define WF_BAROMETER 		_WF_FLAG(WS_BAROMETER)
 #define WF_PRESSURE		_WF_FLAG(WS_PRESSURE)
@@ -17,6 +18,7 @@
 #define WF_WIND_SPEED 		_WF_FLAG(WS_WIND_SPEED)
 #define WF_WIND_DIR 		_WF_FLAG(WS_WIND_DIR)
 #define WF_WIND_SAMPLES		_WF_FLAG(WS_WIND_SAMPLES)
+#define WF_10M_WIND_DIR		_WF_FLAG(WS_10M_WIND_DIR)
 #define WF_10M_WIND_SPEED	_WF_FLAG(WS_10M_WIND_SPEED)
 #define WF_HI_WIND_SPEED	_WF_FLAG(WS_HI_WIND_SPEED)
 #define WF_HI_WIND_DIR		_WF_FLAG(WS_HI_WIND_DIR)
@@ -46,6 +48,7 @@ enum
 	WS_WIND_SPEED,
 	WS_WIND_DIR,
 	WS_WIND_SAMPLES,
+	WS_10M_WIND_DIR,
 	WS_10M_WIND_SPEED,
 	WS_HI_WIND_SPEED,
 	WS_HI_WIND_DIR,

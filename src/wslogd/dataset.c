@@ -15,7 +15,6 @@
 #include "dataset.h"
 
 #define RAIN_PERIOD 900
-#define WF_ISSET(mask, flag) (((mask) & (flag)) == (flag))
 
 struct ws_aggr
 {

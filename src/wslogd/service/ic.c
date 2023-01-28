@@ -27,12 +27,13 @@
 
 struct ic {
 	time_t time;
+	uint32_t ic_mask;
 
 	double temp;
 	double barometer;
 	int humidity;
 	double dew_point;
-	double wind_10m_dir;
+	int wind_10m_dir;
 	double wind_10m_speed;
 	double hi_wind_10m_speed;
 	double rain_rate;
@@ -55,22 +56,27 @@ static int datidx;
 static struct ic dat[2];
 
 static void
-dwrite(int fd, const char *fmt, ...)
-{
-	double v;
-	va_list args;
-
-	va_start(args, fmt);
-	vdprintf(fd, fmt, args);
-	va_end(args);
-}
-
-static void
 ic_reset(struct ic *p)
 {
 	memset(p, 0, sizeof(p));
 
 	aggr_init_avgdeg(&p->aggr.wind_10m_dir);
+}
+
+static void
+ic_writev(int fd, int mask, int flag, const char *n, const char *fmt, ...)
+{
+	dprintf(fd, "%s=", n);
+
+	if (WF_ISSET(mask, flag)) {
+		va_list ap;
+
+		va_start(ap, fmt);
+		vdprintf(fd, fmt, ap);
+		va_end(ap);
+	}
+
+	dprintf(fd, "\n");
 }
 
 /**
@@ -99,23 +105,21 @@ ic_write(int fd, const struct ic *p)
 			PACKAGE_NAME, PACKAGE_VERSION,
 			date, time_utc);
 
-	dwrite(fd, "temperature=%.1f\n", p->temp);
-	dwrite(fd, "pression=%.1f\n", p->barometer);
-	dwrite(fd, "humidite=%hhu\n", p->humidity);
-	dwrite(fd, "point_de_rosee=%.1f\n", p->dew_point);
-	if (p->wind_10m_speed > 0) {
-		dwrite(fd, "vent_dir_moy=%d\n", (int) p->wind_10m_dir);
-	} else {
-		dwrite(fd, "vent_dir_moy=\n");
-	}
-	dwrite(fd, "vent_moyen=%.1f\n", p->wind_10m_speed);
-	dwrite(fd, "vent_rafales=%.1f\n", p->hi_wind_10m_speed);
-	dwrite(fd, "pluie_intensite=%.1f\n", p->rain_rate);
-//	dwrite(fd, "pluie_intensite_maxi_1h=%.1f\n", p->hi_rain_rate_1h);
+	ic_writev(fd, p->ic_mask, WF_TEMP, "temperature", "%.1f", p->temp);
+	ic_writev(fd, p->ic_mask, WF_BAROMETER, "pression", "%.1f", p->barometer);
+	ic_writev(fd, p->ic_mask, WF_HUMIDITY, "humidite", "%hhu", p->humidity);
+	ic_writev(fd, p->ic_mask, WF_DEW_POINT, "point_de_rosee", "%.1f", p->dew_point);
+	ic_writev(fd, p->ic_mask, WF_10M_WIND_DIR, "vent_dir_moyen", "%d", p->wind_10m_dir);
+	ic_writev(fd, p->ic_mask, WF_10M_WIND_SPEED, "vent_moyen", "%.1f", p->wind_10m_speed);
+	ic_writev(fd, p->ic_mask, WF_HI_WIND_SPEED, "vent_rafales", "%.1f", p->hi_wind_10m_speed);
+	ic_writev(fd, p->ic_mask, WF_RAIN_RATE, "pluie_intensite", "%.1f", p->rain_rate);
+	//	dwrite(fd, "pluie_intensite_maxi_1h=%.1f\n", p->hi_rain_rate_1h);
+
 	dprintf(fd, "# PARAMETRES TEMPS PASSE\n");
-	dprintf(fd, "pluie_cumul_1h=%.1f\n", p->rain_1h);
-	dprintf(fd, "pluie_cumul=%.1f\n", p->rain_day);
+	ic_writev(fd, p->ic_mask, WF_RAIN_1H, "pluie_cumul_1h", "%.1f", p->rain_1h);
+	ic_writev(fd, p->ic_mask, WF_RAIN_DAY, "pluie_cumul", "%.1f", p->rain_day);
 	dprintf(fd, "pluie_cumul_heure_utc=%s\n", time_utc);
+
 //	dprintf(fd, "pluie_cumul_annee=%.1f\n", p->rain_year);
 //	."pluie_intensite_maxi=$max_rainRate_today\n"
 //	."pluie_intensite_maxi_heure_utc=$max_rainRate_todayTime\n"
@@ -244,11 +248,21 @@ ic_sig_rt(const struct ws_loop *rt)
 		p = &dat[(datidx + 1) & 1];
 	}
 
-	p->rain_rate = rt->rain_rate;
-	p->rain_1h = rt->rain_1h;
-	p->rain_day = rt->rain_day;
+	if (WF_ISSET(rt->wl_mask, WF_RAIN_RATE)) {
+		p->ic_mask |= WF_RAIN_RATE;
+		p->rain_rate = rt->rain_rate;
+	}
+	if (WF_ISSET(rt->wl_mask, WF_RAIN_1H)) {
+		p->ic_mask |= WF_RAIN_1H;
+		p->rain_1h = rt->rain_1h;
+	}
+	if (WF_ISSET(rt->wl_mask, WF_RAIN_DAY)) {
+		p->ic_mask |= WF_RAIN_DAY;
+		p->rain_day = rt->rain_day;
+	}
 
-	if (rt->wind_speed > 0) {
+	if (WF_ISSET(rt->wl_mask, WF_WIND_DIR)) {
+		p->ic_mask |= WF_10M_WIND_DIR;
 		aggr_add(&p->aggr.wind_10m_dir, rt->wind_dir);
 	}
 
@@ -262,13 +276,34 @@ ic_sig_ar(const struct ws_archive *ar)
 
 	curr->time = ar->time;
 
-	curr->temp = ar->temp;
-	curr->barometer = ar->barometer;
-	curr->humidity = ar->humidity;
-	curr->dew_point = ws_dewpoint(ar->temp, ar->humidity);
-	curr->wind_10m_dir = ar->avg_wind_dir * 22.5;
-	curr->wind_10m_speed = ar->avg_wind_speed * 3.6;
-	curr->hi_wind_10m_speed = ar->hi_wind_speed * 3.6;
+	if (WF_ISSET(ar->wl_mask, WF_TEMP)) {
+		curr->ic_mask |= WF_TEMP;
+		curr->temp = ar->temp;
+	}
+	if (WF_ISSET(ar->wl_mask, WF_BAROMETER)) {
+		curr->ic_mask |= WF_BAROMETER;
+		curr->barometer = ar->barometer;
+	}
+	if (WF_ISSET(ar->wl_mask, WF_HUMIDITY)) {
+		curr->ic_mask |= WF_HUMIDITY;
+		curr->humidity = ar->humidity;
+	}
+	if (WF_ISSET(ar->wl_mask, WF_TEMP|WF_HUMIDITY)) {
+		curr->ic_mask |= WF_DEW_POINT;
+		curr->dew_point = ws_dewpoint(ar->temp, ar->humidity);
+	}
+	if (WF_ISSET(ar->wl_mask, WF_WIND_DIR)) {
+		curr->ic_mask |= WF_WIND_DIR;
+		curr->wind_10m_dir = ar->avg_wind_dir * 22.5;
+	}
+	if (WF_ISSET(ar->wl_mask, WF_WIND_SPEED)) {
+		curr->ic_mask |= WF_WIND_SPEED;
+		curr->wind_10m_speed = ar->avg_wind_speed * 3.6;
+	}
+	if (WF_ISSET(ar->wl_mask, WF_HI_WIND_SPEED)) {
+		curr->ic_mask |= WF_HI_WIND_SPEED;
+		curr->hi_wind_10m_speed = ar->hi_wind_speed * 3.6;
+	}
 
 	/* Aggregate */
 //	curr->rain_year += ar->rain_fall;
