@@ -98,7 +98,7 @@ struct ws_loop
 	double sample_et;		/* Sample evapotranspiration (mm) */
 #endif
 	uint16_t solar_rad;		/* Solar radiation (W/m³) */
-	double uv;			/* UV index */
+	double uv_idx;			/* UV index */
 	double dew_point; 		/* Dew point (°C) */
 	double windchill;		/* Windchill temperature (°C) */
 	double heat_index;		/* Heat index (°C) */
@@ -133,8 +133,8 @@ struct ws_archive
 	double rain_1h;			/* accumulated rain in the past hour (mm) */
 	double rain_24h;		/* accumulated rain in the past 24 hours (mm) */
 	double sample_et;		/* sample evapotranspiration (mm) */
-	uint16_t radiation;		/* solar radiation (W/m³) */
-	double uv;			/* UV index */
+	uint16_t solar_rad;		/* solar radiation (W/m³) */
+	double uv_idx;			/* UV index */
 #endif
 	double dew_point; 		/* Dew point (°C) */
 	double windchill;		/* Windchill temperature (°C) */

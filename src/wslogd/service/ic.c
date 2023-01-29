@@ -42,6 +42,9 @@ struct ic {
 	double rain_day;
 	double rain_year;
 
+	uint16_t solar_rad;
+	double uv_idx;
+
 	/* Aggregate data */
 	struct {
 		struct aggr wind_10m_dir;
@@ -120,16 +123,9 @@ ic_write(int fd, const struct ic *p)
 	ic_writev(fd, p->ic_mask, WF_RAIN_DAY, "pluie_cumul", "%.1f", p->rain_day);
 	dprintf(fd, "pluie_cumul_heure_utc=%s\n", time_utc);
 
-//	dprintf(fd, "pluie_cumul_annee=%.1f\n", p->rain_year);
-//	."pluie_intensite_maxi=$max_rainRate_today\n"
-//	."pluie_intensite_maxi_heure_utc=$max_rainRate_todayTime\n"
-//	"tn_heure_utc=$min_temp_todayTime\n"
-//	"tn_deg_c=$min_temp_today\n"
-//	"tx_heure_utc=$max_temp_todayTime\n",
-//	"tx_deg_c=$max_temp_today\n"
-//	dprintf(fd, "# PARAMETRES TEMPS PASSE\n");
-//	."radiations_solaires_wlk=$solar\n"
-//	."uv_wlk=$uv\n";
+	dprintf(fd, "# ENSOLEILLEMENT\n");
+	ic_writev(fd, p->ic_mask, WF_SOLAR_RAD, "radiations_solaires_wlk", "%hu", p->solar_rad);
+	ic_writev(fd, p->ic_mask, WF_UV_INDEX, "uv_wlk", "%.1f", p->uv_idx);
 
 	lseek(fd, 0, SEEK_SET);
 
@@ -142,12 +138,13 @@ ic_put(const struct ic *p)
 	int ret;
 	CURL *curl = NULL;
 
+	ic_write(datfd, p);
+
 	curl = curl_easy_init();
+
 	if (curl) {
 		char url[128];
 		CURLcode code;
-
-		ic_write(datfd, p);
 
 		snprintf(url, sizeof(url), "ftp://" STATIC_URL "/StatIC_%s.txt", confp->stat_ic.station);
 
@@ -264,6 +261,15 @@ ic_sig_rt(const struct ws_loop *rt)
 	if (WF_ISSET(rt->wl_mask, WF_WIND_DIR)) {
 		p->ic_mask |= WF_10M_WIND_DIR;
 		aggr_add(&p->aggr.wind_10m_dir, rt->wind_dir);
+	}
+
+	if (WF_ISSET(rt->wl_mask, WF_SOLAR_RAD)) {
+		p->ic_mask |= WF_SOLAR_RAD;
+		p->solar_rad = rt->solar_rad;
+	}
+	if (WF_ISSET(rt->wl_mask, WF_UV_INDEX)) {
+		p->ic_mask |= WF_UV_INDEX;
+		p->uv_idx = rt->uv_idx;
 	}
 
 	return 0;
