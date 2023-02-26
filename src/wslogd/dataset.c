@@ -15,7 +15,6 @@
 #include "dataset.h"
 
 #define RAIN_PERIOD 900
-#define WF_ISSET(mask, flag) (((mask) & (flag)) == (flag))
 
 struct ws_aggr
 {
@@ -389,7 +388,7 @@ ws_loop_solar_rad(const struct ws_loop *p, double *v)
 int
 ws_loop_uv(const struct ws_loop *p, double *v)
 {
-	return ws_get(p->wl_mask, WF_UV_INDEX, p->uv, v);
+	return ws_get(p->wl_mask, WF_UV_INDEX, p->uv_idx, v);
 }
 
 int

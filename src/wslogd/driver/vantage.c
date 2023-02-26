@@ -194,7 +194,7 @@ conv_curr_lps(struct ws_loop *p, const struct vantage_loop *d)
 
 	if (d->uv_idx != UINT8_MAX) {
 		p->wl_mask |= WF_UV_INDEX;
-		p->uv = d->uv_idx;
+		p->uv_idx = d->uv_idx;
 	}
 	if (d->solar_rad != INT16_MAX) {
 		p->wl_mask |= WF_SOLAR_RAD;

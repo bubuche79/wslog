@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #define _WF_FLAG(p) 		(1 << (p))
+#define WF_ISSET(mask, flag)	(((mask) & (flag)) == (flag))
 
 #define WF_BAROMETER 		_WF_FLAG(WS_BAROMETER)
 #define WF_PRESSURE		_WF_FLAG(WS_PRESSURE)
@@ -17,6 +18,7 @@
 #define WF_WIND_SPEED 		_WF_FLAG(WS_WIND_SPEED)
 #define WF_WIND_DIR 		_WF_FLAG(WS_WIND_DIR)
 #define WF_WIND_SAMPLES		_WF_FLAG(WS_WIND_SAMPLES)
+#define WF_10M_WIND_DIR		_WF_FLAG(WS_10M_WIND_DIR)
 #define WF_10M_WIND_SPEED	_WF_FLAG(WS_10M_WIND_SPEED)
 #define WF_HI_WIND_SPEED	_WF_FLAG(WS_HI_WIND_SPEED)
 #define WF_HI_WIND_DIR		_WF_FLAG(WS_HI_WIND_DIR)
@@ -46,6 +48,7 @@ enum
 	WS_WIND_SPEED,
 	WS_WIND_DIR,
 	WS_WIND_SAMPLES,
+	WS_10M_WIND_DIR,
 	WS_10M_WIND_SPEED,
 	WS_HI_WIND_SPEED,
 	WS_HI_WIND_DIR,
@@ -95,7 +98,7 @@ struct ws_loop
 	double sample_et;		/* Sample evapotranspiration (mm) */
 #endif
 	uint16_t solar_rad;		/* Solar radiation (W/m³) */
-	double uv;			/* UV index */
+	double uv_idx;			/* UV index */
 	double dew_point; 		/* Dew point (°C) */
 	double windchill;		/* Windchill temperature (°C) */
 	double heat_index;		/* Heat index (°C) */
@@ -130,8 +133,8 @@ struct ws_archive
 	double rain_1h;			/* accumulated rain in the past hour (mm) */
 	double rain_24h;		/* accumulated rain in the past 24 hours (mm) */
 	double sample_et;		/* sample evapotranspiration (mm) */
-	uint16_t radiation;		/* solar radiation (W/m³) */
-	double uv;			/* UV index */
+	uint16_t solar_rad;		/* solar radiation (W/m³) */
+	double uv_idx;			/* UV index */
 #endif
 	double dew_point; 		/* Dew point (°C) */
 	double windchill;		/* Windchill temperature (°C) */

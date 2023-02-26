@@ -61,7 +61,7 @@ virt_loop(struct ws_loop *p, time_t time)
 	p->temp = virt_sin(15, 25, time);
 	p->humidity = virt_sin(60, 80, time);
 	p->wind_speed = virt_sin(0, 2, time);
-	p->wind_dir = virt_sin(225, 315, time);
+	p->wind_dir = virt_sin(225, 315, time) / 22.5;
 
 	/* Supported sensors */
 	p->wl_mask = WF_BAROMETER|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
@@ -75,7 +75,7 @@ virt_archive(struct ws_archive *p, time_t time)
 	p->temp = virt_sin(15, 25, time);
 	p->humidity = virt_sin(60, 80, time);
 	p->avg_wind_speed = virt_sin(0, 2, time);
-	p->avg_wind_dir = virt_sin(225, 315, time);
+	p->avg_wind_dir = virt_sin(225, 315, time) / 22.5;
 
 	/* Supported sensors */
 	p->wl_mask = WF_BAROMETER|WF_TEMP|WF_HUMIDITY|WF_WIND_SPEED|WF_WIND_DIR;
