@@ -98,8 +98,7 @@ ic_write(int fd, const struct ic *p)
 	gmftime(date, sizeof(date), &p->time, "%d/%m/%Y");
 	gmftime(time_utc, sizeof(time_utc), &p->time, "%H:%M");
 
-	ret = dprintf(fd, "# INFORMATIONS\n"
-			"id_station=%s\n"
+	ret = dprintf(fd, "id_station=%s\n"
 			"type=txt\n"
 			"version=%s-%s\n"
 			"date_releve=%s\n"
@@ -112,18 +111,16 @@ ic_write(int fd, const struct ic *p)
 	ic_writev(fd, p->ic_mask, WF_BAROMETER, "pression", "%.1f", p->barometer);
 	ic_writev(fd, p->ic_mask, WF_HUMIDITY, "humidite", "%hhu", p->humidity);
 	ic_writev(fd, p->ic_mask, WF_DEW_POINT, "point_de_rosee", "%.1f", p->dew_point);
-	ic_writev(fd, p->ic_mask, WF_WIND_DIR, "vent_dir_moyen", "%d", p->wind_10m_dir);
+	ic_writev(fd, p->ic_mask, WF_WIND_DIR, "vent_dir_moy", "%d", p->wind_10m_dir);
 	ic_writev(fd, p->ic_mask, WF_WIND_SPEED, "vent_moyen", "%.1f", p->wind_10m_speed);
 	ic_writev(fd, p->ic_mask, WF_HI_WIND_SPEED, "vent_rafales", "%.1f", p->hi_wind_10m_speed);
 	ic_writev(fd, p->ic_mask, WF_RAIN_RATE, "pluie_intensite", "%.1f", p->rain_rate);
 	//	dwrite(fd, "pluie_intensite_maxi_1h=%.1f\n", p->hi_rain_rate_1h);
 
-	dprintf(fd, "# PARAMETRES TEMPS PASSE\n");
 	ic_writev(fd, p->ic_mask, WF_RAIN_1H, "pluie_cumul_1h", "%.1f", p->rain_1h);
 	ic_writev(fd, p->ic_mask, WF_RAIN_DAY, "pluie_cumul", "%.1f", p->rain_day);
 	dprintf(fd, "pluie_cumul_heure_utc=%s\n", time_utc);
 
-	dprintf(fd, "# ENSOLEILLEMENT\n");
 	ic_writev(fd, p->ic_mask, WF_SOLAR_RAD, "radiations_solaires_wlk", "%hu", p->solar_rad);
 	ic_writev(fd, p->ic_mask, WF_UV_INDEX, "uv_wlk", "%.1f", p->uv_idx);
 
