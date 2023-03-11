@@ -1,4 +1,3 @@
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -33,7 +32,7 @@ struct ic {
 	double barometer;
 	int humidity;
 	double dew_point;
-	int wind_10m_dir;
+	double wind_10m_dir;
 	double wind_10m_speed;
 	double hi_wind_10m_speed;
 	double rain_rate;
@@ -111,7 +110,7 @@ ic_write(int fd, const struct ic *p)
 	ic_writev(fd, p->ic_mask, WF_BAROMETER, "pression", "%.1f", p->barometer);
 	ic_writev(fd, p->ic_mask, WF_HUMIDITY, "humidite", "%hhu", p->humidity);
 	ic_writev(fd, p->ic_mask, WF_DEW_POINT, "point_de_rosee", "%.1f", p->dew_point);
-	ic_writev(fd, p->ic_mask, WF_WIND_DIR, "vent_dir_moy", "%d", p->wind_10m_dir);
+	ic_writev(fd, p->ic_mask, WF_WIND_DIR, "vent_dir_moy", "%.1f", p->wind_10m_dir);
 	ic_writev(fd, p->ic_mask, WF_WIND_SPEED, "vent_moyen", "%.1f", p->wind_10m_speed);
 	ic_writev(fd, p->ic_mask, WF_HI_WIND_SPEED, "vent_rafales", "%.1f", p->hi_wind_10m_speed);
 	ic_writev(fd, p->ic_mask, WF_RAIN_RATE, "pluie_intensite", "%.1f", p->rain_rate);
@@ -255,9 +254,9 @@ ic_sig_rt(const struct ws_loop *rt)
 		p->rain_day = rt->rain_day;
 	}
 
-//	if (WF_ISSET(rt->wl_mask, WF_WIND_DIR)) {
-//		p->ic_mask |= WF_10M_WIND_DIR;
-//		aggr_add(&p->aggr.wind_10m_dir, rt->wind_dir);
+//	if (WF_ISSET(rt->wl_mask, WF_WIND_DIR|WF_WIND_SPEED)) {
+//		p->ic_mask |= WF_WIND_DIR;
+//		aggr_add_winddir(&p->aggr.wind_10m_dir, rt->wind_speed, rt->wind_dir);
 //	}
 
 	if (WF_ISSET(rt->wl_mask, WF_SOLAR_RAD)) {
