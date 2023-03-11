@@ -313,7 +313,7 @@ vantage_get_rt_itimer(struct itimerspec *it)
 {
 	/* Every 2.5 seconds */
 	it->it_interval.tv_sec = 2;
-	it->it_interval.tv_nsec = 500*1000;
+	it->it_interval.tv_nsec = 500*1000*1000;
 	it->it_value.tv_sec = 0;
 	it->it_value.tv_nsec = 0;
 
