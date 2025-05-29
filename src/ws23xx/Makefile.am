@@ -3,9 +3,9 @@ include ../include.mk
 bin_PROGRAMS = ws23xx
 
 ws23xx_SOURCES = \
-	main.c \
 	util.c \
-	util.h
+	util.h \
+	ws23xx.c
 
 ws23xx_CPPFLAGS = \
 	$(inc_CPPFLAGS) -I..
