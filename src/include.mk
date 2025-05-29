@@ -1,6 +1,6 @@
 inc_CPPFLAGS =
 
 inc_CFLAGS = \
-	-std=c11 -Wall
+	-std=c23 -Wall
 
 wslogdatadir = @datadir@/@PACKAGE@
