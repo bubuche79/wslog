@@ -11,10 +11,11 @@
 extern "C" {
 #endif
 
-Suite *suite_util(void);
-Suite *suite_nybble(void);
-Suite *suite_crc_ccitt(void);
 Suite *suite_aggregate(void);
+Suite *suite_cli(void);
+Suite *suite_crc_ccitt(void);
+Suite *suite_nybble(void);
+Suite *suite_util(void);
 
 Suite *suite_vantage(void);
 
