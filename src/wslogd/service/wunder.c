@@ -242,8 +242,6 @@ error:
 int
 wunder_init(int *flags, struct itimerspec *it)
 {
-	CURLcode code;
-
 	if (!confp->wunder.station || !confp->wunder.password) {
 		syslog(LOG_ERR, "Wunderground: station or password not set");
 		goto error;
