@@ -3,7 +3,7 @@ include ../include.mk
 bin_PROGRAMS = vantage
 
 vantage_SOURCES = \
-	main.c
+	vantage.c
 
 vantage_CPPFLAGS = \
 	$(inc_CPPFLAGS) -I..
