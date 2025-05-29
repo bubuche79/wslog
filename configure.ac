@@ -1,6 +1,6 @@
-AC_PREREQ([2.69])
+AC_PREREQ([2.71])
 LT_PREREQ([2.4.6])
-AC_INIT([wslog], [0.8.8], [gae.buchetet@free.fr])
+AC_INIT([wslog],[0.8.8],[gae.buchetet@free.fr])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIRS([m4])
 
@@ -11,7 +11,7 @@ AM_INIT_AUTOMAKE([1.10 subdir-objects dist-xz -Wall -Werror])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_LIBTOOL
+LT_INIT
 LT_INIT([disable-static])
 
 # Checks for libraries.
