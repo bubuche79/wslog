@@ -4,17 +4,19 @@ lib_LTLIBRARIES = libws.la
 
 libws_la_SOURCES = \
 	aggregate.c \
-	conf.c \
-	crc_ccitt.c \
-	nybble.c \
-	util.c \
-	serial.c \
 	aggregate.h \
+	cli.c \
+	cli.h \
+	conf.c \
 	conf.h \
-	defs.h \
+	crc_ccitt.c \
 	crc_ccitt.h \
+	nybble.c \
 	nybble.h \
-	util.h
+	util.c \
+	util.h \
+	serial.c \
+	defs.h
 
 nobase_pkginclude_HEADERS = \
 	serial.h
@@ -28,9 +30,9 @@ libws_la_SOURCES += \
 	vantage/eeprom.c \
 	vantage/serial.c \
 	vantage/testing.c \
+	vantage/unit.c \
 	vantage/util.c \
 	vantage/util.h \
-	vantage/unit.c \
 	vantage/vantage.h
 
 nobase_pkginclude_HEADERS += \
@@ -40,10 +42,10 @@ endif
 if USE_WS23XX
 libws_la_SOURCES += \
 	ws23xx/archive.c \
-	ws23xx/decoder.c \
-	ws23xx/ws23xx.c \
 	ws23xx/archive.h \
+	ws23xx/decoder.c \
 	ws23xx/decoder.h \
+	ws23xx/ws23xx.c \
 	ws23xx/ws23xx.h
 
 nobase_pkginclude_HEADERS += \
