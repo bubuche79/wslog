@@ -42,9 +42,6 @@ sync_init(int *flags, struct itimerspec *it)
 	syslog(LOG_INFO, "Time synchronization service ready");
 
 	return 0;
-
-error:
-	return -1;
 }
 
 int
