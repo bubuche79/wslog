@@ -91,6 +91,7 @@ AC_CONFIG_FILES([
 	src/libws/Makefile
 	src/vantage/Makefile
 	src/ws23xx/Makefile
+	src/wslog/Makefile
 	src/wslogd/Makefile
 	src/wsview/Makefile
 	tests/Makefile
