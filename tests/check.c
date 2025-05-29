@@ -15,11 +15,14 @@ main(void)
 	sr = srunner_create(NULL);
 
 	srunner_add_suite(sr, suite_aggregate());
+	srunner_add_suite(sr, suite_cli());
 	srunner_add_suite(sr, suite_crc_ccitt());
 	srunner_add_suite(sr, suite_nybble());
 	srunner_add_suite(sr, suite_util());
 
+#if HAVE_VANTAGE
 	srunner_add_suite(sr, suite_vantage());
+#endif
 
 	srunner_run_all(sr, CK_NORMAL);
 	ntests_failed = srunner_ntests_failed(sr);

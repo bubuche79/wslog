@@ -6,11 +6,16 @@ check_PROGRAMS = \
 check_build_SOURCES = \
 	check.c \
 	check_aggregate.c \
+	check_cli.c \
 	check_crc_ccitt.c \
 	check_nybble.c \
 	check_util.c \
-	check_vantage.c \
 	suites.h
+
+if USE_VANTAGE
+check_build_SOURCES += \
+	check_vantage.c
+endif
 
 check_build_CPPFLAGS = \
 	-I../src \
