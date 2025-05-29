@@ -1,5 +1,6 @@
 SUBDIRS = \
 	libws \
+	wslog \
 	wslogd
 
 if USE_VANTAGE
