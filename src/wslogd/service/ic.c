@@ -60,7 +60,7 @@ static struct ic dat[2];
 static void
 ic_reset(struct ic *p)
 {
-	memset(p, 0, sizeof(p));
+	memset(p, 0, sizeof(*p));
 
 	aggr_init_avgdeg(&p->aggr.wind_10m_dir);
 }
@@ -106,6 +106,7 @@ ic_write(int fd, const struct ic *p)
 			PACKAGE_NAME, PACKAGE_VERSION,
 			date, time_utc);
 
+	/* Real time */
 	ic_writev(fd, p->ic_mask, WF_TEMP, "temperature", "%.1f", p->temp);
 	ic_writev(fd, p->ic_mask, WF_BAROMETER, "pression", "%.1f", p->barometer);
 	ic_writev(fd, p->ic_mask, WF_HUMIDITY, "humidite", "%hhu", p->humidity);
@@ -116,6 +117,7 @@ ic_write(int fd, const struct ic *p)
 	ic_writev(fd, p->ic_mask, WF_RAIN_RATE, "pluie_intensite", "%.1f", p->rain_rate);
 	//	dwrite(fd, "pluie_intensite_maxi_1h=%.1f\n", p->hi_rain_rate_1h);
 
+	/* Past time */
 	ic_writev(fd, p->ic_mask, WF_RAIN_1H, "pluie_cumul_1h", "%.1f", p->rain_1h);
 	ic_writev(fd, p->ic_mask, WF_RAIN_DAY, "pluie_cumul", "%.1f", p->rain_day);
 	dprintf(fd, "pluie_cumul_heure_utc=%s\n", time_utc);
@@ -131,7 +133,6 @@ ic_write(int fd, const struct ic *p)
 static int
 ic_put(const struct ic *p)
 {
-	int ret;
 	CURL *curl = NULL;
 
 	ic_write(datfd, p);
@@ -328,7 +329,4 @@ ic_sig_ar(const struct ws_archive *ar)
 	next = ar->time + freq;
 
 	return 0;
-
-error:
-	return -1;
 }
